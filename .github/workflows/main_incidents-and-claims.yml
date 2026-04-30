@@ -16,7 +16,7 @@ jobs:
       - name: Prepare deployment folder
         run: |
           mkdir deploy
-          cp backend/main.py deploy/
+          cp backend/app/main.py deploy/
           cp backend/requirements.txt deploy/
           cp -r backend/app deploy/
 
@@ -35,11 +35,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
-      # 🔥 THIS LINE IS THE FIX
-      - name: Clean previous deployment
-        run: |
-          rm -rf *
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
