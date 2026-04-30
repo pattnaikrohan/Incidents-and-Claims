@@ -1,16 +1,25 @@
 from fastapi import FastAPI, Request
 from app.api.api import api_router
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.database import SessionLocal
+from app.core.database import SessionLocal, engine
 from app.models.incidents import AuditLog
-from fastapi.middleware.cors import CORSMiddleware
+from app.core.init_data import init_db
 
 app = FastAPI(
     title="Incident & Claims Management API",
     description="API for managing cargo incidents, claims, documents, and reporting.",
     version="1.0.0"
 )
-#
+
+# Startup event to ensure DB is initialized and seeded on Azure
+@app.on_event("startup")
+def on_startup():
+    db = SessionLocal()
+    try:
+        init_db(db)
+    finally:
+        db.close()
+
 # Production CORS policy
 origins = [
     "http://localhost:5173",
@@ -31,7 +40,6 @@ app.include_router(api_router, prefix="/api")
 
 @app.middleware("http")
 async def audit_log_middleware(request: Request, call_next):
-    response = await call_next(request)
     # Basic catch-all for state-changing requests
     if request.method in ["POST", "PUT", "DELETE"]:
         db = SessionLocal()
@@ -47,6 +55,8 @@ async def audit_log_middleware(request: Request, call_next):
             pass # Keep middleware lightweight and non-blocking
         finally:
             db.close()
+    
+    response = await call_next(request)
     return response
 
 @app.get("/health")
