@@ -8,6 +8,8 @@ class MemoryStore:
         self.branches = []
         self.incidents = []
         self.audit_logs = []
+        self.documents = []
+        self.notes = []
         self._seed()
 
     def _seed(self):
@@ -37,38 +39,38 @@ class MemoryStore:
             "id": 2, "email": "aaw.global.syd@aaw.com", "name": "Sydney User", 
             "hashed_password": pwd_hash, "role": RoleEnum.branch_access, "branch_id": syd_branch["id"]
         })
+        
+        # Seed Risk User
+        risk_branch = next(b for b in self.branches if "Risk" in b["name"])
+        self.users.append({
+            "id": 3, "email": "risk.compliance@aaw.com", "name": "Compliance Officer", 
+            "hashed_password": pwd_hash, "role": RoleEnum.risk_compliance, "branch_id": risk_branch["id"]
+        })
 
-    # Helper methods to mimic SQLAlchemy query style
     def query(self, model_type):
-        if "User" in str(model_type): return MockQuery(self.users)
-        if "Branch" in str(model_type): return MockQuery(self.branches)
-        if "Incident" in str(model_type): return MockQuery(self.incidents)
-        return MockQuery([])
+        return self # Simple mock
 
     def add(self, item):
         if not hasattr(item, 'id') or item.id is None:
             # Simple auto-increment
             target_list = []
-            if "Incident" in str(type(item)): target_list = self.incidents
-            elif "User" in str(type(item)): target_list = self.users
+            type_str = str(type(item))
+            if "Incident" in type_str: target_list = self.incidents
+            elif "User" in type_str: target_list = self.users
+            elif "Document" in type_str: target_list = self.documents
+            elif "IncidentNote" in type_str: target_list = self.notes
             item.id = len(target_list) + 1
         
-        # Convert model object to dict for storage if needed, or just store object
-        # For simplicity in this mock, we'll store the objects themselves
-        if "Incident" in str(type(item)): self.incidents.append(item)
-        elif "User" in str(type(item)): self.users.append(item)
-        elif "AuditLog" in str(type(item)): self.audit_logs.append(item)
+        type_str = str(type(item))
+        if "Incident" in type_str: self.incidents.append(item)
+        elif "User" in type_str: self.users.append(item)
+        elif "AuditLog" in type_str: self.audit_logs.append(item)
+        elif "Document" in type_str: self.documents.append(item)
+        elif "IncidentNote" in type_str: self.notes.append(item)
 
     def commit(self): pass
     def refresh(self, item): pass
     def close(self): pass
-
-class MockQuery:
-    def __init__(self, data):
-        self.data = data
-    def filter(self, condition): return self # Mocking filters for now
-    def first(self): return self.data[0] if self.data else None
-    def all(self): return self.data
 
 # Global instance
 store = MemoryStore()

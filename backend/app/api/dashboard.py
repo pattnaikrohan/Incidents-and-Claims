@@ -1,39 +1,47 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from app.core.database import get_db
-from app.api.deps import require_risk_compliance_role
-from app.models.users import User, Branch
-from app.models.incidents import Incident
+from app.api.deps import get_db, require_risk_compliance_role
+from collections import Counter
 
 router = APIRouter()
 
 @router.get("/statistics")
 def get_dashboard_statistics(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_risk_compliance_role)
+    db = Depends(get_db),
+    current_user = Depends(require_risk_compliance_role)
 ):
     """
-    Returns aggregated analytics for Risk & Compliance teams:
-    - Incidents by branch
-    - Incidents by type
-    - Open vs Closed incidents
+    Returns aggregated analytics for Risk & Compliance teams using In-Memory data.
     """
+    incidents = db.incidents
+    branches = db.branches
+
     # Total open
-    total_open = db.query(Incident).filter(Incident.status.notin_(["Closed", "Claim Processing"])).count()
+    total_open = len([i for i in incidents if i.status not in ["Closed", "Claim Processing"]])
     
     # By Branch
-    by_branch = db.query(
-        Branch.name, func.count(Incident.id)
-    ).join(Incident, Branch.id == Incident.branch_id).group_by(Branch.name).all()
+    # Create a mapping of branch_id -> branch_name
+    branch_map = {b["id"]: b["name"] for b in branches}
+    branch_counts = Counter([i.branch_id for i in incidents])
     
+    by_branch = []
+    for b_id, count in branch_counts.items():
+        if b_id in branch_map:
+            by_branch.append({"branch": branch_map[b_id], "count": count})
+            
     # By Type
-    by_type = db.query(
-        Incident.type, func.count(Incident.id)
-    ).group_by(Incident.type).all()
+    type_counts = Counter([i.type for i in incidents])
+    by_type = [{"type": t, "count": c} for t, c in type_counts.items()]
     
+    # Add dummy data if empty so the dashboard charts aren't blank
+    if not by_type:
+        by_type = [{"type": "No Data", "count": 0}]
+    if not by_branch:
+        by_branch = [{"branch": "Head Office", "count": 0}]
+
     return {
         "total_open": total_open,
-        "by_branch": [{"branch": b[0], "count": b[1]} for b in by_branch],
-        "by_type": [{"type": t[0], "count": t[1]} for t in by_type]
+        "total_incidents": len(incidents),
+        "total_closed": len(incidents) - total_open,
+        "by_branch": by_branch,
+        "by_type": by_type
     }
