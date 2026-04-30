@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Database
+sql_app.db
+app.db
+seeded_incidents.db
+
+# OS
+.DS_Store
+Thumbs.db

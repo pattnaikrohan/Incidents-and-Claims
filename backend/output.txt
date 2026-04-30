@@ -1,0 +1,161 @@
+--- ODT CONTENT ---
+Statement of Work (SoW)
+Design of Incident & Claims Management Solution
+Client:AAW GroupSupplier:CozentusProject Name:Incident & Claims Management Solution – Design PhasePurpose:Replacement of existing M‑Files-basedIncident & Claims capability
+
+1. Background and Objectives
+AAW Group currently manages cargo-related incidents and claims using a solution implemented onM‑Files. While functional, this solution is no longer aligned with AAW’s strategic direction for modern, integrated, data-driven platforms and requires replacement with a purpose-designed solution that better integrates with core operational systems, improves usability, and supports role-based access across the business.
+The objective of this engagement is for Cozentus todesign a new Incident & Claims Management solution, including functional, technical, integration, security, and data requirements, to support the full lifecycle of incidents and claims related to cargo movements.
+This SoW covers thedesign phase only. Any subsequent build, implementation, or support activities will be subject to a separate SoW.
+
+2. Scope of Work
+Cozentus will undertake a structured design engagement covering the following areas.
+2.1 Solution Overview
+The target solution will provide acentralised, web-based Incident & Claims Management platformthat enables:
+Submission of new incidents by end users via a secure form
+Automated enrichment of incident data using CargoWise job data sourced from Snowflake
+End-to-endmanagement of incidents and claims by the Risk & Compliance team
+Controlled collaboration between Head Office and branch-level users
+Secure document and correspondence management throughout the incident lifecycle
+Role-based access and data segregation by business unit and branch
+
+3. Functional Design Requirements
+3.1 Incident Submission
+The solution must support submission of new incidents through:
+A web-based user interface
+A structured incident submission form
+Each incident submission must capture, at a minimum:
+Incident details (type, date, location, description)
+Reference to the related CargoWise job (e.g. Job Number)
+Business unit and branch
+Ability to upload and attach supporting documents (e.g. photos, reports, correspondence)
+3.2 CargoWise DataEnrichment (via Snowflake)
+Upon submission, the solution must:
+Query the Snowflake data platform to retrieve CargoWise job data related to the referenced job
+Validate that the job exists
+Enrich the incident record with key job information, including:
+Bill of Lading numbers
+Customer details
+Vessel details
+Key shipment dates (e.g. departure, arrival)
+The design must clearly document the integration approach, data flows, and error handling scenarios.
+3.3 Incident & Claim Lifecycle Management
+Thesolution must support the full lifecycle of an incident or claim, including:
+Initial submission
+Review and triage by Risk & Compliance
+Ongoing updates and assessments
+Correspondence between Risk & Compliance and branch users
+Attachment of additional documents over time
+Status management (e.g. open, under review, escalated, closed)
+Auditability of changes and updates
+Both Risk & Compliance users and branch users must be able to add notes, upload documents, and respond to queries within the constraints of their permissions.
+
+4. Roles, Permissions and Access Control
+The solution must supportrole-based access control, with at least the following roles defined as part of the design.
+4.1 Risk & Compliance Team
+Full access to all incidents and claims across all business units and branches
+Ability to:
+View, create, update, and close incidents
+Add and edit all incident details
+Upload and manage all associated documents
+Communicate with branch users within the system
+4.2 Branch Users
+Access restricted to incidents and claims associated with:
+Their own business unit
+Their own branch
+Ability to:
+Submit new incidents
+View incidents they are permitted to access
+Respond to Risk & Compliance queries
+Upload supporting documentation
+The design must explicitlyaddressdata segregation, ensuring users cannot view or access incidents outside their authorised scope.
+
+5. Non-Functional Requirements
+Cozentus will define and document non-functional requirements, including:
+Security and authentication model(aligned to AAW standards)
+Data privacy and access controls
+Audit logging and traceability
+Performance considerations
+Scalability and future extensibility
+Availability and resilience considerations
+
+6. Deliverables
+Cozentus will produce the following design deliverables:
+Solution Design Document
+High-level architecture
+Logical and physical components
+Key design assumptions
+Functional Design Specification
+User journeys and workflows
+Incident lifecycle states
+Role-based access model
+Integration Design
+Snowflake / CargoWise data integration
+Data mapping and validation rules
+Data and Document Management Design
+Incident data model
+Document storage and metadata approach
+Security and Permissions Model
+Roles
+Access rules
+Segregation of duties
+Implementation Options and Recommendations
+Technology options (where applicable)
+Build vs platform considerations
+High-level implementation approach (non-binding)
+Reporting Dashboard
+Analytics dashboard based on the underling data
+
+7. Out of Scope
+The following are explicitly out of scope for this SoW:
+Migration of historical incidents or documents from M‑Files
+User training or change management
+
+8. Assumptions and Dependencies
+AAW will provide access to relevant stakeholders for workshops and design validation
+AAW will provide required documentation and access details for Snowflake data structures
+CargoWise data is accessible via Snowflake and suitable for read-only integration
+Final implementation scope and cost will be defined under a separate SoW
+
+9. Governance and Acceptance
+Design artefacts will be reviewed jointly by AAW andCozentus
+Formal sign-off by AAW will constitute acceptance of the design phase deliverables
+
+10. Commercials and Timeline
+Commercial terms, pricing, and delivery milestones will be documented separately or appended to this SoW.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+11.ExampleScreenshotsfrom the Current System
+
+Dashboard
+
+
+Inside a View
+
+
+Inside an Incident
+
+
+Completed Cargo & Equipment Incident
+
+
+
+
+
+
+--- XLSX STRUCTURE ---
+Sheets: DASHBOARD, New Vault Summary, Incident Raw Data, New Export, COR, COR Summary

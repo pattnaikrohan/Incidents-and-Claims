@@ -1,0 +1,83 @@
+SHEET: DASHBOARD
+HEADERS: Papa Pita Konig Machine Water Damage - Medlog
+SAMPLE DATA (first 5 rows):
+  Row 1: Papa Pita Konig Machine Water Damage - Medlog
+  Row 2: 
+  Row 3: New Vault Report
+  Row 4: 
+  Row 5: 
+----------------------------------------
+SHEET: New Vault Summary
+HEADERS: 
+SAMPLE DATA (first 5 rows):
+  Row 1: 
+  Row 2: 
+  Row 3: New, Count, Completion rate, Group Division, Open, Closed, Total, Q3 Reporting, Count
+  Row 4: Open, 41, 0.11815561959654179, AAW Global - Sydney, 8, 53, 61, Incident, 39
+  Row 5: Closed, 306, 0.88184438040345825, CBR, 0, 7, 7, Shipment, #REF!
+----------------------------------------
+SHEET: Incident Raw Data
+HEADERS: Cargo & Equipment Incident -416 - Cargo Damage (Ivy Group), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, S00167678
+SAMPLE DATA (first 5 rows):
+  Row 1: Cargo & Equipment Incident -416 - Cargo Damage (Ivy Group), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, S00167678
+  Row 2: Cargo & Equipment Incident -418 - Cargo Damage (Shape Energy), -1, -1, -1, -1, 51, -1, -1, 1, 10, 8, 38, 17, -1, 9, 14, 25, 14, 19, 339, 2025, 346
+  Row 3: Vault, Incident Number, Name, Business Unit, Status, System Job Number, Created by, Date Created, Customer, Incident State, Responsible Party, Company's Liability, Incident Type, State, COR, Risk Level, Dupli, Blank, Status
+(Closed/Open), Total Entries, Date Created 2, Date
+(Day), Date
+(Month), Date
+(Year), Date
+(Time), Month, Month Year, Quarter, Cargo & Equipment Incident -420 - Cargo Damage (BOC), Last email update, Email Subject, Can't Find email, Status, Remarks, Days, [1ST]
+Follow Up, [EXTERNAL] Intent to Claim - Outturn Report - S00442142, S0044214, S00442140   AAW C00131460, Date, Days, [2ND]
+Follow Up, [EXTERNAL] Intent to Claim - Outturn Report - S00442142, S0044214, S00442140   AAW C00131460, Date, 
+, [3RD]
+Follow Up, [EXTERNAL] Intent to Claim - Outturn Report - S00442142, S0044214, S00442140   AAW C00131460, Date, 
+, [4TH]
+Follow Up, [EXTERNAL] Intent to Claim - Outturn Report - S00442142, S0044214, S00442140   AAW C00131460, Date, (Formulated), [5TH]
+Follow Up, [EXTERNAL] Intent to Claim - Outturn Report - S00442142, S0044214, S00442140   AAW C00131460, Date, (Formulated)
+  Row 4: New, 0, 298, Cargo & Equipment Incident -298 - Abandoned cargo Mexico (Signature Orthopaedics), AAW Global - Sydney, Open, S00143602, Joe Di Monaco, 45733.355555555558, MITS ALLOY, Open - Intent to Claim, Consignee, AAW was acting as an agent only., Abandoned Cargo, Incident Management, No, Low, 1. Notify the responsible parties.
+2. Evidence of the damage obtained.
+3. Sent an intent to claim to Woodland.
+4. no claim received, case can be closed, AGS sent an outturn report to AAW. AAW requested a photos. 
+, suspected damages, none noted and no claim received, 17/03/2025 08:32:00, 17, 03, 2025, 08:32:00, March, March 2025, Q1, Updated, 45933, BOC, 0, Ask Karolina what the next step will be, Incident #417 | Truck has arrived at Karratha [damage] _ GEMCO, For Follow-up
+  Row 5: New, 0, 101, Cargo & Equipment Incident -101 - Car Damage Haval - GWFFSA51PJ657660/ LGWFFSA53PJ657661, PILLA, Closed, S00135919, Briannon Mott, 45322.287499999999,  Investigations conclude damage had been preexisting and caused at port of loading., Closed - No Claim, Origin Agent, The cars were packed at the origin, and since they arrived damaged, PILLA is not responsible and does not bear any liability for the damage., Cargo Damage, Incident Complete, No, Low, Root Cause Analysis, Incident Summary, Corrective/ Preventive Action, 31/01/2024 06:54:00, 31, 01, 2024, 06:54:00, January, January 2024, Q1, Updated, 1
+----------------------------------------
+SHEET: New Export
+HEADERS: 
+SAMPLE DATA (first 5 rows):
+  Row 1: 
+  Row 2: 
+  Row 3: Status, Incident Number, Name, Business Unit, Status, System Job Number, Created by, Date Created, Customer, Incident State, Responsible Party, Company's Liability, Incident Type, State, COR, Risk Level, Dupli, Blank, Status
+(Closed/Open), Total Entries
+  Row 4: 101, 101, Cargo & Equipment Incident -101 - Car Damage Haval - GWFFSA51PJ657660/ LGWFFSA53PJ657661, PILLA, Closed, S00135919, Briannon Mott, 45322.287499999999,  Investigations conclude damage had been preexisting and caused at port of loading., Closed - No Claim, Origin Agent, The cars were packed at the origin, and since they arrived damaged, PILLA is not responsible and does not bear any liability for the damage., Cargo Damage, Incident Complete, No, Low, Root Cause Analysis, Incident Summary, Corrective/ Preventive Action, 0
+  Row 5: 102, 102, Cargo & Equipment Incident -102 - Car Damage Haval - LGWEEUA59PK663114, PILLA, Closed, S00135844, Briannon Mott, 45322.291666666664,  Investigations conclude damage had been preexisting and caused at port of loading., Closed - No Claim, Origin Agent, The cars were packed at the origin, and since they arrived damaged, PILLA is not responsible and does not bear any liability for the damage., Cargo Damage, Incident Complete, No, Low, Root Cause Analysis, Incident Summary, Corrective/ Preventive Action, 0
+----------------------------------------
+SHEET: COR
+HEADERS: The customer packed the container without accounting for weight distribution requirements., 0, 0
+SAMPLE DATA (first 5 rows):
+  Row 1: The customer packed the container without accounting for weight distribution requirements., 0, 0
+  Row 2: 0, 0
+  Row 3: Damage S00165906 / HAWB SOF001071091 /  BTL Medical Technologies, Cause, Follow-up, Kaper delivery Gnangara - TCKU6052580, COR Name, COR Risk Level, COR Type, CoR - Third Party Interactios - Cargo & Equipment Incident -401 - Site damage (Fletcher Rail Group), Date Created, 0, Speed, Third Party Interactions, Month, Year, Vehicle Standards, TOTAL: , Month , Quarter, 0
+  Row 4: STATUS, COR Assessment, 45981.40347222222, 0, 20/11/2025 09:41:00, 20, 11, 2025, 09:41:00, November, November 2025, Q4, 0
+  Row 5: STATE, COR CA Implemented, CoR -  - Cargo & Equipment Incident -415 - Property damage, Closed, CoR Incident Logging, Incident Complete, Yes, 45699.345833333333, 0, 11/02/2025 08:18:00, 11, 02, 2025, 08:18:00, February, February 2025, Q1, 0
+----------------------------------------
+SHEET: COR Summary
+HEADERS: 
+SAMPLE DATA (first 5 rows):
+  Row 1: 
+  Row 2: Risk Level, Count, Third Party Interactios, Status, Count, Third Party Interactios
+  Row 3: The customer (consignor/consignee) has a primary duty under HVNL s.26C and s.26G–26H to provide accurate site information and ensure deliveries can be made safely and lawfully.
+
+If the site was unsuitable for a B-double or heavy vehicle, and the customer did not disclose that, they may have breached their duty under CoR.
+
+AAW (as the booking party) has a shared duty to take reasonable steps - which in this case included engaging reputable transport providers.
+
+If we consistently used a previous carrier who had verified site suitability, we’ve likely met our “reasonable steps” obligation under HVNL.
+
+The new transport provider cannot automatically shift liability to AAW if they failed to confirm access or route suitability themselves - they have an independent duty as both operator and driver under CoR.
+
+In short:
+- The customer failed to disclose site restrictions, and
+- The transport provider failed to confirm access, so liability cannot rest solely on you as the booking party., 0, 0, Open, 0, 0
+  Row 4: Severe, 7, 0.7, Closed, 8, 1
+  Row 5: COR CA Implemented, 3, 0.3
+----------------------------------------
