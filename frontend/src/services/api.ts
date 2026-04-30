@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Default to port 8000 for standard dev 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'; 
+const API_URL = import.meta.env.VITE_API_URL || 'https://incidents-and-claims.azurewebsites.net/api';
 
 export const api = axios.create({
   baseURL: API_URL,
