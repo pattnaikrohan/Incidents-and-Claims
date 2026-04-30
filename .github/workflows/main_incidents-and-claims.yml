@@ -13,7 +13,7 @@ jobs:
       contents: read
 
     steps:
-      # Checkout repo
+      # Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Install dependencies from backend folder
+      # Install dependencies (inside backend)
       - name: Install dependencies
         working-directory: backend
         run: |
@@ -32,13 +32,13 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Upload ONLY backend (exclude venv)
+      # Upload ONLY backend contents (NOT the folder itself)
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-app
           path: |
-            backend
+            backend/*
             !backend/antenv/
 
   deploy:
@@ -52,7 +52,7 @@ jobs:
         with:
           name: python-app
 
-      # Deploy to Azure
+      # Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
