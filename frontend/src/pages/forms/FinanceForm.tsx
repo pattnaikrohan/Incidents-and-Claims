@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DollarSign } from 'lucide-react';
+import { CurrencyInput } from '../../components/CurrencyInput';
 
 function generateId() { return `FIN-${Date.now().toString(36).toUpperCase()}`; }
 function today() { return new Date().toLocaleDateString('en-AU'); }
@@ -89,12 +90,16 @@ Corrective Action: ${f.corrective_action || 'N/A'}
           </Field>
           
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Financial Value Involved (AUD)">
-              <input type="number" className="input-field" value={f.financial_value} onChange={e=>upd('financial_value',e.target.value)} />
-            </Field>
-            <Field label="Actual Financial Loss (AUD)">
-              <input type="number" className="input-field" value={f.actual_financial_loss} onChange={e=>upd('actual_financial_loss',e.target.value)} />
-            </Field>
+            <CurrencyInput 
+              label="Financial Value Involved" 
+              value={f.financial_value} 
+              onChange={v => upd('financial_value', v)} 
+            />
+            <CurrencyInput 
+              label="Actual Financial Loss" 
+              value={f.actual_financial_loss} 
+              onChange={v => upd('actual_financial_loss', v)} 
+            />
           </div>
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem'}}>
@@ -105,9 +110,11 @@ Corrective Action: ${f.corrective_action || 'N/A'}
                 <option value="No">No</option>
               </select>
             </Field>
-            <Field label="Recovery Amount (AUD)">
-              <input type="number" className="input-field" value={f.recovery_amount} onChange={e=>upd('recovery_amount',e.target.value)} />
-            </Field>
+            <CurrencyInput 
+              label="Recovery Amount" 
+              value={f.recovery_amount} 
+              onChange={v => upd('recovery_amount', v)} 
+            />
             <Field label="Write-Off Required">
               <select className="input-field" value={f.write_off_required} onChange={e=>upd('write_off_required',e.target.value)}>
                 <option value="">— Select —</option>

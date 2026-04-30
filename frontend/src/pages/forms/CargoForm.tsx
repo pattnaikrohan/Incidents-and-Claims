@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Package, UploadCloud, X, FileText } from 'lucide-react';
+import { CurrencyInput } from '../../components/CurrencyInput';
 
 const INCIDENT_TYPES = [
   'Abandoned Cargo','Cargo Damage','Cargo Theft','Container Seal Breach',
@@ -266,9 +267,11 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
             </label>
           ))}
         </div>
-        <Field label="Incident Claim Estimate (include currency)">
-          <input className="input-field" placeholder="e.g. AUD 12,500" value={f.claim_estimate} onChange={e=>upd('claim_estimate',e.target.value)}/>
-        </Field>
+        <CurrencyInput 
+          label="Incident Claim Estimate" 
+          value={f.claim_estimate} 
+          onChange={v => upd('claim_estimate', v)} 
+        />
       </div>
 
       {/* Supporting Evidence */}

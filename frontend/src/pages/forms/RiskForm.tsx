@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Shield } from 'lucide-react';
+import { CurrencyInput } from '../../components/CurrencyInput';
 
 function generateId() { return `RCI-${Date.now().toString(36).toUpperCase()}`; }
 function today() { return new Date().toLocaleDateString('en-AU'); }
@@ -135,9 +136,11 @@ Corrective Action Owner: ${f.corrective_action_owner || 'N/A'}
                 <option value="No">No</option>
               </select>
             </Field>
-            <Field label="Penalty Amount">
-              <input type="number" className="input-field" value={f.penalty_amount} onChange={e=>upd('penalty_amount',e.target.value)} />
-            </Field>
+            <CurrencyInput 
+              label="Penalty Amount" 
+              value={f.penalty_amount} 
+              onChange={v => upd('penalty_amount', v)} 
+            />
           </div>
 
           <Field label="Root Cause">
