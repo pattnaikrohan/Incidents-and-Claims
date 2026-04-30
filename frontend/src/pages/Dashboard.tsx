@@ -69,7 +69,13 @@ export default function Dashboard() {
     return null;
   };
 
-  if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Synchronizing Digital Twin...</div>;
+  if (loading) return (
+    <div style={{ padding: '8rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+      <Activity className="animate-pulse" size={48} color="var(--accent-fg)" />
+      <div className="overline" style={{ fontSize: '0.75rem', letterSpacing: '0.2em' }}>Establishing Secure Connection...</div>
+      <div style={{ fontSize: '0.875rem', color: 'var(--fg-muted)' }}>Retrieving operational intelligence for your cluster.</div>
+    </div>
+  );
 
   if (error) {
     return (
