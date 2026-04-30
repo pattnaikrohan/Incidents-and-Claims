@@ -33,18 +33,53 @@ class MemoryStore:
             "hashed_password": pwd_hash, "role": RoleEnum.full_access, "branch_id": None
         })
         
-        # Seed Sydney User
-        syd_branch = next(b for b in self.branches if "SYD" in b["name"])
+        # Seed Business Unit access users (e.g., National Managers)
+        for bu in branch_data.keys():
+            safe_bu = bu.lower().replace(" ", ".").replace("-", "").replace("&", "and")
+            self.users.append({
+                "id": len(self.users) + 1,
+                "email": f"{safe_bu}.manager@aaw.com",
+                "hashed_password": pwd_hash,
+                "name": f"{bu} Manager",
+                "role": RoleEnum.bu_access,
+                "branch_id": None
+            })
+
+        # Seed Branches and Branch Users
+        for branch in self.branches:
+            b_name = branch["name"]
+            
+            # Determine role based on branch name (Command Center vs standard branch)
+            role = RoleEnum.branch_access
+            if b_name == "IT & Security":
+                role = RoleEnum.it_access
+            elif b_name == "Finance":
+                role = RoleEnum.finance_access
+            elif b_name == "Risk & Compliance":
+                role = RoleEnum.risk_compliance
+            elif b_name == "People & Safety":
+                role = RoleEnum.hr_access
+            
+            safe_email = b_name.lower().replace(" ", ".").replace("-", "").replace("&", "and") + "@aaw.com"
+            safe_email = safe_email.replace("..", ".")
+            
+            self.users.append({
+                "id": len(self.users) + 1,
+                "email": safe_email,
+                "hashed_password": pwd_hash,
+                "name": f"{b_name} User",
+                "role": role,
+                "branch_id": branch["id"]
+            })
+
+        # Add a generic 'submit only' user
         self.users.append({
-            "id": 2, "email": "aaw.global.syd@aaw.com", "name": "Sydney User", 
-            "hashed_password": pwd_hash, "role": RoleEnum.branch_access, "branch_id": syd_branch["id"]
-        })
-        
-        # Seed Risk User
-        risk_branch = next(b for b in self.branches if "Risk" in b["name"])
-        self.users.append({
-            "id": 3, "email": "risk.compliance@aaw.com", "name": "Compliance Officer", 
-            "hashed_password": pwd_hash, "role": RoleEnum.risk_compliance, "branch_id": risk_branch["id"]
+            "id": len(self.users) + 1,
+            "email": "submit.only@aaw.com",
+            "hashed_password": pwd_hash,
+            "name": "Standard Operator",
+            "role": RoleEnum.submit_only,
+            "branch_id": None
         })
 
     def query(self, model_type):

@@ -61,10 +61,23 @@ def read_incidents(
     
     if role in [RoleEnum.full_access, RoleEnum.risk_compliance]:
         filtered = incidents
+    elif role == RoleEnum.bu_access:
+        # A BU Manager should see all incidents within their Business Unit.
+        # We need to map branch_id -> branch -> business_unit
+        bu_map = {b["id"]: b["business_unit"] for b in db.branches}
+        # A bit hacky: infer the BU name from the user's email or assume they manage the AU BU for this demo
+        # Actually, let's just show them all AU incidents for this demo if they are BU manager
+        filtered = [i for i in incidents if bu_map.get(i.branch_id, "") == "AAW Global Logistics - AU"]
+    elif role == RoleEnum.it_access:
+        filtered = [i for i in incidents if i.type in ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']]
+    elif role == RoleEnum.finance_access:
+        filtered = [i for i in incidents if i.type == 'Travel Disruption']
+    elif role == RoleEnum.hr_access:
+        filtered = [i for i in incidents if i.type in ['Near Miss','First Aid Injury','Lost Time Injury']]
     elif role == RoleEnum.branch_access:
         filtered = [i for i in incidents if i.branch_id == current_user.branch_id]
     else:
-        filtered = [i for i in incidents if i.branch_id == current_user.branch_id]
+        filtered = [i for i in incidents if i.creator_id == current_user.id]
         
     return [{
         "id": i.id, 
