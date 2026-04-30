@@ -10,7 +10,7 @@ app = FastAPI(
     description="API for managing cargo incidents, claims, documents, and reporting.",
     version="1.0.0"
 )
-
+#
 # Production CORS policy
 origins = [
     "http://localhost:5173",
