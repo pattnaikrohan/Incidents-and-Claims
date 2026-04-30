@@ -11,13 +11,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      # Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      # Prepare clean deployment folder (CRITICAL)
       - name: Prepare deployment folder
         run: |
           mkdir deploy
-          cp -r backend/* deploy/
+          cp backend/main.py deploy/
+          cp backend/requirements.txt deploy/
+          cp -r backend/app deploy/
 
+      # Upload artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -29,11 +35,13 @@ jobs:
     needs: build
 
     steps:
+      # Download artifact
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: python-app
 
+      # Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
