@@ -178,7 +178,12 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
             {inp('cargo_description','Nature of cargo','text',true)}
-            {inp('cargo_value','Value incl. currency (e.g. AUD 50,000)','text',true)}
+            <CurrencyInput
+              label="Cargo Value"
+              value={f.cargo_value}
+              onChange={v => upd('cargo_value', v)}
+              req
+            />
           </div>
           {inp('location_of_incident','Specific location of incident','text',true)}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>

@@ -1,10 +1,14 @@
 import axios from 'axios';
 
-// Default to port 8000 for standard dev 
-const API_URL = import.meta.env.VITE_API_URL || 'https://incidents-and-claims.azurewebsites.net/api';
+// Sanitize and force HTTPS for Azure production
+let BASE_URL = import.meta.env.VITE_API_URL || 'https://incidents-and-claims.azurewebsites.net/api';
+
+if (BASE_URL.startsWith('http://') && !BASE_URL.includes('localhost') && !BASE_URL.includes('127.0.0.1')) {
+  BASE_URL = BASE_URL.replace('http://', 'https://');
+}
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: BASE_URL,
 });
 
 api.interceptors.request.use((config) => {
