@@ -9,48 +9,31 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
-      # Checkout repo
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Setup Python (optional, for validation only)
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      # (Optional sanity check - can remove later)
-      - name: Verify requirements exists
+      - name: Prepare deployment folder
         run: |
-          ls backend
-          cat backend/requirements.txt
+          mkdir deploy
+          cp -r backend/* deploy/
 
-      # Upload ONLY backend contents (flattened)
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            backend/*
-            !backend/antenv/
-            !backend/__pycache__/
+          path: deploy
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      # Download artifact
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: python-app
 
-      # Deploy to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
