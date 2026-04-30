@@ -13,26 +13,23 @@ jobs:
       contents: read
 
     steps:
-      # Checkout repository
+      # Checkout repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Python
+      # Setup Python (optional, for validation only)
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # Install dependencies (inside backend)
-      - name: Install dependencies
-        working-directory: backend
+      # (Optional sanity check - can remove later)
+      - name: Verify requirements exists
         run: |
-          python -m venv antenv
-          source antenv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          ls backend
+          cat backend/requirements.txt
 
-      # Upload ONLY backend contents (NOT the folder itself)
+      # Upload ONLY backend contents (flattened)
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -40,6 +37,7 @@ jobs:
           path: |
             backend/*
             !backend/antenv/
+            !backend/__pycache__/
 
   deploy:
     runs-on: ubuntu-latest
