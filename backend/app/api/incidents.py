@@ -17,6 +17,8 @@ class IncidentCreate(BaseModel):
     mbl_mawb_issued: str | None = None
     hbl_hawb_issued: str | None = None
     customer: str | None = None
+    business_unit: str | None = None
+    branch_department: str | None = None
 
 class IncidentUpdateStatus(BaseModel):
     status: str
@@ -27,13 +29,21 @@ def create_incident(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    location_lower = incident_in.location.lower()
     assigned_branch_id = current_user.branch_id
     
-    for b in db.branches:
-        if b["name"].lower() in location_lower or location_lower in b["name"].lower():
-            assigned_branch_id = b["id"]
-            break
+    if incident_in.branch_department:
+        branch_lower = incident_in.branch_department.lower()
+        for b in db.branches:
+            if b["name"].lower() == branch_lower:
+                assigned_branch_id = b["id"]
+                break
+    else:
+        # Fallback to guessing from location text if not explicitly provided
+        location_lower = incident_in.location.lower()
+        for b in db.branches:
+            if b["name"].lower() in location_lower or location_lower in b["name"].lower():
+                assigned_branch_id = b["id"]
+                break
 
     new_incident = Incident(
         id=len(db.incidents) + 1,
