@@ -28,22 +28,31 @@ export default function Incidents() {
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
+        console.log('Polling Power Automate for latest incident...');
         const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw');
-        if (response.ok) {
-          const newIncident = await response.json();
-          // Append the latest one if it does not already exist
-          if (newIncident && newIncident.id) {
-            setIncidents(prev => {
-              const exists = prev.some(inc => inc.id === newIncident.id);
-              if (!exists) {
-                return [...prev, newIncident];
-              }
-              return prev;
-            });
-          }
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Power Automate polling failed:', response.status, errorText);
+          return;
+        }
+
+        const newIncident = await response.json();
+        console.log('Received new incident from Power Automate:', newIncident);
+        
+        // Append the latest one if it does not already exist
+        if (newIncident && newIncident.id) {
+          setIncidents(prev => {
+            const exists = prev.some(inc => inc.id === newIncident.id);
+            if (!exists) {
+              console.log('Appending new incident to list:', newIncident.id);
+              return [...prev, newIncident];
+            }
+            return prev;
+          });
         }
       } catch (error) {
-        console.error('Failed to fetch latest incident from Power Automate', error);
+        console.error('Failed to fetch latest incident from Power Automate (CORS or Network Error):', error);
       }
     }, 30000);
 
