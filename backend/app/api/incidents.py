@@ -89,12 +89,14 @@ def read_incidents(
     else:
         filtered = [i for i in incidents if i.creator_id == current_user.id]
         
+    branch_map = {b["id"]: b["name"] for b in db.branches}
     return [{
         "id": i.id, 
         "type": i.type, 
         "status": i.status, 
         "date": i.date, 
-        "location": i.location
+        "location": i.location,
+        "branch_department": branch_map.get(getattr(i, "branch_id", None), "N/A")
     } for i in filtered]
 
 @router.get("/{incident_id}", response_model=dict)
@@ -107,6 +109,8 @@ def get_incident(
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
     
+    branch_map = {b["id"]: b["name"] for b in db.branches}
+    
     # Simple conversion to dict for response
     return {
         "id": incident.id,
@@ -116,7 +120,8 @@ def get_incident(
         "location": incident.location,
         "description": incident.description,
         "job_number": incident.job_number,
-        "customer_name": getattr(incident, 'customer_name', 'N/A')
+        "customer_name": getattr(incident, 'customer_name', 'N/A'),
+        "branch_department": branch_map.get(getattr(incident, "branch_id", None), "N/A")
     }
 
 @router.put("/{incident_id}/status", response_model=dict)

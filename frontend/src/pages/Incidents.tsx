@@ -24,6 +24,32 @@ export default function Incidents() {
     fetchIncidents();
   }, []);
 
+  // Poll for latest incident via Power Automate flow every 30s
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw');
+        if (response.ok) {
+          const newIncident = await response.json();
+          // Append the latest one if it does not already exist
+          if (newIncident && newIncident.id) {
+            setIncidents(prev => {
+              const exists = prev.some(inc => inc.id === newIncident.id);
+              if (!exists) {
+                return [...prev, newIncident];
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch latest incident from Power Automate', error);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Synchronizing Digital Twin Register...</div>;
 
   let displayedIncidents = incidents;
@@ -144,6 +170,7 @@ export default function Incidents() {
                 <th style={{ paddingLeft: '2rem' }}>Reference</th>
                 <th>Classification</th>
                 <th>Jurisdiction</th>
+                <th>Branch / Dept</th>
                 <th>Lodged Date</th>
                 <th>Status</th>
                 <th style={{ textAlign: 'right', paddingRight: '2rem' }}>Exposure</th>
@@ -172,6 +199,7 @@ export default function Incidents() {
                     </td>
                     <td>{incident.type}</td>
                     <td>{incident.location}</td>
+                    <td>{incident.branch_department || 'N/A'}</td>
                     <td className="monospaced" style={{ color: 'var(--fg-muted)' }}>{incident.date}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
