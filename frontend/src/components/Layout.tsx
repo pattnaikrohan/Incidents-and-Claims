@@ -56,7 +56,7 @@ const INCIDENT_TYPES = [
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { logout, role } = useAuth();
+  const { logout, role, branchName, businessUnit } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
