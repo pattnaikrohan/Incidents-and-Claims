@@ -14,9 +14,29 @@ export default function Incidents() {
   const fetchIncidents = async () => {
     try {
       const response = await api.get('/incidents');
-      setIncidents(response.data);
+      let backendData = response.data || [];
+      
+      // Merge with localStorage to keep Dataverse records stored permanently on frontend
+      try {
+        const saved = localStorage.getItem('incidents_cache');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const existingIds = new Set(backendData.map((i: any) => i.id));
+          parsed.forEach((item: any) => {
+            if (!existingIds.has(item.id)) {
+              backendData.push(item);
+            }
+          });
+        }
+      } catch (e) { console.error('Local storage read error', e); }
+
+      setIncidents(backendData);
+      localStorage.setItem('incidents_cache', JSON.stringify(backendData));
     } catch (error) {
       console.error('Failed to fetch incidents:', error);
+      // Fallback to local storage if backend fails
+      const saved = localStorage.getItem('incidents_cache');
+      if (saved) setIncidents(JSON.parse(saved));
     } finally {
       setLoading(false);
     }
@@ -67,7 +87,10 @@ export default function Incidents() {
             const uniqueNew = newIncidents.filter((inc: any) => !existingIds.has(inc.id));
             if (uniqueNew.length > 0) {
               console.log('Appending new incidents to list:', uniqueNew.map((i: any) => i.id));
-              return [...uniqueNew, ...prev];
+              const updatedList = [...uniqueNew, ...prev];
+              // Store persistently in frontend
+              localStorage.setItem('incidents_cache', JSON.stringify(updatedList));
+              return updatedList;
             }
             return prev;
           });
