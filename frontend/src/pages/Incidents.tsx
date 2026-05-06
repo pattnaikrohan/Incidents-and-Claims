@@ -50,8 +50,7 @@ export default function Incidents() {
       }
       
       if (dataArray.length > 0) {
-        const raw = dataArray[0];
-        newIncident = {
+        const newIncidents = dataArray.map((raw: any) => ({
           id: raw.cr991_cargoequipmentincidentid,
           incident_number_str: raw.cr991_incidentid,
           type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || "Cargo Equipment",
@@ -63,18 +62,19 @@ export default function Incidents() {
           formal_claim_issued: "No",
           cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === "Yes" ? "Yes" : "No",
           management_escalation: "No"
-        };
-      }
+        })).filter((inc: any) => inc.id);
 
-      if (newIncident && newIncident.id) {
-        setIncidents(prev => {
-          const exists = prev.some(inc => inc.id === newIncident.id);
-          if (!exists) {
-            console.log('Appending new incident to list:', newIncident.id);
-            return [newIncident, ...prev]; // Prepending to show at top for better UX
-          }
-          return prev;
-        });
+        if (newIncidents.length > 0) {
+          setIncidents(prev => {
+            const existingIds = new Set(prev.map(inc => inc.id));
+            const uniqueNew = newIncidents.filter((inc: any) => !existingIds.has(inc.id));
+            if (uniqueNew.length > 0) {
+              console.log('Appending new incidents to list:', uniqueNew.map((i: any) => i.id));
+              return [...uniqueNew, ...prev];
+            }
+            return prev;
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch latest incident from Power Automate (CORS or Network Error):', error);
