@@ -37,9 +37,30 @@ export default function Incidents() {
           return;
         }
 
-        const newIncident = await response.json();
-        console.log('Received new incident from Power Automate:', newIncident);
+        const payload = await response.json();
+        console.log('Received new incident from Power Automate:', payload);
         
+        let newIncident = null;
+        if (payload && payload.body && Array.isArray(payload.body) && payload.body.length > 0) {
+          const raw = payload.body[0];
+          
+          // Map Dynamics 365 JSON format to our frontend UI format
+          newIncident = {
+            id: raw.cr991_cargoequipmentincidentid,
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || "Cargo Equipment",
+            location: raw.cr991_locationofincident || "Unknown",
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || "N/A",
+            date: raw["createdon@OData.Community.Display.V1.FormattedValue"]?.split(' ')[0] || raw.cr991_datelogged,
+            // Clean up status (e.g., "Open - Incident Logged" -> "Open")
+            status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || "").includes("Open") ? "Open" : "Review",
+            value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || "Pending",
+            formal_claim_issued: "No",
+            cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === "Yes" ? "Yes" : "No",
+            management_escalation: "No"
+          };
+        }
+
         // Append the latest one if it does not already exist
         if (newIncident && newIncident.id) {
           setIncidents(prev => {
