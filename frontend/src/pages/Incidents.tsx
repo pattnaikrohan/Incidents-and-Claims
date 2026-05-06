@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Filter, Briefcase, AlertTriangle, Shield, Users, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Incidents() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function Incidents() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { role } = useAuth();
 
   const fetchIncidents = async () => {
     try {
@@ -121,6 +123,13 @@ export default function Incidents() {
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Synchronizing Digital Twin Register...</div>;
 
   let displayedIncidents = incidents;
+  
+  // Enforce Role-Based Access Control (RBAC)
+  if (role && role.startsWith('Branch: ')) {
+    const userBranch = role.replace('Branch: ', '');
+    displayedIncidents = displayedIncidents.filter(i => i.branch_department === userBranch);
+  }
+
   if (location.pathname === '/claims') {
     displayedIncidents = incidents.filter(i => i.formal_claim_issued === 'Yes');
   } else if (location.pathname === '/cors') {
