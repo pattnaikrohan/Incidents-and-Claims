@@ -38,7 +38,6 @@ export default function Incidents() {
       const payload = await response.json();
       console.log('Received new incident from Power Automate:', payload);
       
-      let newIncident = null;
       let dataArray = [];
       
       if (Array.isArray(payload)) {
