@@ -29,7 +29,12 @@ export default function Incidents() {
     const interval = setInterval(async () => {
       try {
         console.log('Polling Power Automate for latest incident...');
-        const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw');
+        // Use POST by default for Power Automate HTTP triggers, as GET often requires special config
+        const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
         
         if (!response.ok) {
           const errorText = await response.text();
@@ -41,19 +46,29 @@ export default function Incidents() {
         console.log('Received new incident from Power Automate:', payload);
         
         let newIncident = null;
-        if (payload && payload.body && Array.isArray(payload.body) && payload.body.length > 0) {
-          const raw = payload.body[0];
+        let dataArray = [];
+        
+        // Handle different ways Power Automate might format the response
+        if (Array.isArray(payload)) {
+          dataArray = payload;
+        } else if (payload && Array.isArray(payload.body)) {
+          dataArray = payload.body; // Raw trigger output format
+        } else if (payload && Array.isArray(payload.value)) {
+          dataArray = payload.value; // Dataverse List Rows format
+        }
+        
+        if (dataArray.length > 0) {
+          const raw = dataArray[0];
           
           // Map Dynamics 365 JSON format to our frontend UI format
           newIncident = {
             id: raw.cr991_cargoequipmentincidentid,
             incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || "Cargo Equipment",
-            location: raw.cr991_locationofincident || "Unknown",
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || "Cargo Equipment",
+            location: raw.cr991_locationofincident || raw.cr991_destinationagent || raw.cr991_originagent || "Unknown",
             branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || "N/A",
-            date: raw["createdon@OData.Community.Display.V1.FormattedValue"]?.split(' ')[0] || raw.cr991_datelogged,
-            // Clean up status (e.g., "Open - Incident Logged" -> "Open")
-            status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || "").includes("Open") ? "Open" : "Review",
+            date: (raw["createdon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || new Date().toLocaleDateString()).split(' ')[0],
+            status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidentstatus || "").includes("Open") ? "Open" : "Review",
             value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || "Pending",
             formal_claim_issued: "No",
             cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === "Yes" ? "Yes" : "No",
