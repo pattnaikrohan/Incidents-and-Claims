@@ -11,7 +11,7 @@ export default function Incidents() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { role } = useAuth();
+  const { role, branchName } = useAuth();
 
   const fetchIncidents = async () => {
     try {
@@ -107,9 +107,9 @@ export default function Incidents() {
     fetchIncidents();
   }, []);
 
-  // Poll for latest incident via Power Automate flow every 30s
+  // Poll for latest incident via Power Automate flow every 2s
   useEffect(() => {
-    const interval = setInterval(fetchLatestFromPA, 30000);
+    const interval = setInterval(fetchLatestFromPA, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -125,9 +125,10 @@ export default function Incidents() {
   let displayedIncidents = incidents;
   
   // Enforce Role-Based Access Control (RBAC)
-  if (role && role.startsWith('Branch: ')) {
-    const userBranch = role.replace('Branch: ', '');
-    displayedIncidents = displayedIncidents.filter(i => i.branch_department === userBranch);
+  // Admin and Risk & Compliance can see everything. 
+  // Branch-specific roles (branch_access, it_access, etc.) only see their own branch data.
+  if (role !== 'full_access' && role !== 'risk_compliance' && role !== 'bu_access' && branchName) {
+    displayedIncidents = displayedIncidents.filter(i => i.branch_department === branchName);
   }
 
   if (location.pathname === '/claims') {

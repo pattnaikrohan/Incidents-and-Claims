@@ -18,7 +18,16 @@ class MemoryStore:
         # Seed Branches
         branch_data = {
             "AAW Group Holdings": ["IT & Security", "Finance", "Risk & Compliance", "People & Safety"],
-            "AAW Global Logistics - AU": ["AAW Global - MEL", "AAW Global - SYD", "AAW Global - BNE", "AAW Global - ADL", "AAW Global - FRE"],
+            "AAW Global Logistics - AU": [
+                "AAW Global - MEL", "AAW Global - SYD", "AAW Global - BNE", 
+                "AAW Global - ADL", "AAW Global - FRE", "AAW Brokerage", "AAW Project Logistics"
+            ],
+            "AAW Global Logistics - NZ": ["AAW Global - AKL"],
+            "AAW Bulk Liquid Logistics": ["AAW BLL"],
+            "Hoyer Logistics Australia": ["HLA"],
+            "Coastalbridge": ["Coastalbridge", "Coastalbridge Agencies"],
+            "Regional Shipping Services": ["PILLA", "RSS"],
+            "International Logistics Management": ["ILM"]
         }
         
         b_id = 1
