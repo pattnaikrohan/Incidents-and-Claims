@@ -90,13 +90,15 @@ def read_incidents(
         filtered = [i for i in incidents if i.creator_id == current_user.id]
         
     branch_map = {b["id"]: b["name"] for b in db.branches}
+    bu_map = {b["id"]: b["business_unit"] for b in db.branches}
     return [{
         "id": i.id, 
         "type": i.type, 
         "status": i.status, 
         "date": i.date, 
         "location": i.location,
-        "branch_department": branch_map.get(getattr(i, "branch_id", None), "N/A")
+        "branch_department": branch_map.get(getattr(i, "branch_id", None), "N/A"),
+        "business_unit": bu_map.get(getattr(i, "branch_id", None), "N/A")
     } for i in filtered]
 
 @router.get("/{incident_id}", response_model=dict)

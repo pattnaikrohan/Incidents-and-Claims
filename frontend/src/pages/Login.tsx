@@ -29,8 +29,8 @@ export default function Login() {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
       
-      const { access_token, role, branch_id, branch_name } = response.data;
-      login(access_token, role, branch_id, branch_name);
+      const { access_token, role, branch_id, branch_name, business_unit } = response.data;
+      login(access_token, role, branch_id, branch_name, business_unit);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');

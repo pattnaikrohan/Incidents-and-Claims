@@ -5,7 +5,8 @@ interface AuthContextType {
   role: string | null;
   branchId: number | null;
   branchName: string | null;
-  login: (token: string, role: string, branchId: number | null, branchName: string | null) => void;
+  businessUnit: string | null;
+  login: (token: string, role: string, branchId: number | null, branchName: string | null, businessUnit: string | null) => void;
   logout: () => void;
 }
 
@@ -15,11 +16,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
   const [branchName, setBranchName] = useState<string | null>(localStorage.getItem('branchName'));
+  const [businessUnit, setBusinessUnit] = useState<string | null>(localStorage.getItem('businessUnit'));
   const [branchId, setBranchId] = useState<number | null>(
     localStorage.getItem('branchId') ? Number(localStorage.getItem('branchId')) : null
   );
 
-  const login = (newToken: string, newRole: string, newBranchId: number | null, newBranchName: string | null) => {
+  const login = (newToken: string, newRole: string, newBranchId: number | null, newBranchName: string | null, newBusinessUnit: string | null) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('role', newRole);
     if (newBranchId !== null) {
@@ -32,10 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       localStorage.removeItem('branchName');
     }
+    if (newBusinessUnit !== null) {
+      localStorage.setItem('businessUnit', newBusinessUnit);
+    } else {
+      localStorage.removeItem('businessUnit');
+    }
     setToken(newToken);
     setRole(newRole);
     setBranchId(newBranchId);
     setBranchName(newBranchName);
+    setBusinessUnit(newBusinessUnit);
   };
 
   const logout = () => {
@@ -43,14 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('role');
     localStorage.removeItem('branchId');
     localStorage.removeItem('branchName');
+    localStorage.removeItem('businessUnit');
     setToken(null);
     setRole(null);
     setBranchId(null);
     setBranchName(null);
+    setBusinessUnit(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, role, branchId, branchName, login, logout }}>
+    <AuthContext.Provider value={{ token, role, branchId, branchName, businessUnit, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

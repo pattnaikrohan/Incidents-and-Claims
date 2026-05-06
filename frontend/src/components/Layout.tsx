@@ -270,8 +270,15 @@ export default function Layout({ children }: { children: ReactNode }) {
                   border: '1px solid var(--border-base)'
                 }}>
                   <div style={{ padding: '0.75rem', borderBottom: '1px solid var(--border-base)', marginBottom: '0.5rem' }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>{role === 'risk_compliance' ? 'Risk & Compliance' : 'Branch Manager'}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--fg-muted)' }}>AAW Group HQ</div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                      {role === 'full_access' ? 'Global Admin' : 
+                       role === 'risk_compliance' ? 'Risk & Compliance' : 
+                       role === 'bu_access' ? 'Business Unit Manager' : 
+                       'Branch Manager'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--fg-muted)' }}>
+                      {branchName ? branchName : businessUnit ? businessUnit : 'AAW Group HQ'}
+                    </div>
                   </div>
                   <button className="sidebar__nav-item" style={{ width: '100%', border: 'none', background: 'transparent', margin: 0, padding: '0.6rem 0.75rem' }} onClick={() => { setProfileOpen(false); alert('Settings Panel Coming Soon'); }}>
                     <Settings size={16} />

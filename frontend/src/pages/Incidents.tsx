@@ -11,7 +11,7 @@ export default function Incidents() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const { role, branchName } = useAuth();
+  const { role, branchName, businessUnit } = useAuth();
 
   const fetchIncidents = async () => {
     try {
@@ -75,6 +75,7 @@ export default function Incidents() {
           type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || "Cargo Equipment",
           location: raw.cr991_locationofincident || raw.cr991_destinationagent || raw.cr991_originagent || "Unknown",
           branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || "N/A",
+          business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || "N/A",
           date: (raw["createdon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || new Date().toLocaleDateString()).split(' ')[0],
           status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidentstatus || "").includes("Open") ? "Open" : "Review",
           value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || "Pending",
@@ -125,20 +126,26 @@ export default function Incidents() {
   let displayedIncidents = incidents;
   
   // Enforce Role-Based Access Control (RBAC)
-  // Admin and Risk & Compliance can see everything. 
-  // Branch-specific roles (branch_access, it_access, etc.) only see their own branch data.
-  if (role !== 'full_access' && role !== 'risk_compliance' && role !== 'bu_access' && branchName) {
-    displayedIncidents = displayedIncidents.filter(i => i.branch_department === branchName);
+  // Admin and Risk & Compliance can see everything.
+  if (role !== 'full_access' && role !== 'risk_compliance') {
+    // If BU manager, they see all branches in their business unit
+    if (role === 'bu_access' && businessUnit) {
+      displayedIncidents = displayedIncidents.filter(i => i.business_unit === businessUnit || i.branch_department === businessUnit);
+    } 
+    // If Branch Manager (or other branch-specific role), they ONLY see their branch
+    else if (branchName) {
+      displayedIncidents = displayedIncidents.filter(i => i.branch_department === branchName);
+    }
   }
 
   if (location.pathname === '/claims') {
-    displayedIncidents = incidents.filter(i => i.formal_claim_issued === 'Yes');
+    displayedIncidents = displayedIncidents.filter(i => i.formal_claim_issued === 'Yes');
   } else if (location.pathname === '/cors') {
-    displayedIncidents = incidents.filter(i => i.cor_required === 'Yes');
+    displayedIncidents = displayedIncidents.filter(i => i.cor_required === 'Yes');
   } else if (location.pathname === '/insurers') {
-    displayedIncidents = incidents.filter(i => i.insurer_notified === 'Yes');
+    displayedIncidents = displayedIncidents.filter(i => i.insurer_notified === 'Yes');
   } else if (location.pathname === '/escalations') {
-    displayedIncidents = incidents.filter(i => i.management_escalation === 'Yes');
+    displayedIncidents = displayedIncidents.filter(i => i.management_escalation === 'Yes');
   }
 
   // Apply tab filter
