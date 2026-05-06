@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Filter, Briefcase, AlertTriangle, Shield, Users } from 'lucide-react';
+import { FileText, Filter, Briefcase, AlertTriangle, Shield, Users, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
@@ -9,89 +9,94 @@ export default function Incidents() {
   const [activeTab, setActiveTab] = useState('active');
   const [incidents, setIncidents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchIncidents = async () => {
+    try {
+      const response = await api.get('/incidents');
+      setIncidents(response.data);
+    } catch (error) {
+      console.error('Failed to fetch incidents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLatestFromPA = async () => {
+    try {
+      console.log('Polling Power Automate for latest incident...');
+      const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw', {
+        method: 'POST'
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Power Automate polling failed:', response.status, errorText);
+        return;
+      }
+
+      const payload = await response.json();
+      console.log('Received new incident from Power Automate:', payload);
+      
+      let newIncident = null;
+      let dataArray = [];
+      
+      if (Array.isArray(payload)) {
+        dataArray = payload;
+      } else if (payload && Array.isArray(payload.body)) {
+        dataArray = payload.body;
+      } else if (payload && Array.isArray(payload.value)) {
+        dataArray = payload.value;
+      }
+      
+      if (dataArray.length > 0) {
+        const raw = dataArray[0];
+        newIncident = {
+          id: raw.cr991_cargoequipmentincidentid,
+          incident_number_str: raw.cr991_incidentid,
+          type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || "Cargo Equipment",
+          location: raw.cr991_locationofincident || raw.cr991_destinationagent || raw.cr991_originagent || "Unknown",
+          branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || "N/A",
+          date: (raw["createdon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || new Date().toLocaleDateString()).split(' ')[0],
+          status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidentstatus || "").includes("Open") ? "Open" : "Review",
+          value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || "Pending",
+          formal_claim_issued: "No",
+          cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === "Yes" ? "Yes" : "No",
+          management_escalation: "No"
+        };
+      }
+
+      if (newIncident && newIncident.id) {
+        setIncidents(prev => {
+          const exists = prev.some(inc => inc.id === newIncident.id);
+          if (!exists) {
+            console.log('Appending new incident to list:', newIncident.id);
+            return [newIncident, ...prev]; // Prepending to show at top for better UX
+          }
+          return prev;
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch latest incident from Power Automate (CORS or Network Error):', error);
+    }
+  };
 
   useEffect(() => {
-    const fetchIncidents = async () => {
-      try {
-        const response = await api.get('/incidents');
-        setIncidents(response.data);
-      } catch (error) {
-        console.error('Failed to fetch incidents:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchIncidents();
   }, []);
 
   // Poll for latest incident via Power Automate flow every 30s
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        console.log('Polling Power Automate for latest incident...');
-        // Use POST by default for Power Automate HTTP triggers, as GET often requires special config
-        const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw', {
-          method: 'POST'
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Power Automate polling failed:', response.status, errorText);
-          return;
-        }
-
-        const payload = await response.json();
-        console.log('Received new incident from Power Automate:', payload);
-        
-        let newIncident = null;
-        let dataArray = [];
-        
-        // Handle different ways Power Automate might format the response
-        if (Array.isArray(payload)) {
-          dataArray = payload;
-        } else if (payload && Array.isArray(payload.body)) {
-          dataArray = payload.body; // Raw trigger output format
-        } else if (payload && Array.isArray(payload.value)) {
-          dataArray = payload.value; // Dataverse List Rows format
-        }
-        
-        if (dataArray.length > 0) {
-          const raw = dataArray[0];
-          
-          // Map Dynamics 365 JSON format to our frontend UI format
-          newIncident = {
-            id: raw.cr991_cargoequipmentincidentid,
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || "Cargo Equipment",
-            location: raw.cr991_locationofincident || raw.cr991_destinationagent || raw.cr991_originagent || "Unknown",
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || "N/A",
-            date: (raw["createdon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || new Date().toLocaleDateString()).split(' ')[0],
-            status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidentstatus || "").includes("Open") ? "Open" : "Review",
-            value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || "Pending",
-            formal_claim_issued: "No",
-            cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === "Yes" ? "Yes" : "No",
-            management_escalation: "No"
-          };
-        }
-
-        // Append the latest one if it does not already exist
-        if (newIncident && newIncident.id) {
-          setIncidents(prev => {
-            const exists = prev.some(inc => inc.id === newIncident.id);
-            if (!exists) {
-              console.log('Appending new incident to list:', newIncident.id);
-              return [...prev, newIncident];
-            }
-            return prev;
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch latest incident from Power Automate (CORS or Network Error):', error);
-      }
-    }, 30000);
-
+    const interval = setInterval(fetchLatestFromPA, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchIncidents(); // Fetch from backend DB
+    await fetchLatestFromPA(); // Fetch latest from PA
+    setIsRefreshing(false);
+  };
 
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Synchronizing Digital Twin Register...</div>;
 
@@ -174,6 +179,15 @@ export default function Incidents() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            style={{ opacity: isRefreshing ? 0.7 : 1 }}
+          >
+            <RefreshCw size={14} className={isRefreshing ? "spin-animation" : ""} /> 
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
           <button className="btn btn-secondary">
             <Filter size={14} /> View Filters
           </button>
