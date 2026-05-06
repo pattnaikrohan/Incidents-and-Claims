@@ -25,9 +25,7 @@ export default function Incidents() {
   const fetchLatestFromPA = async () => {
     try {
       console.log('Polling Power Automate for latest incident...');
-      const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw', {
-        method: 'POST'
-      });
+      const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw');
       
       if (!response.ok) {
         const errorText = await response.text();
