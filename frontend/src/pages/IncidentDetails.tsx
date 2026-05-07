@@ -153,81 +153,80 @@ export default function IncidentDetails() {
           <div className="card" style={{ padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Details</h3>
           
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                  <Clock size={16} style={{ color: 'var(--fg-muted)' }} />
-                </div>
-                <div>
-                  <label className="overline">Reported Date</label>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>
-                    {new Date(incident.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                <Clock size={16} style={{ color: 'var(--fg-muted)' }} />
+              </div>
+              <div>
+                <label className="overline">Reported Date</label>
+                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>
+                  {new Date(incident.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ padding: '0.5rem', background: 'var(--accent-light)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                  <Briefcase size={16} style={{ color: 'var(--accent-fg)' }} />
-                </div>
-                <div>
-                  <label className="overline">CargoWise Ref</label>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{incident.job_number}</div>
-                </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ padding: '0.5rem', background: 'var(--accent-light)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                <Briefcase size={16} style={{ color: 'var(--accent-fg)' }} />
               </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                  <MapPin size={16} style={{ color: 'var(--fg-muted)' }} />
-                </div>
-                <div>
-                  <label className="overline">Location</label>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location}</div>
-                </div>
+              <div>
+                <label className="overline">CargoWise Ref</label>
+                <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{incident.job_number}</div>
               </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ padding: '0.5rem', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                  <FileText size={16} style={{ color: 'var(--danger-fg)' }} />
-                </div>
-                <div>
-                  <label className="overline">Classification</label>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>Cargo Damage</div>
-                </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                <MapPin size={16} style={{ color: 'var(--fg-muted)' }} />
+              </div>
+              <div>
+                <label className="overline">Location</label>
+                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ padding: '0.5rem', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                <FileText size={16} style={{ color: 'var(--danger-fg)' }} />
+              </div>
+              <div>
+                <label className="overline">Classification</label>
+                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>Cargo Damage</div>
               </div>
             </div>
           </div>
           
-          {/* Submission Data Dropdown */}
-          <div className="card" style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Incident Description & Form Data</h3>
-              <button 
-                onClick={() => setShowOriginal(!showOriginal)} 
-                className="btn btn-secondary" 
-                style={{ height: '36px', padding: '0 1rem', fontSize: '0.75rem' }}
-              >
-                {showOriginal ? 'Hide Form Data' : 'Show Full Form Data'}
-              </button>
-            </div>
-            
-            <div style={{ fontSize: '1rem', lineHeight: 1.6, color: 'var(--fg-base)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', marginBottom: showOriginal ? '1.5rem' : 0 }}>
-              <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--fg-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Primary Description</div>
-              {incident.description || 'No detailed description provided in original submission.'}
-            </div>
+          <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 2rem 0' }} />
 
-            {showOriginal && (
-              <div className="fade-in" style={{ padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
-                {Object.entries(incident)
-                  .filter(([k, v]) => v !== null && v !== '' && !['id', 'description', 'status', 'location', 'type', 'date', 'assigned_to_id', 'branch_id', 'creator_id'].includes(k))
-                  .map(([k, v]) => (
-                  <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
-                      {String(v)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', fontWeight: 600 }}>Description</h3>
+          
+          <div style={{ fontSize: '0.9375rem', lineHeight: 1.6, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', marginBottom: '1.5rem' }}>
+            {incident.description || 'No description provided'}
           </div>
+
+          <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 1.5rem 0' }} />
+
+          <button 
+            onClick={() => setShowOriginal(!showOriginal)} 
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: '#3b82f6', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', padding: 0 }}
+          >
+            {showOriginal ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            {showOriginal ? 'Hide Original Submission Data' : 'View Original Submission Data'}
+          </button>
+
+          {showOriginal && (
+            <div className="fade-in" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
+              {Object.entries(incident)
+                .filter(([k, v]) => v !== null && v !== '' && !['id', 'description', 'status', 'location', 'type', 'date', 'assigned_to_id', 'branch_id', 'creator_id'].includes(k))
+                .map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
+                    {String(v)}
+                  </div>
+                </div>
+              )))}
+            </div>
+          )}
+        </div>
 
           {/* Risk & Compliance Team Liability Form */}
           <div className="card" style={{ padding: '2rem' }}>
@@ -408,7 +407,19 @@ export default function IncidentDetails() {
                      <strong>To:</strong> claims@insurer.com<br/>
                      <strong>Subject:</strong> Initial Notification of Loss - {incident.type} - {incident.location}
                    </p>
-                   <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`Dear Insurer,\n\nPlease be advised of an incident that may give rise to a claim under our policy.\n\nIncident ID: INC-${incident.id}\nDate of Incident: ${incident.date}\nLocation: ${incident.location}\nType: ${incident.type}\n\nPreliminary Details:\n${incident.description}\n\nWe will provide further documentation as our investigation progresses.`} />
+                   <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`Dear Insurer,
+
+Please be advised of an incident that may give rise to a claim under our policy.
+
+Incident ID: INC-${incident.id}
+Date of Incident: ${incident.date}
+Location: ${incident.location}
+Type: ${incident.type}
+
+Preliminary Details:
+${incident.description}
+
+We will provide further documentation as our investigation progresses.`} />
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
@@ -431,7 +442,17 @@ export default function IncidentDetails() {
                      <strong>To:</strong> executive.team@aaw.com<br/>
                      <strong>Subject:</strong> HIGH PRIORITY ESCALATION - INC-${incident.id}
                    </p>
-                   <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`URGENT MANAGEMENT ESCALATION\n\nRisk Level: ${liability.risk_level || 'Pending'}\nIncident Type: ${incident.type}\nLocation: ${incident.location}\n\nSummary of Escalation:\n${incident.description}\n\nImmediate Action Required:\nPlease review the attached incident file in the Command Center. Legal and operational holds may be required.`} />
+                   <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`URGENT MANAGEMENT ESCALATION
+
+Risk Level: ${liability.risk_level || 'Pending'}
+Incident Type: ${incident.type}
+Location: ${incident.location}
+
+Summary of Escalation:
+${incident.description}
+
+Immediate Action Required:
+Please review the attached incident file in the Command Center. Legal and operational holds may be required.`} />
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
