@@ -14,6 +14,8 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://icy-desert-0a4e94a00.7.azurestaticapps.net",
+    "https://icy-desert-0a4e94a00.azurestaticapps.net",
+    "https://ashy-forest-0478c1800.azurestaticapps.net",
     "https://incidents-and-claims.azurewebsites.net"
 ]
 
