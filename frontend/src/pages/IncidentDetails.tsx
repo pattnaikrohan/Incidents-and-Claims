@@ -122,7 +122,9 @@ export default function IncidentDetails() {
               {incident.status}
             </span>
           </div>
-          <p className="page-subtitle" style={{ marginBottom: 0 }}>{incident.description.substring(0, 100)}...</p>
+          <p className="page-subtitle" style={{ marginBottom: 0 }}>
+            {(incident.description || 'No description provided').substring(0, 100)}...
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <div className="dropdown" style={{ position: 'relative' }}>
@@ -195,7 +197,7 @@ export default function IncidentDetails() {
           <div style={{ borderTop: '1px solid var(--border-base)', paddingTop: '2rem' }}>
             <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Description</h4>
             <div style={{ fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
-              {incident.description}
+              {(incident.description || 'No description provided')}
             </div>
           </div>
 

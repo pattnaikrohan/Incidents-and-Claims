@@ -194,9 +194,9 @@ export default function Dashboard() {
         ))}
 
         {/* Main Operational Trend Chart */}
-        <div style={{ gridColumn: 'span 8', gridRow: 'span 2' }}>
+        <div style={{ gridColumn: 'span 8', gridRow: 'span 2', minHeight: '400px' }}>
            <ChartWrapper id="main-trend-grad" title="Cluster Resolution Velocity" subtitle="Incident capture vs Finalized records (6 Month Rolling Data)">
-              <div style={{ width: '100%', height: '320px' }}>
+              <div style={{ width: '100%', height: '320px', minHeight: '320px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data?.monthly || []}>
                     <defs>
@@ -216,9 +216,9 @@ export default function Dashboard() {
         </div>
 
         {/* Categorical Distribution */}
-        <div style={{ gridColumn: 'span 4', gridRow: 'span 2' }}>
+        <div style={{ gridColumn: 'span 4', gridRow: 'span 2', minHeight: '400px' }}>
            <ChartWrapper id="category-bars" title="Incident Distribution" subtitle="Classification breakdown by severity">
-              <div style={{ width: '100%', height: '240px' }}>
+              <div style={{ width: '100%', height: '240px', minHeight: '240px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={categoryData} layout="vertical" margin={{ left: -20, right: 30, top: 10 }}>
                      <CartesianGrid horizontal={false} strokeDasharray="3 3" strokeOpacity={0.1} />
