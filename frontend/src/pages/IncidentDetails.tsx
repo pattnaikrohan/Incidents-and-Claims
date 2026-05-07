@@ -223,7 +223,7 @@ export default function IncidentDetails() {
                     {String(v)}
                   </div>
                 </div>
-              )))}
+              ))}
             </div>
           )}
         </div>
