@@ -194,31 +194,38 @@ export default function IncidentDetails() {
             </div>
           </div>
           
-          <div style={{ borderTop: '1px solid var(--border-base)', paddingTop: '2rem' }}>
-            <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Description</h4>
-            <div style={{ fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
-              {(incident.description || 'No description provided')}
+          {/* Submission Data Dropdown */}
+          <div className="card" style={{ padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Incident Description & Form Data</h3>
+              <button 
+                onClick={() => setShowOriginal(!showOriginal)} 
+                className="btn btn-secondary" 
+                style={{ height: '36px', padding: '0 1rem', fontSize: '0.75rem' }}
+              >
+                {showOriginal ? 'Hide Form Data' : 'Show Full Form Data'}
+              </button>
             </div>
-          </div>
+            
+            <div style={{ fontSize: '1rem', lineHeight: 1.6, color: 'var(--fg-base)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', marginBottom: showOriginal ? '1.5rem' : 0 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.75rem', color: 'var(--fg-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Primary Description</div>
+              {incident.description || 'No detailed description provided in original submission.'}
+            </div>
 
-          <div style={{ borderTop: '1px solid var(--border-base)', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
-            <button onClick={() => setShowOriginal(!showOriginal)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: 'none', color: 'var(--accent-fg)', fontWeight: 600, cursor: 'pointer', padding: 0 }}>
-              {showOriginal ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
-              View Original Submission Data
-            </button>
             {showOriginal && (
-              <div className="fade-in" style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
+              <div className="fade-in" style={{ padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
                 {Object.entries(incident)
                   .filter(([k, v]) => v !== null && v !== '' && !['id', 'description', 'status', 'location', 'type', 'date', 'assigned_to_id', 'branch_id', 'creator_id'].includes(k))
                   .map(([k, v]) => (
-                  <div key={k}>
-                    <span className="overline">{k.replace(/_/g, ' ')}</span>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--fg-base)' }}>{String(v)}</div>
+                  <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
+                      {String(v)}
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
           </div>
 
           {/* Risk & Compliance Team Liability Form */}
