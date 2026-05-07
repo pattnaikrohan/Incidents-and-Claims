@@ -23,7 +23,27 @@ export default function IncidentDetails() {
 
   const fetchIncident = async () => {
     try {
-      // In a real app we fetch by ID, using mock logic for now if needed or actual API
+      // 1. First check if this is a cached Dataverse record (UUID)
+      const saved = localStorage.getItem('incidents_cache');
+      if (saved) {
+        const cached = JSON.parse(saved);
+        const match = cached.find((i: any) => String(i.id) === String(id));
+        if (match) {
+          console.log('Found incident in Dataverse cache:', match);
+          setIncident(match);
+          setLiability(prev => ({
+            ...prev,
+            responsible_party: match.responsible_party || '',
+            risk_level: match.cor_risk_level || '',
+            cor: match.cor_required || '',
+            status: match.status || 'Open - Incident Logged'
+          }));
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. If not in cache, fallback to backend API (expected integer ID)
       const response = await api.get(`/incidents/${id}`);
       setIncident(response.data);
       if (response.data) {
