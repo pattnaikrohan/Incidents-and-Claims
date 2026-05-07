@@ -5,7 +5,7 @@ import {
   LogOut, LayoutDashboard, FileText, Search,
   BarChart3, ChevronRight, Package, Users, HeartPulse,
   Shield, DollarSign, Lock, Bell, Settings,
-  Briefcase, AlertTriangle
+  Briefcase, AlertTriangle, FileWarning
 } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
@@ -52,6 +52,13 @@ const INCIDENT_TYPES = [
     icon: DollarSign,
     color: '#3b82f6',
     desc: 'Financial incidents & travel disruption',
+  },
+  {
+    id: 'ncr',
+    label: 'Non-Conformance Report',
+    icon: FileWarning,
+    color: '#eab308',
+    desc: 'Process failures & defects',
   },
 ];
 

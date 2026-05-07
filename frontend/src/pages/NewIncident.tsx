@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowLeft, Package, Users, HeartPulse, Lock, Shield, DollarSign } from 'lucide-react';
+import { ArrowLeft, Package, Users, HeartPulse, Lock, Shield, DollarSign, FileWarning } from 'lucide-react';
 import { api } from '../services/api';
 
 import CargoForm from './forms/CargoForm';
@@ -9,6 +9,7 @@ import WHSForm from './forms/WHSForm';
 import ITForm from './forms/ITForm';
 import RiskForm from './forms/RiskForm';
 import FinanceForm from './forms/FinanceForm';
+import NCRForm from './forms/NCRForm';
 
 const FORM_META: Record<string, { label: string; icon: any; color: string; desc: string }> = {
   cargo: { label: 'Cargo & Equipment Incident', icon: Package, color: '#f59e0b', desc: 'Log cargo damage, theft, equipment failure and related events.' },
@@ -17,6 +18,7 @@ const FORM_META: Record<string, { label: string; icon: any; color: string; desc:
   it: { label: 'IT & Security Incident', icon: Lock, color: '#06b6d4', desc: 'Report cyber incidents, data breaches, outages, and unauthorised access.' },
   risk: { label: 'Risk & Compliance Incident', icon: Shield, color: '#10b981', desc: 'Report regulatory breaches, policy non-compliance, and sanctions violations.' },
   finance: { label: 'Finance Incident', icon: DollarSign, color: '#3b82f6', desc: 'Report financial incidents and travel disruption events.' },
+  ncr: { label: 'Non-Conformance Report (NCR)', icon: FileWarning, color: '#eab308', desc: 'Log non-conformance reports, process failures, and defects.' },
 };
 
 export default function NewIncident() {
@@ -202,6 +204,7 @@ export default function NewIncident() {
       {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
       {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
       {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
+      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
     </div>
   );
 }

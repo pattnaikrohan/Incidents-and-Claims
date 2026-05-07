@@ -1,11 +1,13 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Clock, MapPin, Briefcase, UserPlus, ChevronDown, ChevronRight, Shield, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText, Clock, MapPin, Briefcase, UserPlus, ChevronDown, ChevronRight, Shield, AlertTriangle, FileWarning } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import CollaborationFeed from '../components/CollaborationFeed';
 import { api } from '../services/api';
 import { useState, useEffect } from 'react';
 
 export default function IncidentDetails() {
   const { id } = useParams();
+  const { role } = useAuth();
   const [incident, setIncident] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -458,6 +460,114 @@ Please review the attached incident file in the Command Center. Legal and operat
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                 <button className="btn btn-secondary">Download Report</button>
                 <button className="btn btn-primary" style={{ background: '#8b5cf6' }}>Trigger Exec Workflow</button>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic NCR Form for R&C/Manager/Admin */}
+          {incident.type === 'Non-Conformance Report (NCR)' && ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '') && (
+            <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.02)', marginTop: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+                <div style={{ padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}><FileWarning size={20}/></div>
+                <h3 style={{ fontSize: '1.25rem', color: '#10b981', margin: 0 }}>R&C / MANAGER (NCR Follow-up)</h3>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Cause of NC</label>
+                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Identify the root cause of the non-conformance..." />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Corrective Action</label>
+                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Action taken to correct the non-conformance..." />
+                </div>
+                <div>
+                  <label className="overline">Corrective Action Implemented</label>
+                  <select className="input-field">
+                    <option>No — implementation in progress</option>
+                    <option>Yes</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Preventive Action</label>
+                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Action taken to prevent recurrence..." />
+                </div>
+                <div>
+                  <label className="overline">Responsible Person</label>
+                  <input type="text" className="input-field" placeholder="Name or Role" />
+                </div>
+                <div>
+                  <label className="overline">Target Completion Date</label>
+                  <input type="date" className="input-field" />
+                </div>
+              </div>
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn btn-primary" style={{ background: '#10b981', color: '#fff' }}>Save Follow-up Details</button>
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic NCR Close-Out Form for R&C/Admin */}
+          {incident.type === 'Non-Conformance Report (NCR)' && ['full_access', 'risk_compliance'].includes(role || '') && (
+            <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.02)', marginTop: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><Shield size={20}/></div>
+                <h3 style={{ fontSize: '1.25rem', color: '#8b5cf6', margin: 0 }}>CLOSE-OUT (R&C)</h3>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label className="overline">Actual Completion Date</label>
+                  <input type="date" className="input-field" />
+                </div>
+                <div>
+                  <label className="overline">Similar NC Checked</label>
+                  <select className="input-field">
+                    <option>Yes — checked across all branches. No similar NC identified.</option>
+                    <option>Yes — similar NC identified. Updating risk register.</option>
+                    <option>No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Effectiveness Verification Date</label>
+                  <input type="date" className="input-field" />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Effectiveness Evidence / Results</label>
+                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Detail the evidence supporting the effectiveness of the PA/CA..." />
+                </div>
+                <div>
+                  <label className="overline">Risk Register Updated</label>
+                  <select className="input-field">
+                    <option>No — to be updated at close-out</option>
+                    <option>Yes</option>
+                    <option>N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">QMS / Procedure Changed</label>
+                  <select className="input-field">
+                    <option>No — SOP update in progress</option>
+                    <option>Yes</option>
+                    <option>N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">CAPA Adequate</label>
+                  <select className="input-field">
+                    <option>No — pending effectiveness verification</option>
+                    <option>Yes</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Status</label>
+                  <select className="input-field">
+                    <option>In Progress</option>
+                    <option>Open</option>
+                    <option>Closed</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn btn-primary" style={{ background: '#8b5cf6', color: '#fff' }}>Save Close-Out Details</button>
               </div>
             </div>
           )}
