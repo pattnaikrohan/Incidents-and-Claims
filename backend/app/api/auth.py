@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.api.deps import get_db
 from app.core import security
+from app.models.users import RoleEnum
 from pydantic import BaseModel
 
 router = APIRouter()
