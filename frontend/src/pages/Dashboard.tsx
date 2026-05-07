@@ -54,7 +54,11 @@ export default function Dashboard() {
               backendData.total_closed += cacheClosed;
               
               // Merge by_type
-              const typeMap = new Map(backendData.by_type.map((t: any) => [t.type, t.count]));
+              const typeMap = new Map(
+                backendData.by_type
+                  .filter((t: any) => t.type !== 'No Data') // Remove fallback label
+                  .map((t: any) => [t.type, t.count])
+              );
               cachedIncidents.forEach((i: any) => {
                 const current = typeMap.get(i.type) || 0;
                 typeMap.set(i.type, current + 1);
@@ -75,12 +79,14 @@ export default function Dashboard() {
     
     fetchStats();
   }, [role, branchName, businessUnit]);
+
+  // Premium Incident Type Colors
+  const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#06b6d4', '#8b5cf6'];
   
-  // Real dynamic data parsing without mock fallbacks
-  const monthlyData = data?.monthly || [];
-  const categoryData = data?.by_type?.map((item: any) => ({
+  const categoryData = data?.by_type?.filter(t => t.type !== 'No Data' || data?.by_type.length === 1).map((item: any, idx: number) => ({
     name: item.type,
-    value: item.count
+    value: item.count,
+    fill: COLORS[idx % COLORS.length]
   })) || [];
 
   const totalOpen = data?.total_open || 0;
@@ -150,20 +156,21 @@ export default function Dashboard() {
              <Zap size={16} color="var(--accent-fg)" fill="var(--accent-fg)" />
              <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'var(--accent-fg)' }}>OPERATIONAL COMMAND</span>
           </div>
-          <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
+          <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, var(--fg-base) 0%, var(--fg-muted) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             {branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global Fleet'} Intelligence
           </h2>
-          <p style={{ color: 'var(--fg-muted)', fontSize: '1rem' }}>
-            Live {branchName || businessUnit || 'global'} risk monitoring and incident distribution.
+          <p style={{ color: 'var(--fg-muted)', fontSize: '1.125rem', maxWidth: '600px' }}>
+            Live {branchName || businessUnit || 'global'} risk monitoring and automated incident distribution analysis.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '1rem', top: '1rem', color: 'var(--fg-faint)' }} />
-            <input type="text" className="input-field" placeholder="Search Fleet ID..." style={{ paddingLeft: '2.75rem', width: '280px', height: '44px' }} />
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div className="card" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--glass-bg)', borderColor: 'var(--glass-border)' }}>
+             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success-fg)', boxShadow: '0 0 10px var(--success-fg)' }} className="animate-pulse" />
+             <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--fg-muted)' }}>NETWORK ONLINE</span>
           </div>
-          <Link to="/incidents/new" className="btn btn-primary" style={{ height: '44px', textDecoration: 'none', padding: '0 1.5rem' }}>
-            New Log Entry
+          <Link to="/incidents/new" className="btn btn-primary" style={{ height: '48px', textDecoration: 'none', padding: '0 2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 20px -10px var(--accent-fg)' }}>
+            <Zap size={18} fill="currentColor" />
+            <span>New Log Entry</span>
           </Link>
         </div>
       </div>
@@ -171,61 +178,69 @@ export default function Dashboard() {
       <div className="bento-grid">
         {/* KPI Cards */}
         {stats.map((stat, i) => (
-          <div key={i} className="card" style={{ gridColumn: 'span 3', padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-               <div style={{ padding: '0.75rem', background: `${stat.color}10`, color: stat.color, borderRadius: 'var(--radius-md)' }}>
-                  <stat.icon size={24} />
+          <div key={i} className="card hover-tilt" style={{ gridColumn: 'span 3', padding: '2rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '120px', height: '120px', background: `${stat.color}05`, borderRadius: '50%', zIndex: 0 }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', position: 'relative', zIndex: 1 }}>
+               <div style={{ padding: '0.75rem', background: `${stat.color}15`, color: stat.color, borderRadius: '1rem' }}>
+                  <stat.icon size={26} />
                </div>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: stat.up ? 'var(--danger-fg)' : 'var(--success-fg)', fontSize: '0.75rem', fontWeight: 900, background: stat.up ? 'var(--danger-bg)' : 'var(--success-bg)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: stat.up ? 'var(--danger-fg)' : 'var(--success-fg)', fontSize: '0.75rem', fontWeight: 900, padding: '0.35rem 0.75rem', borderRadius: '2rem', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
                   {stat.up ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {stat.trend}
                </div>
             </div>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, lineHeight: 1 }}>{stat.value}</div>
-            <div className="overline" style={{ marginTop: '0.5rem', opacity: 0.6 }}>{stat.title}</div>
+            <div style={{ fontSize: '3rem', fontWeight: 900, lineHeight: 1, position: 'relative', zIndex: 1, letterSpacing: '-0.05em' }}>{stat.value}</div>
+            <div className="overline" style={{ marginTop: '0.5rem', opacity: 0.8, fontWeight: 700, fontSize: '0.7rem', color: 'var(--fg-muted)', position: 'relative', zIndex: 1 }}>{stat.title.toUpperCase()}</div>
           </div>
         ))}
 
         {/* Main Operational Trend Chart */}
         <div style={{ gridColumn: 'span 8', gridRow: 'span 2' }}>
-           <ChartWrapper id="main-trend-grad" title="Cluster Resolution Velocity" subtitle="Incident capture vs Finalized records (6 Month Rolling)">
-              <ResponsiveContainer width="100%" height="100%">
-                 <AreaChart data={monthlyData}>
-                   <defs>
-                     <linearGradient id="primeArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--accent-fg)" stopOpacity={0.3}/><stop offset="95%" stopColor="var(--accent-fg)" stopOpacity={0}/></linearGradient>
-                     <linearGradient id="succArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--success-fg)" stopOpacity={0.2}/><stop offset="95%" stopColor="var(--success-fg)" stopOpacity={0}/></linearGradient>
-                   </defs>
-                   <CartesianGrid vertical={false} strokeOpacity={0.05} />
-                   <XAxis dataKey="name" axisLine={false} tickLine={false} dy={10} fontSize={11} fontWeight={800} />
-                   <YAxis axisLine={false} tickLine={false} fontSize={11} />
-                   <Tooltip content={<CustomTooltip />} />
-                   <Area type="monotone" dataKey="incidents" name="New Logs" stroke="var(--accent-fg)" strokeWidth={3} fill="url(#primeArea)" />
-                   <Area type="monotone" dataKey="resolved" name="Resolved" stroke="var(--success-fg)" strokeWidth={2} fill="url(#succArea)" strokeDasharray="4 4" />
-                 </AreaChart>
-              </ResponsiveContainer>
+           <ChartWrapper id="main-trend-grad" title="Cluster Resolution Velocity" subtitle="Incident capture vs Finalized records (6 Month Rolling Data)">
+              <div style={{ width: '100%', height: '320px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data?.monthly || []}>
+                    <defs>
+                      <linearGradient id="primeArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--accent-fg)" stopOpacity={0.4}/><stop offset="95%" stopColor="var(--accent-fg)" stopOpacity={0}/></linearGradient>
+                      <linearGradient id="succArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--success-fg)" stopOpacity={0.3}/><stop offset="95%" stopColor="var(--success-fg)" stopOpacity={0}/></linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.1} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} dy={10} fontSize={11} fontWeight={800} stroke="var(--fg-faint)" />
+                    <YAxis axisLine={false} tickLine={false} fontSize={11} stroke="var(--fg-faint)" />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Area type="monotone" dataKey="incidents" name="New Logs" stroke="var(--accent-fg)" strokeWidth={4} fill="url(#primeArea)" />
+                    <Area type="monotone" dataKey="resolved" name="Resolved" stroke="var(--success-fg)" strokeWidth={3} fill="url(#succArea)" strokeDasharray="6 6" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
            </ChartWrapper>
         </div>
 
-        {/* Categorical Distribution - REPLACED PIE WITH HORIZONTAL BARS */}
+        {/* Categorical Distribution */}
         <div style={{ gridColumn: 'span 4', gridRow: 'span 2' }}>
-           <ChartWrapper id="category-bars" title="Incident Distribution" subtitle="System-wide classification breakdown (Non-Pie)">
-              <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={categoryData} layout="vertical" margin={{ left: 20 }}>
-                    <CartesianGrid horizontal={false} strokeOpacity={0.05} />
-                    <XAxis type="number" hide />
-                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontSize={10} fontWeight={800} width={100} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
-                       {categoryData.map((_e: any, i: number) => (
-                          <Cell key={i} fill={`var(--accent-fg)`} fillOpacity={1 - (i * 0.15)} />
-                       ))}
-                    </Bar>
-                 </BarChart>
-              </ResponsiveContainer>
-              <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+           <ChartWrapper id="category-bars" title="Incident Distribution" subtitle="Classification breakdown by severity">
+              <div style={{ width: '100%', height: '240px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryData} layout="vertical" margin={{ left: -20, right: 30, top: 10 }}>
+                     <CartesianGrid horizontal={false} strokeDasharray="3 3" strokeOpacity={0.1} />
+                     <XAxis type="number" hide />
+                     <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} fontSize={11} fontWeight={900} width={120} stroke="var(--fg-muted)" />
+                     <Tooltip content={<CustomTooltip />} />
+                     <Bar dataKey="value" radius={[0, 10, 10, 0]} barSize={24}>
+                        {categoryData.map((entry: any, index: number) => (
+                           <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                     </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                  {categoryData.map((item: any, i: number) => (
-                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem' }}>
-                      <span style={{ fontWeight: 600, color: 'var(--fg-muted)' }}>{item.name}</span>
-                      <span style={{ fontWeight: 900, color: 'var(--fg-base)' }}>{item.value} Records</span>
+                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                         <div style={{ width: '10px', height: '10px', borderRadius: '3px', background: item.fill }} />
+                         <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)' }}>{item.name}</span>
+                      </div>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 900, color: 'var(--fg-base)' }}>{item.value}</span>
                    </div>
                  ))}
               </div>
