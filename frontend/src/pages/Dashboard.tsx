@@ -3,6 +3,7 @@ import { ShieldAlert, CheckCircle, Activity, TrendingUp, TrendingDown, Search, Z
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, BarChart, Bar } from 'recharts';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { ChartWrapper } from '../components/ChartWrapper';
 
 export default function Dashboard() {
@@ -10,11 +11,50 @@ export default function Dashboard() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const { role, branchName, businessUnit } = useAuth();
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
         const response = await api.get('/dashboard/statistics');
-        setData(response.data);
+        let backendData = response.data;
+        
+        // Merge with Dataverse cache from localStorage
+        try {
+          const saved = localStorage.getItem('incidents_cache');
+          if (saved) {
+            let cachedIncidents = JSON.parse(saved);
+            
+            // Apply RBAC Filter to cache
+            if (role !== 'full_access' && role !== 'risk_compliance') {
+              if (role === 'bu_access' && businessUnit) {
+                cachedIncidents = cachedIncidents.filter((i: any) => i.business_unit === businessUnit || i.branch_department === businessUnit);
+              } else if (branchName) {
+                cachedIncidents = cachedIncidents.filter((i: any) => i.branch_department === branchName);
+              }
+            }
+
+            // Aggregate cache into backend stats
+            if (cachedIncidents.length > 0) {
+              const cacheOpen = cachedIncidents.filter((i: any) => i.status === 'Open').length;
+              const cacheClosed = cachedIncidents.filter((i: any) => i.status === 'Closed').length;
+              
+              backendData.total_incidents += cachedIncidents.length;
+              backendData.total_open += cacheOpen;
+              backendData.total_closed += cacheClosed;
+              
+              // Merge by_type
+              const typeMap = new Map(backendData.by_type.map((t: any) => [t.type, t.count]));
+              cachedIncidents.forEach((i: any) => {
+                const current = typeMap.get(i.type) || 0;
+                typeMap.set(i.type, current + 1);
+              });
+              backendData.by_type = Array.from(typeMap.entries()).map(([type, count]) => ({ type, count }));
+            }
+          }
+        } catch (e) { console.error('Cache merge error', e); }
+
+        setData(backendData);
       } catch (err) {
         setError('Failed to load dashboard metrics. The server might be offline.');
         console.error(err);
@@ -24,7 +64,7 @@ export default function Dashboard() {
     };
     
     fetchStats();
-  }, []);
+  }, [role, branchName, businessUnit]);
   
   // Real dynamic data parsing without mock fallbacks
   const monthlyData = data?.monthly || [];
@@ -100,9 +140,11 @@ export default function Dashboard() {
              <Zap size={16} color="var(--accent-fg)" fill="var(--accent-fg)" />
              <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'var(--accent-fg)' }}>OPERATIONAL COMMAND</span>
           </div>
-          <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em' }}>Executive Fleet Intelligence</h2>
+          <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em' }}>
+            {branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global Fleet'} Intelligence
+          </h2>
           <p style={{ color: 'var(--fg-muted)', fontSize: '1rem' }}>
-            Real-time multi-cluster risk monitoring dashboard.
+            Live {branchName || businessUnit || 'global'} risk monitoring and incident distribution.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>

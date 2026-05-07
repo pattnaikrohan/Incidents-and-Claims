@@ -20,15 +20,13 @@ def get_dashboard_statistics(
     if role in [RoleEnum.full_access, RoleEnum.risk_compliance]:
         incidents = all_incidents
     elif role == RoleEnum.bu_access:
+        bu_name = getattr(current_user, "business_unit", None)
         bu_map = {b["id"]: b["business_unit"] for b in db.branches}
-        incidents = [i for i in all_incidents if bu_map.get(i.branch_id, "") == "AAW Global Logistics - AU"]
-    elif role == RoleEnum.it_access:
-        incidents = [i for i in all_incidents if i.type in ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']]
-    elif role == RoleEnum.finance_access:
-        incidents = [i for i in all_incidents if i.type == 'Travel Disruption']
-    elif role == RoleEnum.hr_access:
-        incidents = [i for i in all_incidents if i.type in ['Near Miss','First Aid Injury','Lost Time Injury']]
+        incidents = [i for i in all_incidents if bu_map.get(i.branch_id, "") == bu_name]
     elif role == RoleEnum.branch_access:
+        incidents = [i for i in all_incidents if i.branch_id == current_user.branch_id]
+    elif role in [RoleEnum.it_access, RoleEnum.finance_access, RoleEnum.hr_access]:
+        # These are also branch-specific in our store
         incidents = [i for i in all_incidents if i.branch_id == current_user.branch_id]
     else:
         incidents = [i for i in all_incidents if i.creator_id == current_user.id]

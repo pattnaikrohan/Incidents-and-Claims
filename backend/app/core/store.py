@@ -51,6 +51,7 @@ class MemoryStore:
                 "hashed_password": pwd_hash,
                 "name": f"{bu} Manager",
                 "role": RoleEnum.bu_access,
+                "business_unit": bu,
                 "branch_id": None
             })
 
