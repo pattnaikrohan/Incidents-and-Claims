@@ -5,7 +5,7 @@ import {
   LogOut, LayoutDashboard, FileText, Search,
   BarChart3, ChevronRight, Package, Users, HeartPulse,
   Shield, DollarSign, Lock, Bell, Settings,
-  Briefcase, AlertTriangle, FileWarning
+  Briefcase, AlertTriangle, FileWarning, PieChart
 } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
@@ -68,9 +68,12 @@ export default function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [incidentFlyout, setIncidentFlyout] = useState(false);
+  const [dashboardFlyout, setDashboardFlyout] = useState(false);
   const [collapsed] = useState(false);
   const flyoutRef = useRef<HTMLDivElement>(null);
   const incidentNavRef = useRef<HTMLDivElement>(null);
+  const dashboardFlyoutRef = useRef<HTMLDivElement>(null);
+  const dashboardNavRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,6 +83,12 @@ export default function Layout({ children }: { children: ReactNode }) {
         incidentNavRef.current && !incidentNavRef.current.contains(e.target as Node)
       ) {
         setIncidentFlyout(false);
+      }
+      if (
+        dashboardFlyoutRef.current && !dashboardFlyoutRef.current.contains(e.target as Node) &&
+        dashboardNavRef.current && !dashboardNavRef.current.contains(e.target as Node)
+      ) {
+        setDashboardFlyout(false);
       }
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
@@ -107,14 +116,72 @@ export default function Layout({ children }: { children: ReactNode }) {
 
         {/* Navigation */}
         <nav className="sidebar__nav">
-          <Link
-            to="/"
-            className={`sidebar__nav-item ${isActive('/') && !isActive('/incidents') && !isActive('/search') && !isActive('/reports') ? 'active' : ''}`}
-            title="Dashboard"
-          >
-            <LayoutDashboard size={18} color="#3b82f6" />
-            {!collapsed && <span>Dashboard</span>}
-          </Link>
+          {/* Dashboards with flyout */}
+          {['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '') && (
+            <>
+              <div
+                ref={dashboardNavRef}
+                className={`sidebar__nav-item sidebar__nav-item--has-flyout ${dashboardFlyout || (isActive('/') && !isActive('/incidents') && !isActive('/search') && !isActive('/reports') && !isActive('/ncr-dashboard')) || isActive('/ncr-dashboard') ? 'active' : ''}`}
+                onClick={() => setDashboardFlyout(f => !f)}
+                title="Dashboards"
+              >
+                <LayoutDashboard size={18} color="#3b82f6" />
+                {!collapsed && <span style={{ flex: 1 }}>Dashboards</span>}
+              </div>
+
+              {/* Dashboard Flyout Panel */}
+              {dashboardFlyout && (
+                <div
+                  ref={dashboardFlyoutRef}
+                  className="incident-flyout"
+                >
+                  <div className="incident-flyout__header">
+                    <span className="incident-flyout__title">Dashboards</span>
+                    <span className="incident-flyout__sub">Select operational dashboard</span>
+                  </div>
+                  <div className="incident-flyout__grid">
+                    <button
+                      className="incident-flyout__item"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDashboardFlyout(false);
+                        navigate('/');
+                      }}
+                    >
+                      <div className="incident-flyout__icon" style={{ background: '#3b82f618', color: '#3b82f6', borderColor: '#3b82f630' }}>
+                        <LayoutDashboard size={20} />
+                      </div>
+                      <div className="incident-flyout__content">
+                        <span className="incident-flyout__label">Global Dashboard</span>
+                        <span className="incident-flyout__desc">Main fleet and operational metrics</span>
+                      </div>
+                      <ChevronRight size={14} className="incident-flyout__arrow" />
+                    </button>
+
+                    {['risk_compliance', 'full_access'].includes(role || '') && (
+                      <button
+                        className="incident-flyout__item"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDashboardFlyout(false);
+                          navigate('/ncr-dashboard');
+                        }}
+                      >
+                        <div className="incident-flyout__icon" style={{ background: '#eab30818', color: '#eab308', borderColor: '#eab30830' }}>
+                          <PieChart size={20} />
+                        </div>
+                        <div className="incident-flyout__content">
+                          <span className="incident-flyout__label">NCR Dashboard</span>
+                          <span className="incident-flyout__desc">Non-conformance and CAPA tracking</span>
+                        </div>
+                        <ChevronRight size={14} className="incident-flyout__arrow" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
           {/* Log New Incident with flyout */}
           <div
@@ -138,7 +205,9 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <span className="incident-flyout__sub">Select incident category to open form</span>
               </div>
               <div className="incident-flyout__grid">
-                {INCIDENT_TYPES.map(inc => (
+                {INCIDENT_TYPES
+                  .filter(inc => inc.id !== 'ncr' || ['branch_access', 'bu_access', 'risk_compliance', 'full_access'].includes(role || ''))
+                  .map(inc => (
                   <button
                     key={inc.id}
                     className="incident-flyout__item"
@@ -159,78 +228,85 @@ export default function Layout({ children }: { children: ReactNode }) {
                   </button>
                 ))}
               </div>
-              <div className="incident-flyout__footer">
-                <Link to="/incidents" onClick={() => setIncidentFlyout(false)} className="incident-flyout__view-all">
-                  View All Incident Records →
-                </Link>
-              </div>
+              {['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '') && (
+                <div className="incident-flyout__footer">
+                  <Link to="/incidents" onClick={() => setIncidentFlyout(false)} className="incident-flyout__view-all">
+                    View All Incident Records →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Logged Incidents Link */}
-          <Link
-            to="/incidents"
-            className={`sidebar__nav-item ${isActive('/incidents') && !isActive('/incidents/new') ? 'active' : ''}`}
-            title="Logged Incidents"
-          >
-            <FileText size={18} color="#6366f1" />
-            {!collapsed && <span>Logged Incidents</span>}
-          </Link>
+          {['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '') && (
+            <>
+              {/* Logged Incidents Link */}
+              <Link
+                to="/incidents"
+                className={`sidebar__nav-item ${isActive('/incidents') && !isActive('/incidents/new') ? 'active' : ''}`}
+                title="Logged Incidents"
+              >
+                <FileText size={18} color="#6366f1" />
+                {!collapsed && <span>Logged Incidents</span>}
+              </Link>
 
-          <Link
-            to="/claims"
-            className={`sidebar__nav-item ${isActive('/claims') ? 'active' : ''}`}
-            title="Claims"
-          >
-            <Briefcase size={18} color="#10b981" />
-            {!collapsed && <span>Claims</span>}
-          </Link>
+              <Link
+                to="/claims"
+                className={`sidebar__nav-item ${isActive('/claims') ? 'active' : ''}`}
+                title="Claims"
+              >
+                <Briefcase size={18} color="#10b981" />
+                {!collapsed && <span>Claims</span>}
+              </Link>
 
-          <Link
-            to="/cors"
-            className={`sidebar__nav-item ${isActive('/cors') ? 'active' : ''}`}
-            title="CORs"
-          >
-            <AlertTriangle size={18} color="#f97316" />
-            {!collapsed && <span>CORs</span>}
-          </Link>
+              <Link
+                to="/cors"
+                className={`sidebar__nav-item ${isActive('/cors') ? 'active' : ''}`}
+                title="CORs"
+              >
+                <AlertTriangle size={18} color="#f97316" />
+                {!collapsed && <span>CORs</span>}
+              </Link>
 
-          <Link
-            to="/insurers"
-            className={`sidebar__nav-item ${isActive('/insurers') ? 'active' : ''}`}
-            title="Insurer Notifications"
-          >
-            <Shield size={18} color="#06b6d4" />
-            {!collapsed && <span>Insurers</span>}
-          </Link>
+              <Link
+                to="/insurers"
+                className={`sidebar__nav-item ${isActive('/insurers') ? 'active' : ''}`}
+                title="Insurer Notifications"
+              >
+                <Shield size={18} color="#06b6d4" />
+                {!collapsed && <span>Insurers</span>}
+              </Link>
 
-          <Link
-            to="/escalations"
-            className={`sidebar__nav-item ${isActive('/escalations') ? 'active' : ''}`}
-            title="Management Escalations"
-          >
-            <Users size={18} color="#8b5cf6" />
-            {!collapsed && <span>Escalations</span>}
-          </Link>
+              <Link
+                to="/escalations"
+                className={`sidebar__nav-item ${isActive('/escalations') ? 'active' : ''}`}
+                title="Management Escalations"
+              >
+                <Users size={18} color="#8b5cf6" />
+                {!collapsed && <span>Escalations</span>}
+              </Link>
 
-          <Link
-            to="/search"
-            className={`sidebar__nav-item ${isActive('/search') ? 'active' : ''}`}
-            title="Search"
-          >
-            <Search size={18} color="#64748b" />
-            {!collapsed && <span>Search</span>}
-          </Link>
+              <Link
+                to="/search"
+                className={`sidebar__nav-item ${isActive('/search') ? 'active' : ''}`}
+                title="Search"
+              >
+                <Search size={18} color="#64748b" />
+                {!collapsed && <span>Search</span>}
+              </Link>
 
-          {role === 'risk_compliance' && (
-            <Link
-              to="/reports"
-              className={`sidebar__nav-item ${isActive('/reports') ? 'active' : ''}`}
-              title="Reports"
-            >
-              <BarChart3 size={18} color="#f43f5e" />
-              {!collapsed && <span>Reports</span>}
-            </Link>
+              {role === 'risk_compliance' && (
+                <Link
+                  to="/reports"
+                  className={`sidebar__nav-item ${isActive('/reports') ? 'active' : ''}`}
+                  title="Reports"
+                >
+                  <BarChart3 size={18} color="#f43f5e" />
+                  {!collapsed && <span>Reports</span>}
+                </Link>
+              )}
+
+            </>
           )}
         </nav>
 

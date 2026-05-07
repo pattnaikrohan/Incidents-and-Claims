@@ -560,8 +560,9 @@ Please review the attached incident file in the Command Center. Legal and operat
                 <div>
                   <label className="overline">Status</label>
                   <select className="input-field">
-                    <option>In Progress</option>
-                    <option>Open</option>
+                    <option>Open - Pending Assessment</option>
+                    <option>In Progress - Implementing CA/PA</option>
+                    <option>Pending QA Validation</option>
                     <option>Closed</option>
                   </select>
                 </div>

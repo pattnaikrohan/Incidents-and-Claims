@@ -1,6 +1,7 @@
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useState } from 'react';
 import { ArrowLeft, Package, Users, HeartPulse, Lock, Shield, DollarSign, FileWarning } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 
 import CargoForm from './forms/CargoForm';
@@ -23,6 +24,7 @@ const FORM_META: Record<string, { label: string; icon: any; color: string; desc:
 
 export default function NewIncident() {
   const navigate = useNavigate();
+  const { role } = useAuth();
   const [params] = useSearchParams();
   const type = params.get('type') || '';
   const [loading, setLoading] = useState(false);
@@ -61,7 +63,7 @@ export default function NewIncident() {
           });
         }
       }
-      if (type === 'cargo') {
+      if (type === 'cargo' || type === 'ncr') {
         try {
           console.log('Sending payload to Power Automate:', payload);
           const flowRes = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/465821937cf347c9b5eec4737d068fdd/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZUR4iYLZmuytbGXp0uaTvqXkvT927AsbYf9_RtJF2lE', {
@@ -88,7 +90,15 @@ export default function NewIncident() {
       }
 
       setSuccess(true);
-      setTimeout(() => navigate('/incidents'), 1800);
+      setTimeout(() => {
+        const isManager = ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '');
+        if (isManager) {
+          navigate('/incidents');
+        } else {
+          navigate('/incidents/new');
+          window.location.reload();
+        }
+      }, 1800);
     } catch (err: any) {
       const detail = err.response?.data?.detail;
       if (Array.isArray(detail)) {
@@ -114,7 +124,9 @@ export default function NewIncident() {
           <p style={{ color: 'var(--fg-muted)' }}>Choose the type of incident to log the correct form.</p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1.25rem' }}>
-          {Object.entries(FORM_META).map(([key, m]) => (
+          {Object.entries(FORM_META)
+            .filter(([key]) => key !== 'ncr' || ['branch_access', 'bu_access', 'risk_compliance', 'full_access'].includes(role || ''))
+            .map(([key, m]) => (
             <Link
               key={key}
               to={`/incidents/new?type=${key}`}
