@@ -6,9 +6,19 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ChartWrapper } from '../components/ChartWrapper';
 
+interface DashboardStats {
+  total_incidents: number;
+  total_open: number;
+  total_closed: number;
+  total_review?: number;
+  by_type: { type: string; count: number }[];
+  by_branch: { branch: string; count: number }[];
+  monthly?: { name: string; incidents: number; resolved: number }[];
+}
+
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DashboardStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { role, branchName, businessUnit } = useAuth();
@@ -17,7 +27,7 @@ export default function Dashboard() {
     const fetchStats = async () => {
       try {
         const response = await api.get('/dashboard/statistics');
-        let backendData = response.data;
+        let backendData: DashboardStats = response.data;
         
         // Merge with Dataverse cache from localStorage
         try {
