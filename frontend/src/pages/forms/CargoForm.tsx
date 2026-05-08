@@ -40,19 +40,35 @@ const Field = ({ label, req, children }: { label: string; req?: boolean; childre
 );
 
 export default function CargoForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
-  const [f, setF] = useState(initialData || {
-    incident_id: generateId('CEI'),
-    short_description: '', date_of_incident: '', date_logged: today(),
-    logged_by: localStorage.getItem('role') || 'Current User',
-    business_unit: '', branch_department: '', system_job_number: '',
-    mbl_mawb_issued: 'Yes', hbl_hawb_issued: 'Yes',
-    mbl_mawb_number: '', hbl_hawb_number: '',
-    customer: '', container_numbers: '', origin: '', destination: '',
-    mode: 'Sea', cargo_description: '', cargo_value: '',
-    location_of_incident: '', origin_agent: '', destination_agent: '',
-    shipping_line: '', coloader: '', transport_company: '',
-    scope_of_work: '', role_performed: '',
-    incident_summary: '', root_cause: '', claim_estimate: '',
+  const [f, setF] = useState<any>(() => {
+    if (initialData) {
+      return {
+        ...initialData,
+        incident_id: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        short_description: initialData.short_description || initialData.description || '',
+        date_of_incident: initialData.date_of_incident || initialData.date || '',
+        system_job_number: initialData.system_job_number || initialData.job_number || '',
+        cargo_value: initialData.cargo_value || initialData.value || '',
+        location_of_incident: initialData.location_of_incident || initialData.location || '',
+        customer: initialData.customer || initialData.customer_name || '',
+        date_logged: initialData.date_logged || initialData.date || today(),
+        logged_by: initialData.logged_by || 'System User',
+      };
+    }
+    return {
+      incident_id: generateId('CEI'),
+      short_description: '', date_of_incident: '', date_logged: today(),
+      logged_by: localStorage.getItem('role') || 'Current User',
+      business_unit: '', branch_department: '', system_job_number: '',
+      mbl_mawb_issued: 'Yes', hbl_hawb_issued: 'Yes',
+      mbl_mawb_number: '', hbl_hawb_number: '',
+      customer: '', container_numbers: '', origin: '', destination: '',
+      mode: 'Sea', cargo_description: '', cargo_value: '',
+      location_of_incident: '', origin_agent: '', destination_agent: '',
+      shipping_line: '', coloader: '', transport_company: '',
+      scope_of_work: '', role_performed: '',
+      incident_summary: '', root_cause: '', claim_estimate: '',
+    };
   });
   const [incidentTypes, setIncidentTypes] = useState<string[]>(
     initialData?.incident_types ? (typeof initialData.incident_types === 'string' ? initialData.incident_types.split(', ') : initialData.incident_types) : []
