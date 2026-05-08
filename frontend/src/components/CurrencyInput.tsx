@@ -9,9 +9,9 @@ interface Props {
 }
 
 export const CurrencyInput = ({ label, value, onChange, req }: Props) => {
-  // Parse initial value
-  const initialCurrency = value.split(' ')[0] || 'AUD';
-  const initialAmount = value.split(' ').slice(1).join(' ') || '';
+  const safeValue = value || '';
+  const initialCurrency = safeValue.split(' ')[0] || 'AUD';
+  const initialAmount = safeValue.split(' ').slice(1).join(' ') || '';
 
   const [currency, setCurrency] = useState(initialCurrency);
   const [amount, setAmount] = useState(initialAmount);

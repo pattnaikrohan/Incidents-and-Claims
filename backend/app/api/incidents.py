@@ -103,11 +103,11 @@ def read_incidents(
 
 @router.get("/{incident_id}", response_model=dict)
 def get_incident(
-    incident_id: int,
+    incident_id: str,
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    incident = next((i for i in db.incidents if i.id == incident_id), None)
+    incident = next((i for i in db.incidents if str(i.id) == str(incident_id)), None)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
     
@@ -128,12 +128,12 @@ def get_incident(
 
 @router.put("/{incident_id}/status", response_model=dict)
 def update_incident_status(
-    incident_id: int,
+    incident_id: str,
     status_update: IncidentUpdateStatus,
     db = Depends(get_db),
     current_user = Depends(require_risk_compliance_role)
 ):
-    incident = next((i for i in db.incidents if i.id == incident_id), None)
+    incident = next((i for i in db.incidents if str(i.id) == str(incident_id)), None)
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
     
@@ -142,16 +142,16 @@ def update_incident_status(
 
 @router.get("/{incident_id}/notes", response_model=List[dict])
 def list_incident_notes(
-    incident_id: int,
+    incident_id: str,
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    notes = [n for n in db.notes if n.incident_id == incident_id]
+    notes = [n for n in db.notes if str(n.incident_id) == str(incident_id)]
     return [{"id": n.id, "message": n.message, "author": "System User", "date": n.created_at} for n in notes]
 
 @router.post("/{incident_id}/notes", response_model=dict)
 def add_incident_note(
-    incident_id: int,
+    incident_id: str,
     note_in: dict, # Simplified
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
