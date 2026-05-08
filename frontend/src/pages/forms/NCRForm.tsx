@@ -6,14 +6,36 @@ function today() { return new Date().toLocaleDateString('en-AU'); }
 
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
 
-interface Props { onSubmit: (d:any)=>void; onCancel: ()=>void; loading: boolean; }
+interface Props { onSubmit?: (d: any)=>void; onCancel?: ()=>void; loading?: boolean; initialData?: any; readOnly?: boolean; }
 
 const Field = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div><label className="overline">{label}{req&&<span style={{color:'#ef4444',marginLeft:3}}>*</span>}</label>{children}</div>
 );
 
-export default function NCRForm({ onSubmit, onCancel, loading }: Props) {
-  const [f, setF] = useState({
+export default function NCRForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
+  const [f, setF] = useState<any>(() => {
+    if (initialData) {
+      return {
+        ...initialData,
+        incident_ref: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        incident_id: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        ncr_ref: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        date_of_incident: initialData.date_of_incident || initialData.date || '',
+        date_reported: initialData.date_reported || initialData.date || today(),
+        date_logged: initialData.date_logged || initialData.date || today(),
+        reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || 'System User',
+        logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || 'System User',
+        employee_name: initialData.employee_name || initialData.customer_name || '',
+        business_unit: initialData.business_unit || '',
+        branch_department: initialData.branch_department || '',
+        incident_type: initialData.incident_type || initialData.type || '',
+        description: initialData.description || initialData.short_description || '',
+        short_description: initialData.short_description || initialData.description || '',
+        location_of_incident: initialData.location_of_incident || initialData.location || '',
+        system_job_number: initialData.system_job_number || initialData.job_number || '',
+      };
+    }
+    return {
     incident_id: generateId(), date_reported: today(),
     reported_by: localStorage.getItem('role')||'Current User',
     business_unit:'', branch_department:'',
@@ -23,8 +45,9 @@ export default function NCRForm({ onSubmit, onCancel, loading }: Props) {
     level_of_nonconformity: '', identification: '', identified_by: '',
     at_fault_party: '', notify: '', containment: '', related_record: '',
     files: [] as File[]
+  };
   });
-  const upd = (k:string,v:any) => setF(p=>({...p,[k]:v}));
+  const upd = (k:string,v:any) => setF((p:any)=>({...p,[k]:v}));
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,11 +64,12 @@ Immediate Containment Action: ${f.containment || 'N/A'}
 Related Record Reference: ${f.related_record || 'N/A'}
     `.trim();
 
-    onSubmit({ ...f, description: enrichedDescription });
+    if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
   };
 
   return (
-    <form onSubmit={submitForm} style={{display:'flex',flexDirection:'column',gap:'2rem'}}>
+    <form onSubmit={submitForm} style={{display:'flex',flexDirection:'column',gap:'2rem', pointerEvents: readOnly ? 'none' : 'auto', opacity: readOnly ? 0.95 : 1}}>
+      <fieldset disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1rem',background:'var(--bg-subtle)',borderRadius:12,padding:'1.25rem'}}>
         <div><span className="overline">NCR ID</span><div style={{fontWeight:700,fontFamily:'monospace',color:'#8b5cf6'}}>{f.incident_id}</div></div>
         <div><span className="overline">Date Created</span><div style={{fontWeight:600}}>{f.date_reported}</div></div>
@@ -131,12 +155,15 @@ Related Record Reference: ${f.related_record || 'N/A'}
         </Field>
       </div>
 
+      {!readOnly && (
       <div style={{display:'flex',justifyContent:'flex-end',gap:'1rem'}}>
         <button type="button" onClick={onCancel} className="btn btn-secondary" style={{padding:'0.75rem 2rem'}}>Cancel</button>
         <button type="submit" className="btn btn-primary" disabled={loading} style={{padding:'0.75rem 2.5rem'}}>
           {loading?'Submitting...':'Submit NCR'}
         </button>
       </div>
+      )}
+      </fieldset>
     </form>
   );
 }
