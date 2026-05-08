@@ -70,15 +70,17 @@ export default function Incidents() {
       
       if (dataArray.length > 0) {
         const newIncidents = dataArray.map((raw: any) => ({
-          id: raw.cr991_cargoequipmentincidentid,
-          incident_number_str: raw.cr991_incidentid,
-          type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || "Cargo Equipment",
-          location: raw.cr991_locationofincident || raw.cr991_destinationagent || raw.cr991_originagent || "Unknown",
-          branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || "N/A",
-          business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || "N/A",
-          date: (raw["createdon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || new Date().toLocaleDateString()).split(' ')[0],
-          status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidentstatus || "").includes("Open") ? "Open" : "Review",
-          value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || "Pending",
+          id: raw.cr991_cargoequipmentincidentid || raw.id,
+          incident_number_str: raw.cr991_incidentid || raw.incident_number_str,
+          type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || raw.type || "Cargo Equipment",
+          location: raw.cr991_locationofincident || raw.cr991_destinationagent || raw.cr991_originagent || raw.location || "Unknown",
+          branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || raw.branch_department || "N/A",
+          business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || raw.business_unit || "N/A",
+          date: (raw["createdon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || raw.date || new Date().toLocaleDateString()).split(' ')[0],
+          status: (raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidentstatus || raw.status || "").includes("Open") ? "Open" : "Review",
+          value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || raw.value || "Pending",
+          description: raw.cr991_incidentsummary || raw.cr991_description || raw.cr991_shortdescription || raw.description || "No description provided",
+          job_number: raw.cr991_systemjobnumber || raw.cr991_cargowisejobreference || raw.job_number || "N/A",
           formal_claim_issued: "No",
           cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === "Yes" ? "Yes" : "No",
           management_escalation: "No"
