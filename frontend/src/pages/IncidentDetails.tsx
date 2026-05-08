@@ -119,26 +119,27 @@ export default function IncidentDetails() {
   if (!incident) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Incident not found.</div>;
 
   const renderOriginalForm = () => {
-    // We cast to any to suppress TS errors if the other forms don't have readOnly in their Props interface yet
-    const typeStr = incident.type || '';
-    if (typeStr.includes('Cargo') || typeStr === 'Cargo & Equipment') {
+    const typeStr = String(incident.type || '');
+    const refStr = String(incident.incident_number_str || incident.incident_id || '');
+    
+    if (typeStr.includes('Cargo') || typeStr.includes('Equipment') || refStr.includes('CEI') || refStr.includes('CRG')) {
       return <CargoForm initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('Human Resources') || typeStr === 'HR') {
+    } else if (typeStr.includes('Human Resources') || typeStr.includes('HR') || refStr.includes('HRI')) {
       const Form = HRForm as any;
       return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('WH&S') || typeStr === 'WHS') {
+    } else if (typeStr.includes('WH&S') || typeStr.includes('WHS') || typeStr.includes('Health') || refStr.includes('WHS')) {
       const Form = WHSForm as any;
       return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('IT & Security') || typeStr === 'IT') {
+    } else if (typeStr.includes('IT & Security') || typeStr.includes('IT') || typeStr.includes('Cyber') || refStr.includes('ITI')) {
       const Form = ITForm as any;
       return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('Risk & Compliance') || typeStr === 'Risk') {
+    } else if (typeStr.includes('Risk & Compliance') || typeStr.includes('Risk') || refStr.includes('RCI')) {
       const Form = RiskForm as any;
       return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('Finance')) {
+    } else if (typeStr.includes('Finance') || typeStr.includes('Travel') || refStr.includes('FIN')) {
       const Form = FinanceForm as any;
       return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('NCR') || typeStr.includes('Non-Conformance')) {
+    } else if (typeStr.includes('NCR') || typeStr.includes('Non-Conformance') || refStr.includes('NCR')) {
       const Form = NCRForm as any;
       return <Form initialData={incident} readOnly={true} />;
     }
