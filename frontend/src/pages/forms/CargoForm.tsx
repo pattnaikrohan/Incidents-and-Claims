@@ -30,7 +30,7 @@ function today() {
   return new Date().toLocaleDateString('en-AU');
 }
 
-interface Props { onSubmit: (data: any) => void; onCancel: () => void; loading: boolean; }
+interface Props { onSubmit?: (data: any) => void; onCancel?: () => void; loading?: boolean; initialData?: any; readOnly?: boolean; }
 
 const Field = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
   <div>
@@ -39,8 +39,8 @@ const Field = ({ label, req, children }: { label: string; req?: boolean; childre
   </div>
 );
 
-export default function CargoForm({ onSubmit, onCancel, loading }: Props) {
-  const [f, setF] = useState({
+export default function CargoForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
+  const [f, setF] = useState(initialData || {
     incident_id: generateId('CEI'),
     short_description: '', date_of_incident: '', date_logged: today(),
     logged_by: localStorage.getItem('role') || 'Current User',
@@ -54,12 +54,18 @@ export default function CargoForm({ onSubmit, onCancel, loading }: Props) {
     scope_of_work: '', role_performed: '',
     incident_summary: '', root_cause: '', claim_estimate: '',
   });
-  const [incidentTypes, setIncidentTypes] = useState<string[]>([]);
-  const [correctiveActions, setCorrectiveActions] = useState<string[]>([]);
-  const [claimTypes, setClaimTypes] = useState<string[]>([]);
+  const [incidentTypes, setIncidentTypes] = useState<string[]>(
+    initialData?.incident_types ? (typeof initialData.incident_types === 'string' ? initialData.incident_types.split(', ') : initialData.incident_types) : []
+  );
+  const [correctiveActions, setCorrectiveActions] = useState<string[]>(
+    initialData?.corrective_actions ? (typeof initialData.corrective_actions === 'string' ? initialData.corrective_actions.split(', ') : initialData.corrective_actions) : []
+  );
+  const [claimTypes, setClaimTypes] = useState<string[]>(
+    initialData?.claim_types ? (typeof initialData.claim_types === 'string' ? initialData.claim_types.split(', ') : initialData.claim_types) : []
+  );
   const [files, setFiles] = useState<File[]>([]);
 
-  const upd = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
+  const upd = (k: string, v: string) => setF((p: any) => ({ ...p, [k]: v }));
   const toggle = (arr: string[], setArr: (a: string[]) => void, val: string) =>
     setArr(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]);
 
@@ -107,18 +113,21 @@ Role Performed: ${f.role_performed || 'N/A'}
 Claim Estimate: ${f.claim_estimate || 'N/A'}
     `.trim();
 
-    onSubmit({ 
-      ...f, 
-      incident_summary: enrichedSummary,
-      incident_types: incidentTypes, 
-      corrective_actions: correctiveActions, 
-      claim_types: claimTypes, 
-      files 
-    });
+    if (onSubmit) {
+      onSubmit({ 
+        ...f, 
+        incident_summary: enrichedSummary,
+        incident_types: incidentTypes, 
+        corrective_actions: correctiveActions, 
+        claim_types: claimTypes, 
+        files 
+      });
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'2rem' }}>
+    <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'2rem', pointerEvents: readOnly ? 'none' : 'auto', opacity: readOnly ? 0.95 : 1 }}>
+      <fieldset disabled={readOnly} style={{ border: 'none', padding: 0, margin: 0 }}>
 
       {/* Auto-generated header */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'1rem', background:'var(--bg-subtle)', borderRadius:12, padding:'1.25rem' }}>
@@ -301,12 +310,15 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
       </div>
 
       {/* Actions */}
-      <div style={{ display:'flex', justifyContent:'flex-end', gap:'1rem' }}>
-        <button type="button" onClick={onCancel} className="btn btn-secondary" style={{ padding:'0.75rem 2rem' }}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding:'0.75rem 2.5rem' }}>
-          {loading ? 'Submitting...' : 'Submit Incident'}
-        </button>
-      </div>
+      {!readOnly && (
+        <div style={{ display:'flex', justifyContent:'flex-end', gap:'1rem' }}>
+          <button type="button" onClick={onCancel} className="btn btn-secondary" style={{ padding:'0.75rem 2rem' }}>Cancel</button>
+          <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding:'0.75rem 2.5rem' }}>
+            {loading ? 'Submitting...' : 'Submit Incident'}
+          </button>
+        </div>
+      )}
+      </fieldset>
     </form>
   );
 }

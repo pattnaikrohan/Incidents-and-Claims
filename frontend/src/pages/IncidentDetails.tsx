@@ -5,6 +5,14 @@ import CollaborationFeed from '../components/CollaborationFeed';
 import { api } from '../services/api';
 import { useState, useEffect } from 'react';
 
+import CargoForm from './forms/CargoForm';
+import HRForm from './forms/HRForm';
+import WHSForm from './forms/WHSForm';
+import ITForm from './forms/ITForm';
+import RiskForm from './forms/RiskForm';
+import FinanceForm from './forms/FinanceForm';
+import NCRForm from './forms/NCRForm';
+
 export default function IncidentDetails() {
   const { id } = useParams();
   const { role } = useAuth();
@@ -109,6 +117,48 @@ export default function IncidentDetails() {
 
   if (loading) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Loading incident data...</div>;
   if (!incident) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Incident not found.</div>;
+
+  const renderOriginalForm = () => {
+    // We cast to any to suppress TS errors if the other forms don't have readOnly in their Props interface yet
+    const typeStr = incident.type || '';
+    if (typeStr.includes('Cargo') || typeStr === 'Cargo & Equipment') {
+      return <CargoForm initialData={incident} readOnly={true} />;
+    } else if (typeStr.includes('Human Resources') || typeStr === 'HR') {
+      const Form = HRForm as any;
+      return <Form initialData={incident} readOnly={true} />;
+    } else if (typeStr.includes('WH&S') || typeStr === 'WHS') {
+      const Form = WHSForm as any;
+      return <Form initialData={incident} readOnly={true} />;
+    } else if (typeStr.includes('IT & Security') || typeStr === 'IT') {
+      const Form = ITForm as any;
+      return <Form initialData={incident} readOnly={true} />;
+    } else if (typeStr.includes('Risk & Compliance') || typeStr === 'Risk') {
+      const Form = RiskForm as any;
+      return <Form initialData={incident} readOnly={true} />;
+    } else if (typeStr.includes('Finance')) {
+      const Form = FinanceForm as any;
+      return <Form initialData={incident} readOnly={true} />;
+    } else if (typeStr.includes('NCR') || typeStr.includes('Non-Conformance')) {
+      const Form = NCRForm as any;
+      return <Form initialData={incident} readOnly={true} />;
+    }
+    
+    // Fallback to generic JSON mapping if form not matched
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
+        {Object.entries(incident)
+          .filter(([k, v]) => v !== null && v !== '' && !['id', 'description', 'status', 'location', 'type', 'date', 'assigned_to_id', 'branch_id', 'creator_id'].includes(k))
+          .map(([k, v]) => (
+          <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
+              {String(v)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="fade-in">
@@ -215,17 +265,8 @@ export default function IncidentDetails() {
           </button>
 
           {showOriginal && (
-            <div className="fade-in" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
-              {Object.entries(incident)
-                .filter(([k, v]) => v !== null && v !== '' && !['id', 'description', 'status', 'location', 'type', 'date', 'assigned_to_id', 'branch_id', 'creator_id'].includes(k))
-                .map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
-                    {String(v)}
-                  </div>
-                </div>
-              ))}
+            <div className="fade-in" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
+              {renderOriginalForm()}
             </div>
           )}
         </div>
