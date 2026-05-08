@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Shield, Clock } from 'lucide-react';
+import { Send, Shield, Clock, MessageSquare } from 'lucide-react';
 import { api } from '../services/api';
 
 interface Note {
@@ -72,28 +72,29 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
     }}>
       {/* Header */}
       <div style={{ 
-        padding: '1rem 1.5rem', 
+        padding: '1.25rem 1.5rem', 
         borderBottom: '1px solid var(--border-base)',
         display: 'flex',
         alignItems: 'center',
-        gap: '0.75rem',
-        background: 'rgba(255, 255, 255, 0.02)'
+        gap: '1rem',
+        background: 'linear-gradient(to right, rgba(59, 130, 246, 0.05), transparent)'
       }}>
         <div style={{ 
-          width: '32px', 
-          height: '32px', 
-          borderRadius: '50%', 
+          width: '40px', 
+          height: '40px', 
+          borderRadius: '12px', 
           background: 'var(--accent-light)', 
           display: 'flex', 
           alignItems: 'center', 
           justifyContent: 'center',
-          color: 'var(--accent-fg)'
+          color: 'var(--accent-fg)',
+          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.15)'
         }}>
-          <Shield size={16} />
+          <Shield size={20} />
         </div>
         <div>
-          <h3 style={{ fontSize: '0.9rem', fontWeight: 600, margin: 0 }}>Incident Collaboration</h3>
-          <span style={{ fontSize: '0.7rem', color: 'var(--fg-muted)' }}>Real-time coordination thread</span>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, color: 'var(--fg-base)' }}>Incident Collaboration</h3>
+          <span style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', fontWeight: 500 }}>Real-time coordination thread</span>
         </div>
       </div>
 
@@ -110,8 +111,13 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
         }}
       >
         {notes.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--fg-faint)', fontSize: '0.85rem' }}>
-            No messages yet. Start the conversation.
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.7, minHeight: '200px' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', color: 'var(--fg-muted)' }}>
+              <MessageSquare size={28} />
+            </div>
+            <div style={{ textAlign: 'center', color: 'var(--fg-muted)', fontSize: '0.95rem', fontWeight: 500, maxWidth: '200px' }}>
+              No messages yet. Start the conversation.
+            </div>
           </div>
         )}
 
@@ -170,34 +176,59 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
         style={{ 
           padding: '1.25rem', 
           borderTop: '1px solid var(--border-base)',
-          background: 'rgba(255, 255, 255, 0.02)',
+          background: 'var(--bg-subtle)',
           display: 'flex',
-          gap: '0.75rem'
+          gap: '0.75rem',
+          alignItems: 'center'
         }}
       >
-        <input 
-          type="text"
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Type a message or instruction..."
-          style={{ 
-            flex: 1,
-            background: 'var(--bg-base)',
-            border: '1px solid var(--border-base)',
-            borderRadius: '0.5rem',
-            padding: '0.75rem 1rem',
-            color: 'var(--fg-base)',
-            fontSize: '0.875rem',
-            outline: 'none'
-          }}
-        />
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input 
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Type a message or instruction..."
+            style={{ 
+              width: '100%',
+              background: 'var(--bg-base)',
+              border: '1px solid var(--border-base)',
+              borderRadius: '2rem',
+              padding: '0.875rem 1.25rem',
+              color: 'var(--fg-base)',
+              fontSize: '0.9rem',
+              outline: 'none',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)',
+              transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#3b82f6';
+              e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = 'var(--border-base)';
+              e.target.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.02)';
+            }}
+          />
+        </div>
         <button 
           type="submit"
           className="btn btn-primary"
-          style={{ padding: '0.75rem', borderRadius: '0.5rem' }}
+          style={{ 
+            width: '46px', 
+            height: '46px', 
+            borderRadius: '50%', 
+            padding: 0, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            opacity: newMessage.trim() ? 1 : 0.6,
+            transition: 'all 0.2s ease',
+            transform: newMessage.trim() ? 'scale(1.05)' : 'scale(1)',
+            boxShadow: newMessage.trim() ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
+          }}
           disabled={!newMessage.trim()}
         >
-          <Send size={18} />
+          <Send size={18} style={{ transform: 'translateX(-1px) translateY(1px)' }} />
         </button>
       </form>
     </div>
