@@ -9,6 +9,8 @@ import NewIncident from './pages/NewIncident';
 import Search from './pages/Search';
 import Reports from './pages/Reports';
 import NCRDashboard from './pages/NCRDashboard';
+import NCRs from './pages/NCRs';
+import ICDashboard from './pages/ICDashboard';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, role } = useAuth();
@@ -16,7 +18,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!token) return <Navigate to="/login" replace />;
   
-  const isManager = ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '');
+  const isManager = role !== 'submit_only';
   
   if (!isManager && !location.pathname.startsWith('/incidents/new')) {
     return <Navigate to="/incidents/new" replace />;
@@ -51,14 +53,14 @@ export default function App() {
               <Incidents />
             </ProtectedRoute>
           } />
-          <Route path="/insurers" element={
+          <Route path="/ncrs" element={
             <ProtectedRoute>
-              <Incidents />
+              <NCRs />
             </ProtectedRoute>
           } />
-          <Route path="/escalations" element={
+          <Route path="/ic-dashboard" element={
             <ProtectedRoute>
-              <Incidents />
+              <ICDashboard />
             </ProtectedRoute>
           } />
           <Route path="/incidents/new" element={
@@ -92,3 +94,4 @@ export default function App() {
     </AuthProvider>
   );
 }
+

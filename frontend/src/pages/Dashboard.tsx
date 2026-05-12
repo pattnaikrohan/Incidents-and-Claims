@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle, Activity, TrendingUp, TrendingDown, Zap, Database } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, BarChart, Bar } from 'recharts';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useIncidents } from '../hooks/useIncidents';
 import { ChartWrapper } from '../components/ChartWrapper';
 
 interface DashboardStats {
@@ -17,85 +17,54 @@ interface DashboardStats {
 }
 
 export default function Dashboard() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<DashboardStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   const { role, branchName, businessUnit } = useAuth();
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get('/dashboard/statistics');
-        let backendData: DashboardStats = response.data;
-        
-        // Merge with Dataverse cache from localStorage
-        try {
-          const saved = localStorage.getItem('incidents_cache');
-          if (saved) {
-            let cachedIncidents = JSON.parse(saved);
-            
-            // Apply RBAC Filter to cache
-            if (role !== 'full_access' && role !== 'risk_compliance') {
-              if (role === 'bu_access' && businessUnit) {
-                cachedIncidents = cachedIncidents.filter((i: any) => i.business_unit === businessUnit || i.branch_department === businessUnit);
-              } else if (branchName) {
-                cachedIncidents = cachedIncidents.filter((i: any) => i.branch_department === branchName);
-              }
-            }
-
-            // Aggregate cache into backend stats
-            if (cachedIncidents.length > 0) {
-              const cacheOpen = cachedIncidents.filter((i: any) => i.status === 'Open').length;
-              const cacheClosed = cachedIncidents.filter((i: any) => i.status === 'Closed').length;
-              
-              backendData.total_incidents += cachedIncidents.length;
-              backendData.total_open += cacheOpen;
-              backendData.total_closed += cacheClosed;
-              
-              // Merge by_type
-              const typeMap = new Map(
-                backendData.by_type
-                  .filter((t: any) => t.type !== 'No Data') // Remove fallback label
-                  .map((t: any) => [t.type, t.count])
-              );
-              cachedIncidents.forEach((i: any) => {
-                const current = typeMap.get(i.type) || 0;
-                typeMap.set(i.type, current + 1);
-              });
-              backendData.by_type = Array.from(typeMap.entries()).map(([type, count]) => ({ type, count }));
-            }
-          }
-        } catch (e) { console.error('Cache merge error', e); }
-
-        setData(backendData);
-      } catch (err) {
-        setError('Failed to load dashboard metrics. The server might be offline.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchStats();
-  }, [role, branchName, businessUnit]);
-
-  // Premium Incident Type Colors
-  const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#06b6d4', '#8b5cf6'];
+  const { incidents: rawIncidents, loading, isRefreshing } = useIncidents(2000);
   
-  const categoryData = data?.by_type?.filter(t => t.type !== 'No Data' || data?.by_type.length === 1).map((item: any, idx: number) => ({
-    name: item.type,
-    value: item.count,
-    fill: COLORS[idx % COLORS.length]
-  })) || [];
+  // Apply RBAC
+  let incidents = rawIncidents;
+  if (role !== 'full_access' && role !== 'risk_compliance') {
+    if (role === 'bu_access' && businessUnit) {
+      incidents = incidents.filter((i: any) => i.business_unit === businessUnit || i.branch_department === businessUnit);
+    } else if (role === 'hr_access') {
+      incidents = incidents.filter((i: any) => { const c = (i.category||'').toLowerCase(); const t = (i.type||'').toLowerCase(); return c==='hr'||c==='whs'||t.includes('human')||t.includes('hr')||t.includes('whs')||t.includes('safety'); });
+    } else if (role === 'it_access') {
+      incidents = incidents.filter((i: any) => { const c = (i.category||'').toLowerCase(); const t = (i.type||'').toLowerCase(); return c==='it'||t.includes('it')||t.includes('security')||t.includes('cyber'); });
+    } else if (role === 'finance_access') {
+      incidents = incidents.filter((i: any) => { const c = (i.category||'').toLowerCase(); const t = (i.type||'').toLowerCase(); return c==='finance'||t.includes('finance')||t.includes('travel'); });
+    } else if (branchName) {
+      incidents = incidents.filter((i: any) => i.branch_department === branchName);
+    }
+  }
 
-  const totalOpen = data?.total_open || 0;
-  const monitoredCount = data?.total_incidents || 0;
+  // Calculate stats directly from live data
+  const totalOpen = incidents.filter(i => i.status?.toLowerCase().includes('open')).length;
+  const totalClosed = incidents.filter(i => i.status?.toLowerCase().includes('closed')).length;
+  const totalReview = incidents.filter(i => i.status?.toLowerCase().includes('review') || i.status?.toLowerCase().includes('progress')).length;
+  const monitoredCount = incidents.length;
+
+  const typeMap = new Map<string, number>();
+  incidents.forEach(i => {
+    const t = i.type || 'Unknown';
+    typeMap.set(t, (typeMap.get(t) || 0) + 1);
+  });
+  
+  const categoryData = Array.from(typeMap.entries()).map(([name, value], idx) => ({
+    name,
+    value,
+    fill: ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#06b6d4', '#8b5cf6'][idx % 6]
+  })).sort((a, b) => b.value - a.value);
+
+  const ncrOpen = incidents.filter(i => (i.category === 'ncr' || (i.type || '').toLowerCase().includes('ncr')) && i.status?.toLowerCase().includes('open')).length;
+  const ncrClosed = incidents.filter(i => (i.category === 'ncr' || (i.type || '').toLowerCase().includes('ncr')) && i.status?.toLowerCase().includes('closed')).length;
+  const claimOpen = incidents.filter(i => i.formal_claim_issued === 'Yes' && !i.status?.toLowerCase().includes('closed')).length;
+  const claimClosed = incidents.filter(i => i.formal_claim_issued === 'Yes' && i.status?.toLowerCase().includes('closed')).length;
+  const corOpen = incidents.filter(i => i.cor_required === 'Yes' && !i.status?.toLowerCase().includes('closed')).length;
+  const corClosed = incidents.filter(i => i.cor_required === 'Yes' && i.status?.toLowerCase().includes('closed')).length;
 
   const stats = [
     { title: 'Total Active Records', value: totalOpen, icon: Activity, color: 'var(--accent-fg)', trend: 'Live', up: true },
-    { title: 'Requires Critical Review', value: data?.total_review || 0, icon: ShieldAlert, color: 'var(--danger-fg)', trend: 'Live', up: true },
-    { title: 'Closed Records', value: data?.total_closed || 0, icon: CheckCircle, color: 'var(--success-fg)', trend: 'Live', up: false },
+    { title: 'Requires Critical Review', value: totalReview, icon: ShieldAlert, color: 'var(--danger-fg)', trend: 'Live', up: true },
+    { title: 'Closed Records', value: totalClosed, icon: CheckCircle, color: 'var(--success-fg)', trend: 'Live', up: false },
     { title: 'Total Fleet Logs', value: monitoredCount, icon: Database, color: 'var(--primary)', trend: 'System', up: true },
   ];
 
@@ -133,19 +102,26 @@ export default function Dashboard() {
     </div>
   );
 
-  if (error) {
-    return (
-      <div className="fade-in" style={{ padding: '2rem' }}>
-        <div className="card" style={{ border: '1px solid var(--danger-fg)', background: 'rgba(239, 68, 68, 0.05)' }}>
-          <h3 style={{ color: 'var(--danger-fg)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-             <ShieldAlert size={20} /> System Connection Offline
-          </h3>
-          <p style={{ color: 'var(--fg-muted)', marginTop: '0.5rem' }}>{error}</p>
-          <button className="btn" style={{ marginTop: '1rem', background: 'var(--fg-base)', color: '#fff' }} onClick={() => window.location.reload()}>Retry Connection</button>
-        </div>
-      </div>
-    );
-  }
+  // Monthly Trend Calculation
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyMap = new Map<string, { name: string; incidents: number; resolved: number }>();
+  monthNames.forEach(m => monthlyMap.set(m, { name: m, incidents: 0, resolved: 0 }));
+
+  incidents.forEach(i => {
+    try {
+      const d = new Date(i.date || i.created_at);
+      const key = monthNames[d.getMonth()];
+      if (key && monthlyMap.has(key)) {
+        const entry = monthlyMap.get(key)!;
+        entry.incidents += 1;
+        if (i.status?.toLowerCase().includes('closed')) {
+          entry.resolved += 1;
+        }
+      }
+    } catch {}
+  });
+
+  const monthlyData = Array.from(monthlyMap.values());
 
   return (
     <div className="fade-in" style={{ paddingBottom: '3rem' }}>
@@ -154,10 +130,10 @@ export default function Dashboard() {
         <div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', justifyContent: 'center' }}>
              <Zap size={16} color="var(--accent-fg)" fill="var(--accent-fg)" />
-             <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'var(--accent-fg)' }}>OPERATIONAL COMMAND</span>
+             <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'var(--accent-fg)' }}>R&C HUB</span>
           </div>
           <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, var(--fg-base) 0%, var(--fg-muted) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global Fleet'} Intelligence
+            {branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global'} Dashboard
           </h2>
           <p style={{ color: 'var(--fg-muted)', fontSize: '1.125rem', maxWidth: '600px' }}>
             Live {branchName || businessUnit || 'global'} risk monitoring and automated incident distribution analysis.
@@ -193,12 +169,40 @@ export default function Dashboard() {
           </div>
         ))}
 
+        {/* Consolidated Open / Closed KPIs */}
+        <div className="card" style={{ gridColumn: 'span 12', padding: '2rem' }}>
+          <div className="overline" style={{ marginBottom: '1.5rem', fontWeight: 700, fontSize: '0.7rem', color: 'var(--fg-muted)' }}>CONSOLIDATED STATUS OVERVIEW</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+            {[
+              { label: 'Incidents', open: totalOpen, closed: totalClosed, color: '#6366f1' },
+              { label: 'NCRs', open: ncrOpen, closed: ncrClosed, color: '#eab308' },
+              { label: 'Claims', open: claimOpen, closed: claimClosed, color: '#ef4444' },
+              { label: 'CoRs', open: corOpen, closed: corClosed, color: '#f59e0b' },
+            ].map((item, i) => (
+              <div key={i} style={{ padding: '1.25rem', borderRadius: 12, border: `1px solid ${item.color}20`, background: `${item.color}05` }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: item.color, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ef4444', lineHeight: 1 }}>{item.open}</div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-muted)', marginTop: '0.25rem' }}>OPEN</div>
+                  </div>
+                  <div style={{ width: '1px', height: '40px', background: 'var(--border-base)' }} />
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>{item.closed}</div>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-muted)', marginTop: '0.25rem' }}>CLOSED</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Main Operational Trend Chart */}
         <div style={{ gridColumn: 'span 8', gridRow: 'span 2', minHeight: '400px' }}>
            <ChartWrapper id="main-trend-grad" title="Cluster Resolution Velocity" subtitle="Incident capture vs Finalized records (6 Month Rolling Data)">
               <div style={{ width: '100%', height: '320px', minHeight: '320px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data?.monthly || []}>
+                  <AreaChart data={monthlyData}>
                     <defs>
                       <linearGradient id="primeArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--accent-fg)" stopOpacity={0.4}/><stop offset="95%" stopColor="var(--accent-fg)" stopOpacity={0}/></linearGradient>
                       <linearGradient id="succArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="var(--success-fg)" stopOpacity={0.3}/><stop offset="95%" stopColor="var(--success-fg)" stopOpacity={0}/></linearGradient>

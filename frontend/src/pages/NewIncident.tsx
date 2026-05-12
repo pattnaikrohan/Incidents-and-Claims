@@ -63,33 +63,35 @@ export default function NewIncident() {
           });
         }
       }
-      if (type === 'cargo' || type === 'ncr') {
-        try {
-          console.log('Sending payload to Power Automate:', payload);
-          const flowRes = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/465821937cf347c9b5eec4737d068fdd/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZUR4iYLZmuytbGXp0uaTvqXkvT927AsbYf9_RtJF2lE', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
+      try {
+        console.log('Sending payload to Power Automate:', payload);
+        const flowRes = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/465821937cf347c9b5eec4737d068fdd/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZUR4iYLZmuytbGXp0uaTvqXkvT927AsbYf9_RtJF2lE', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-          if (!flowRes.ok) {
-            const errorText = await flowRes.text();
-            console.error('Power Automate rejected the request:', flowRes.status, errorText);
-            throw new Error(`Flow rejected with status ${flowRes.status}`);
+        if (!flowRes.ok) {
+          if (flowRes.status === 502) {
+             console.warn('Power Automate returned 502 NoResponse. This usually means the flow was triggered successfully but either timed out (took >2 mins) or is missing an HTTP Response action at the end of the flow.');
+             setSuccessMessage(`${meta.label} registered. (Note: Workflow triggered but returned no response).`);
+          } else {
+             const errorText = await flowRes.text();
+             console.error('Power Automate rejected the request:', flowRes.status, errorText);
+             throw new Error(`Flow rejected with status ${flowRes.status}`);
           }
-
+        } else {
           console.log('Power Automate flow triggered successfully!');
-          setSuccessMessage('Cargo & Equipment Incident registered successfully.');
-        } catch (flowErr: any) {
-          console.error('Power Automate Flow error:', flowErr);
-          // Still show success for the incident creation, but alert about the flow failure in the console
-          setSuccessMessage('Cargo & Equipment Incident registered successfully, but Flow trigger failed.');
+          setSuccessMessage(`${meta.label} registered and workflow triggered successfully.`);
         }
-      } else {
-        setSuccessMessage('Incident submitted successfully. Redirecting…');
+      } catch (flowErr: any) {
+        console.error('Power Automate Flow error:', flowErr);
+        // Still show success for the incident creation, but alert about the flow failure in the console
+        setSuccessMessage(`${meta.label} registered successfully, but workflow trigger failed.`);
       }
 
       setSuccess(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
         const isManager = ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '');
         if (isManager) {

@@ -1,0 +1,327 @@
+import { useState, useEffect, useCallback } from 'react';
+
+export function useIncidents(pollingInterval = 2000) {
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const fetchLatestFromPA = useCallback(async () => {
+    try {
+      console.log('Polling Power Automate for latest incidents...');
+      const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw');
+      
+      if (!response.ok) {
+        console.error('Power Automate polling failed:', response.status);
+        return;
+      }
+
+      const payload = await response.json();
+      
+      const allNewIncidents: any[] = [];
+
+      // ── CARGO & EQUIPMENT ─────────────────────────────────
+      if (Array.isArray(payload.cargo_equipment_incidents)) {
+        payload.cargo_equipment_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_cargoequipmentincidentid || raw.id,
+            category: 'cargo',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Cargo & Equipment',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || 'Pending',
+            description: raw.cr991_shortdescription || raw.cr991_cargodescription || 'No description',
+            job_number: raw.cr991_systemjobnumber || 'N/A',
+            customer_name: raw.cr991_customer || 'N/A',
+            formal_claim_issued: 'No',
+            cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
+            insurer_notified: raw["cr991_insurernotified@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            short_description: raw.cr991_shortdescription || '',
+            date_of_incident: raw.cr991_dateofincident || '',
+            date_logged: raw.cr991_datelogged || '',
+            logged_by: raw.cr991_loggedby || '',
+            mode: raw.cr991_mode || '',
+            system_job_number: raw.cr991_systemjobnumber || '',
+            mbl_mawb_issued: raw["cr991_mblmawbissued@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            mbl_mawb_number: raw.cr991_mblmawbnumber || '',
+            hbl_hawb_issued: raw["cr991_hblhawbissued@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            hbl_hawb_number: raw.cr991_hblhawbnumber || '',
+            customer: raw.cr991_customer || '',
+            container_numbers: raw.cr991_containernumbers || '',
+            origin: raw.cr991_origin || '',
+            destination: raw.cr991_destination || '',
+            cargo_description: raw.cr991_cargodescription || '',
+            cargo_value: raw.cr991_cargovalue || '',
+            location_of_incident: raw.cr991_locationofincident || '',
+            origin_agent: raw.cr991_originagent || '',
+            destination_agent: raw.cr991_destinationagent || '',
+            shipping_line: raw.cr991_shippinglineairline || '',
+            coloader: raw.cr991_coloader || '',
+            transport_company: raw.cr991_transportcompany || '',
+            scope_of_work: raw.cr991_scopeofwork || '',
+            incident_types: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] ? [raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"].trim()] : [],
+            corrective_actions: raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"] ? [raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"].trim()] : [],
+            claim_estimate: raw.cr991_incidentclaimestimate || '',
+          });
+        });
+      }
+
+      // ── HUMAN RESOURCES ───────────────────────────────────
+      if (Array.isArray(payload.human_resources_incidents)) {
+        payload.human_resources_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_humanresourcesincidentid || raw.id,
+            category: 'hr',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Human Resources',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
+            employee_involved: raw.cr991_employee || raw.cr991_employeeinvolved || 'N/A',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            date_of_incident: raw.cr991_dateofincident || '',
+            date_logged: raw.cr991_datelogged || '',
+            logged_by: raw.cr991_loggedby || '',
+            employee_name: raw.cr991_employee || raw.cr991_employeeinvolved || '',
+            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
+            witnesses: raw.cr991_witnesses || '',
+            immediate_action: raw.cr991_immediateaction || '',
+            investigation_required: raw["cr991_investigationrequired@OData.Community.Display.V1.FormattedValue"] || '',
+            investigation_outcome: raw.cr991_investigationoutcome || '',
+            corrective_action: raw.cr991_correctiveaction || '',
+            legal_counsel_engaged: raw["cr991_legalcounselengaged@OData.Community.Display.V1.FormattedValue"] || '',
+            close_out_date: raw.cr991_closeoutdate || '',
+            notes: raw.cr991_notes || '',
+          });
+        });
+      }
+
+      // ── WH&S ──────────────────────────────────────────────
+      if (Array.isArray(payload.workplace_health_safety_incidents)) {
+        payload.workplace_health_safety_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_workplacehealthsafetyincidentid || raw.id,
+            category: 'whs',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'WH&S Incident',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            date_of_incident: raw.cr991_dateofincident || '',
+            date_logged: raw.cr991_datelogged || '',
+            logged_by: raw.cr991_loggedby || '',
+            persons_involved: raw.cr991_personsinvolved || '',
+            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
+            injury_details: raw.cr991_injurydetails || '',
+            medical_treatment_required: raw["cr991_medicaltreatmentrequired@OData.Community.Display.V1.FormattedValue"] || '',
+            lost_time_injury: raw["cr991_losttimeinjury@OData.Community.Display.V1.FormattedValue"] || '',
+            notifiable_safework: raw["cr991_notifiablesafework@OData.Community.Display.V1.FormattedValue"] || '',
+            date_notified_regulator: raw.cr991_datenotifiedregulator || '',
+            root_cause: raw.cr991_rootcause || '',
+            corrective_action: raw.cr991_correctiveaction || '',
+            corrective_action_owner: raw.cr991_correctiveactionowner || '',
+            corrective_action_due_date: raw.cr991_correctiveactionduedate || '',
+            chro_cro_notified: raw["cr991_chro_cronotified@OData.Community.Display.V1.FormattedValue"] || '',
+            workers_comp_claim: raw["cr991_workerscompclaim@OData.Community.Display.V1.FormattedValue"] || '',
+          });
+        });
+      }
+
+      // ── IT & SECURITY ─────────────────────────────────────
+      if (Array.isArray(payload.it_security_incidents)) {
+        payload.it_security_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_itsecurityincidentid || raw.id,
+            category: 'it',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'IT & Security',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
+            system_affected: raw.cr991_system || raw.cr991_systemaffected || 'N/A',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            date_of_incident: raw.cr991_dateofincident || '',
+            date_logged: raw.cr991_datelogged || '',
+            logged_by: raw.cr991_loggedby || '',
+            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
+            number_of_users_affected: raw.cr991_numberofusersaffected || '',
+            data_breach: raw["cr991_databreach@OData.Community.Display.V1.FormattedValue"] || '',
+            data_type_compromised: raw.cr991_datatypecompromised || '',
+            notifiable_data_breach: raw["cr991_notifiabledatabreach@OData.Community.Display.V1.FormattedValue"] || '',
+            it_support_ticket_ref: raw.cr991_itsupportticketref || '',
+            root_cause: raw.cr991_rootcause || '',
+            system_restored: raw["cr991_systemrestored@OData.Community.Display.V1.FormattedValue"] || '',
+          });
+        });
+      }
+
+      // ── RISK & COMPLIANCE ─────────────────────────────────
+      if (Array.isArray(payload.risk_compliance_incidents)) {
+        payload.risk_compliance_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_riskcomplianceincidentid || raw.id,
+            category: 'risk',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Risk & Compliance',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
+            regulatory_body: raw.cr991_regulatorybody || 'N/A',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            date_of_incident: raw.cr991_dateofincident || '',
+            date_logged: raw.cr991_datelogged || '',
+            logged_by: raw.cr991_loggedby || '',
+            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
+            legislation_policy_breached: raw.cr991_legislationpolicybreached || '',
+            financial_penalty_estimate: raw.cr991_financialpenaltyestimate || '',
+            regulator_notified: raw["cr991_regulatornotified@OData.Community.Display.V1.FormattedValue"] || '',
+            date_regulator_notified: raw.cr991_dateregulatornotified || '',
+            remediation_plan: raw.cr991_remediationplan || '',
+            board_notified: raw["cr991_boardnotified@OData.Community.Display.V1.FormattedValue"] || '',
+          });
+        });
+      }
+
+      // ── FINANCE ───────────────────────────────────────────
+      if (Array.isArray(payload.finance_incidents)) {
+        payload.finance_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_financeincidentid || raw.id,
+            category: 'finance',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Finance',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
+            transaction_ref: raw.cr991_transactionref || 'N/A',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            date_of_incident: raw.cr991_dateofincident || '',
+            date_logged: raw.cr991_datelogged || '',
+            logged_by: raw.cr991_loggedby || '',
+            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
+            financial_impact_aud: raw.cr991_financialimpactaud || '',
+            vendor_customer_name: raw.cr991_vendorcustomername || '',
+            police_notified: raw["cr991_policenotified@OData.Community.Display.V1.FormattedValue"] || '',
+            bank_notified: raw["cr991_banknotified@OData.Community.Display.V1.FormattedValue"] || '',
+            recovery_possible: raw["cr991_recoverypossible@OData.Community.Display.V1.FormattedValue"] || '',
+            control_failure_identified: raw.cr991_controlfailureidentified || '',
+          });
+        });
+      }
+
+      // ── NCR ───────────────────────────────────────────
+      if (Array.isArray(payload.ncr_incidents)) {
+        payload.ncr_incidents.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_ncrincidentid || raw.id,
+            category: 'ncr',
+            incident_number_str: raw.cr991_incidentid,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'NCR',
+            location: raw.cr991_locationofincident || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+            // Basic NCR fields (if needed for filtering)
+            nc_type: raw["cr991_nctype@OData.Community.Display.V1.FormattedValue"] || '',
+            root_cause: raw.cr991_rootcause || '',
+            preventative_action: raw.cr991_preventativeaction || '',
+          });
+        });
+      }
+
+      // ── BACKWARDS COMPATIBILITY ─
+      if (Array.isArray(payload)) {
+        payload.forEach((raw: any) => {
+          allNewIncidents.push({
+            id: raw.cr991_cargoequipmentincidentid || raw.id,
+            category: 'cargo',
+            incident_number_str: raw.cr991_incidentid || raw.incident_number_str,
+            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.type || 'Cargo & Equipment',
+            location: raw.cr991_locationofincident || raw.location || 'N/A',
+            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || raw.branch_department || 'N/A',
+            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || raw.business_unit || 'N/A',
+            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || raw.date || '').split(' ')[0],
+            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.status || 'Open',
+            value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || 'Pending',
+            description: raw.cr991_shortdescription || raw.description || 'No description',
+            job_number: raw.cr991_systemjobnumber || raw.job_number || 'N/A',
+            customer_name: raw.cr991_customer || 'N/A',
+            formal_claim_issued: 'No',
+            cor_required: 'No',
+            management_escalation: 'No',
+            created_at: raw.createdon,
+          });
+        });
+      }
+
+      const validNew = allNewIncidents.filter((inc: any) => inc.id);
+      setIncidents(validNew);
+      localStorage.setItem('incidents_cache', JSON.stringify(validNew));
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch from Power Automate:', error);
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLatestFromPA();
+  }, [fetchLatestFromPA]);
+
+  useEffect(() => {
+    if (pollingInterval > 0) {
+      const interval = setInterval(fetchLatestFromPA, pollingInterval);
+      return () => clearInterval(interval);
+    }
+  }, [fetchLatestFromPA, pollingInterval]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchLatestFromPA();
+    setIsRefreshing(false);
+  };
+
+  return { incidents, loading, isRefreshing, handleManualRefresh };
+}

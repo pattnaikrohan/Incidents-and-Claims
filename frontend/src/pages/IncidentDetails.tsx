@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Clock, MapPin, Briefcase, UserPlus, ChevronDown, ChevronRight, Shield, AlertTriangle, FileWarning } from 'lucide-react';
+import { ArrowLeft, FileText, Clock, MapPin, Briefcase, UserPlus, ChevronDown, ChevronRight, Shield, AlertTriangle, FileWarning, Users, HeartPulse, Lock as LockIcon, DollarSign } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CollaborationFeed from '../components/CollaborationFeed';
 import { api } from '../services/api';
@@ -13,6 +13,10 @@ import RiskForm from './forms/RiskForm';
 import FinanceForm from './forms/FinanceForm';
 import NCRForm from './forms/NCRForm';
 
+import IncidentSection from '../components/IncidentSection';
+import { HRDeptSection, HRConfidentialNotes, WHSDeptSection, ITDeptSection, RiskDeptSection, FinanceDeptSection } from '../components/DeptSections';
+import { getIncidentCategory, CATEGORY_META, isDeptSectionFilled, canSeeDeptSection, canEditDeptSection, canSeeRCSection, canSeeConfidentialNotes } from '../utils/incidentRoles';
+
 export default function IncidentDetails() {
   const { id } = useParams();
   const { role } = useAuth();
@@ -21,6 +25,14 @@ export default function IncidentDetails() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [isUpdatingLiability, setIsUpdatingLiability] = useState(false);
+  const [isUpdatingDept, setIsUpdatingDept] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const showNotification = (msg: string) => {
+    setSuccessMessage(msg);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
   const [liability, setLiability] = useState({
     responsible_party: '',
     formal_claim_issued: '',
@@ -33,37 +45,44 @@ export default function IncidentDetails() {
 
   const fetchIncident = async () => {
     try {
-      // 1. First check if this is a cached Dataverse record (UUID)
+      let finalIncident: any = null;
+
+      // 1. Check local cache (usually contains Dataverse skeleton data)
       const saved = localStorage.getItem('incidents_cache');
       if (saved) {
         const cached = JSON.parse(saved);
-        const match = cached.find((i: any) => String(i.id) === String(id));
-        if (match) {
-          console.log('Found incident in Dataverse cache:', match);
-          setIncident(match);
-          setLiability(prev => ({
-            ...prev,
-            responsible_party: match.responsible_party || '',
-            risk_level: match.cor_risk_level || '',
-            cor: match.cor_required || '',
-            status: match.status || 'Open - Incident Logged'
-          }));
-          setLoading(false);
-          return;
-        }
+        finalIncident = cached.find((i: any) => String(i.id) === String(id));
       }
 
-      // 2. If not in cache, fallback to backend API (expected integer ID)
-      const response = await api.get(`/incidents/${id}`);
-      setIncident(response.data);
-      if (response.data) {
-         setLiability(prev => ({
-            ...prev,
-            responsible_party: response.data.responsible_party || '',
-            risk_level: response.data.cor_risk_level || '',
-            cor: response.data.cor_required || '',
-            status: response.data.status || 'Open - Incident Logged'
-         }));
+      // 2. Fetch latest metadata from backend (Investigation findings, Liability, etc.)
+      try {
+        const response = await api.get(`/incidents/${id}`);
+        const backendData = response.data;
+        
+        if (backendData) {
+          if (finalIncident) {
+            // Enrich Dataverse record with backend metadata
+            finalIncident = { ...finalIncident, ...backendData };
+          } else {
+            finalIncident = backendData;
+          }
+        }
+      } catch (err) {
+        console.warn('Backend fetch failed, using cache only:', err);
+      }
+
+      if (finalIncident) {
+        setIncident(finalIncident);
+        setLiability(prev => ({
+          ...prev,
+          responsible_party: finalIncident.responsible_party || '',
+          formal_claim_issued: finalIncident.formal_claim_issued || 'No',
+          insurer_notified: finalIncident.insurer_notified || 'No',
+          risk_level: finalIncident.risk_level || finalIncident.cor_risk_level || '',
+          management_escalation: finalIncident.management_escalation || 'No',
+          cor: finalIncident.cor || finalIncident.cor_required || 'No',
+          status: finalIncident.status || 'Open - Incident Logged'
+        }));
       }
     } catch (error) {
       console.error('Error fetching incident:', error);
@@ -75,9 +94,28 @@ export default function IncidentDetails() {
   const handleLiabilityUpdate = async () => {
     try {
       setIsUpdatingLiability(true);
-      await api.put(`/incidents/${id}/liability`, liability);
-      await fetchIncident(); // Refresh to pull new notes/status
-      alert('Liability updated successfully. Triggers processed.');
+      const category = getIncidentCategory(incident);
+      const payload: any = { ...liability };
+      
+      if (category === 'cargo') {
+        payload.dept_section_updated = true;
+      }
+
+      await api.patch(`/incidents/${id}`, payload);
+      
+      // Synchronize with local cache
+      const saved = localStorage.getItem('incidents_cache');
+      if (saved) {
+        const cached = JSON.parse(saved);
+        const idx = cached.findIndex((i: any) => String(i.id) === String(id));
+        if (idx !== -1) {
+          cached[idx] = { ...cached[idx], ...payload };
+          localStorage.setItem('incidents_cache', JSON.stringify(cached));
+        }
+      }
+
+      setIncident((prev: any) => ({ ...prev, ...payload }));
+      showNotification('Liability details updated successfully.');
     } catch (error) {
       console.error('Failed to update liability:', error);
       alert('Error updating liability details.');
@@ -115,33 +153,59 @@ export default function IncidentDetails() {
     }
   };
 
+  const handleDeptUpdate = async () => {
+    if (!incident) return;
+    setIsUpdatingDept(true);
+    try {
+      // Automatically attribute the investigation to the current user
+      const updatedIncident = { ...incident };
+      const ownerFields = ['corrective_action_owner', 'investigation_owner'];
+      ownerFields.forEach(field => {
+        if (!updatedIncident[field] || updatedIncident[field] === 'full_access') {
+          updatedIncident[field] = email || role;
+        }
+      });
+
+      // Mark as updated so the "Awaiting" badge disappears
+      const payload = { ...updatedIncident, dept_section_updated: true };
+      // 2. Persist to backend database
+      await api.patch(`/incidents/${id}`, payload);
+
+      // 3. Synchronize with local cache if this is a Dataverse record
+      const saved = localStorage.getItem('incidents_cache');
+      if (saved) {
+        const cached = JSON.parse(saved);
+        const idx = cached.findIndex((i: any) => String(i.id) === String(id));
+        if (idx !== -1) {
+          cached[idx] = { ...cached[idx], ...payload };
+          localStorage.setItem('incidents_cache', JSON.stringify(cached));
+        }
+      }
+
+      setIncident(payload);
+      showNotification('Investigation details updated successfully.');
+    } catch (error) {
+      console.error('Update failed:', error);
+      alert('Failed to update investigation details.');
+    } finally {
+      setIsUpdatingDept(false);
+    }
+  };
+
   if (loading) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Loading incident data...</div>;
   if (!incident) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Incident not found.</div>;
 
   const renderOriginalForm = () => {
-    const typeStr = String(incident.type || '');
-    const refStr = String(incident.incident_number_str || incident.incident_id || '');
+    const category = getIncidentCategory(incident);
     
-    if (typeStr.includes('Cargo') || typeStr.includes('Equipment') || refStr.includes('CEI') || refStr.includes('CRG')) {
-      return <CargoForm initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('Human Resources') || typeStr.includes('HR') || refStr.includes('HRI')) {
-      const Form = HRForm as any;
-      return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('WH&S') || typeStr.includes('WHS') || typeStr.includes('Health') || refStr.includes('WHS')) {
-      const Form = WHSForm as any;
-      return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('IT & Security') || typeStr.includes('IT') || typeStr.includes('Cyber') || refStr.includes('ITI')) {
-      const Form = ITForm as any;
-      return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('Risk & Compliance') || typeStr.includes('Risk') || refStr.includes('RCI')) {
-      const Form = RiskForm as any;
-      return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('Finance') || typeStr.includes('Travel') || refStr.includes('FIN')) {
-      const Form = FinanceForm as any;
-      return <Form initialData={incident} readOnly={true} />;
-    } else if (typeStr.includes('NCR') || typeStr.includes('Non-Conformance') || refStr.includes('NCR')) {
-      const Form = NCRForm as any;
-      return <Form initialData={incident} readOnly={true} />;
+    switch (category) {
+      case 'cargo': return <CargoForm initialData={incident} readOnly={true} />;
+      case 'hr': return <HRForm initialData={incident} readOnly={true} />;
+      case 'whs': return <WHSForm initialData={incident} readOnly={true} />;
+      case 'it': return <ITForm initialData={incident} readOnly={true} />;
+      case 'risk': return <RiskForm initialData={incident} readOnly={true} />;
+      case 'finance': return <FinanceForm initialData={incident} readOnly={true} />;
+      case 'ncr': return <NCRForm initialData={incident} readOnly={true} />;
     }
     
     // Fallback to generic JSON mapping if form not matched
@@ -166,6 +230,26 @@ export default function IncidentDetails() {
       <Link to="/incidents" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--fg-muted)', textDecoration: 'none', marginBottom: '1.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
         <ArrowLeft size={16} /> Back to incidents
       </Link>
+
+      {successMessage && (
+        <div className="fade-in" style={{ 
+          background: 'rgba(16, 185, 129, 0.1)', 
+          border: '1px solid #10b981', 
+          color: '#10b981', 
+          padding: '1rem 1.5rem', 
+          borderRadius: '12px', 
+          marginBottom: '2rem', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '1rem',
+          backdropFilter: 'blur(10px)',
+          fontWeight: 600,
+          boxShadow: '0 10px 30px -10px rgba(16, 185, 129, 0.2)'
+        }}>
+          <Shield size={20} />
+          {successMessage}
+        </div>
+      )}
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid var(--border-base)' }}>
         <div>
@@ -179,7 +263,7 @@ export default function IncidentDetails() {
             {(incident.description || 'No description provided').substring(0, 100)}...
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
           <div className="dropdown" style={{ position: 'relative' }}>
              <button 
                className="btn btn-secondary" 
@@ -192,9 +276,62 @@ export default function IncidentDetails() {
                <UserPlus size={16} /> {isAssigning ? 'Assigning...' : 'Assign to Handler'}
              </button>
           </div>
-          <button className="btn btn-primary" onClick={handleResolve} disabled={incident.status === 'Resolved'}>
-            Resolve Incident
-          </button>
+
+          {/* Status Display & Update */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-faint)', textTransform: 'uppercase' }}>Current Status:</span>
+              <span className={`badge badge-${incident.status?.includes('Closed') ? 'closed' : incident.status?.includes('Open') ? 'open' : 'review'}`} style={{ fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}>
+                {incident.status || 'Open - Incident Logged'}
+              </span>
+            </div>
+            {['full_access', 'risk_compliance'].includes(role || '') && (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <select 
+                  className="input-field" 
+                  value={liability.status} 
+                  onChange={(e) => setLiability({...liability, status: e.target.value})}
+                  style={{ fontSize: '0.75rem', padding: '0.3rem 0.5rem', height: '32px', minWidth: '200px' }}
+                >
+                  <option value="Open - Incident Logged">Open - Incident Logged</option>
+                  <option value="Open - Under Investigation">Open - Under Investigation</option>
+                  <option value="Open - Corrective Action Pending">Open - Corrective Action Pending</option>
+                  <option value="Open - Formal Claim">Open - Formal Claim</option>
+                  <option value="Closed - No Further Action">Closed - No Further Action</option>
+                </select>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={async () => {
+                    try {
+                      await api.put(`/incidents/${id}/status`, { status: liability.status });
+                      await fetchIncident();
+                      alert('Status updated successfully.');
+                    } catch (err) {
+                      // Fallback: update localStorage cache
+                      try {
+                        const saved = localStorage.getItem('incidents_cache');
+                        if (saved) {
+                          const cached = JSON.parse(saved);
+                          const idx = cached.findIndex((i: any) => String(i.id) === String(id));
+                          if (idx !== -1) {
+                            cached[idx].status = liability.status;
+                            localStorage.setItem('incidents_cache', JSON.stringify(cached));
+                            await fetchIncident();
+                            alert('Status updated (local cache).');
+                            return;
+                          }
+                        }
+                      } catch (e) {}
+                      alert('Failed to update status.');
+                    }
+                  }}
+                  style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', height: '32px' }}
+                >
+                  Update
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -214,7 +351,7 @@ export default function IncidentDetails() {
               <div>
                 <label className="overline">Reported Date</label>
                 <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>
-                  {new Date(incident.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                  {incident.date ? new Date(incident.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
                 </div>
               </div>
             </div>
@@ -223,8 +360,8 @@ export default function IncidentDetails() {
                 <Briefcase size={16} style={{ color: 'var(--accent-fg)' }} />
               </div>
               <div>
-                <label className="overline">CargoWise Ref</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{incident.job_number}</div>
+                <label className="overline">{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? 'CargoWise Ref' : cat === 'hr' ? 'Employee' : cat === 'whs' ? 'Person(s) Involved' : cat === 'it' ? 'Systems Affected' : cat === 'risk' ? 'Regulation Breached' : cat === 'finance' ? 'Incident Type' : 'Reference'; })()}</label>
+                <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? (incident.job_number || 'N/A') : cat === 'hr' ? (incident.employee_name || incident.employee_involved || 'N/A') : cat === 'whs' ? (incident.persons_involved || 'N/A') : cat === 'it' ? (incident.systems_affected || 'N/A') : cat === 'risk' ? (incident.regulation_breached || 'N/A') : cat === 'finance' ? (incident.incident_type || incident.type || 'N/A') : 'N/A'; })()}</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -232,17 +369,17 @@ export default function IncidentDetails() {
                 <MapPin size={16} style={{ color: 'var(--fg-muted)' }} />
               </div>
               <div>
-                <label className="overline">Location</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location}</div>
+                <label className="overline">{getIncidentCategory(incident) === 'whs' ? 'Location (Site)' : 'Branch / Department'}</label>
+                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location || incident.branch_department || 'N/A'}</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                <FileText size={16} style={{ color: 'var(--danger-fg)' }} />
+              <div style={{ padding: '0.5rem', background: `${CATEGORY_META[getIncidentCategory(incident)].color}15`, borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                <FileText size={16} style={{ color: CATEGORY_META[getIncidentCategory(incident)].color }} />
               </div>
               <div>
                 <label className="overline">Classification</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>Cargo Damage</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.type || incident.incident_type || CATEGORY_META[getIncidentCategory(incident)].label}</div>
               </div>
             </div>
           </div>
@@ -272,7 +409,89 @@ export default function IncidentDetails() {
           )}
         </div>
 
+          {/* ═══ DEPARTMENT-SPECIFIC SECTIONS (Role-Aware) ═══ */}
+          {(() => {
+            const category = getIncidentCategory(incident);
+            const meta = CATEGORY_META[category];
+            const deptFilled = isDeptSectionFilled(incident, category);
+            const canSee = canSeeDeptSection(role, category);
+            const canEdit = canEditDeptSection(role, category);
+            const showRC = canSeeRCSection(role);
+            const showConfNotes = canSeeConfidentialNotes(role);
+            const isAwaiting = !deptFilled && !canEdit;
+
+            const deptSectionIcon = category === 'hr' ? <Users size={16} /> :
+              category === 'whs' ? <HeartPulse size={16} /> :
+              category === 'it' ? <LockIcon size={16} /> :
+              category === 'risk' ? <Shield size={16} /> :
+              category === 'finance' ? <DollarSign size={16} /> : <FileText size={16} />;
+
+            const handleFieldChange = (key: string, value: any) => {
+              setIncident((prev: any) => ({ ...prev, [key]: value }));
+            };
+
+            return (
+              <>
+                {/* Department Investigation Section */}
+                {canSee && category !== 'cargo' && (
+                  <IncidentSection
+                    title={`${meta.label} Investigation`}
+                    icon={deptSectionIcon}
+                    color={meta.color}
+                    ownerLabel={meta.deptLabel}
+                    isAwaitingUpdate={isAwaiting}
+                    awaitingMessage={`Awaiting ${meta.deptLabel} Update`}
+                  >
+                    {category === 'hr' && <HRDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
+                    {category === 'whs' && <WHSDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
+                    {category === 'it' && <ITDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
+                    {category === 'risk' && <RiskDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
+                    {category === 'finance' && <FinanceDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
+                    
+                    {canEdit && (
+                      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ background: meta.color, color: '#fff', border: 'none' }}
+                          onClick={handleDeptUpdate}
+                          disabled={isUpdatingDept}
+                        >
+                          {isUpdatingDept ? 'Saving...' : 'Save Investigation Updates'}
+                        </button>
+                      </div>
+                    )}
+                  </IncidentSection>
+                )}
+
+                {/* HR Confidential Notes — HR eyes only */}
+                {category === 'hr' && showConfNotes && (
+                  <IncidentSection
+                    title="Confidential Notes"
+                    icon={<LockIcon size={16} />}
+                    color="#8b5cf6"
+                    ownerLabel="HR Department — Restricted Access"
+                  >
+                    <HRConfidentialNotes incident={incident} editable={canEdit} onChange={handleFieldChange} />
+                    {canEdit && (
+                      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ background: '#8b5cf6', color: '#fff', border: 'none' }}
+                          onClick={handleDeptUpdate}
+                          disabled={isUpdatingDept}
+                        >
+                          {isUpdatingDept ? 'Saving...' : 'Save Confidential Notes'}
+                        </button>
+                      </div>
+                    )}
+                  </IncidentSection>
+                )}
+              </>
+            );
+          })()}
+
           {/* Risk & Compliance Team Liability Form */}
+          {canSeeRCSection(role) && (
           <div className="card" style={{ padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Risk & Compliance Team Liability</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -335,9 +554,10 @@ export default function IncidentDetails() {
                 <label className="overline">Incident Status</label>
                 <select className="input-field" value={liability.status} onChange={(e) => setLiability({...liability, status: e.target.value})}>
                   <option value="Open - Incident Logged">Open - Incident Logged</option>
-                  <option value="Under Review">Under Review</option>
-                  <option value="Resolved">Resolved</option>
-                  <option value="Closed">Closed</option>
+                  <option value="Open - Under Investigation">Open - Under Investigation</option>
+                  <option value="Open - Corrective Action Pending">Open - Corrective Action Pending</option>
+                  <option value="Open - Formal Claim">Open - Formal Claim</option>
+                  <option value="Closed - No Further Action">Closed - No Further Action</option>
                 </select>
               </div>
             </div>
@@ -351,6 +571,7 @@ export default function IncidentDetails() {
               </button>
             </div>
           </div>
+          )}
 
           {/* Dynamic Claims Log Form */}
           {liability.formal_claim_issued === 'Yes' && (
@@ -396,7 +617,14 @@ export default function IncidentDetails() {
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-primary" style={{ background: '#ef4444' }}>Save Claim Details</button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ background: '#ef4444' }} 
+                  onClick={handleDeptUpdate}
+                  disabled={isUpdatingDept}
+                >
+                  {isUpdatingDept ? 'Saving...' : 'Save Claim Details'}
+                </button>
               </div>
             </div>
           )}
@@ -433,7 +661,14 @@ export default function IncidentDetails() {
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-primary" style={{ background: '#f59e0b', color: '#fff' }}>Save CoR Details</button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ background: '#f59e0b', color: '#fff' }} 
+                  onClick={handleDeptUpdate}
+                  disabled={isUpdatingDept}
+                >
+                  {isUpdatingDept ? 'Saving...' : 'Save CoR Details'}
+                </button>
               </div>
             </div>
           )}
@@ -468,7 +703,7 @@ We will provide further documentation as our investigation progresses.`} />
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                 <button className="btn btn-secondary">Download PDF</button>
-                <button className="btn btn-primary" style={{ background: '#3b82f6' }}>Send Email Notification</button>
+                <button className="btn btn-primary" style={{ background: '#3b82f6' }} onClick={() => showNotification('Insurer notified and notification template processed.')}>Send Email Notification</button>
               </div>
             </div>
           )}
@@ -501,7 +736,7 @@ Please review the attached incident file in the Command Center. Legal and operat
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
                 <button className="btn btn-secondary">Download Report</button>
-                <button className="btn btn-primary" style={{ background: '#8b5cf6' }}>Trigger Exec Workflow</button>
+                <button className="btn btn-primary" style={{ background: '#8b5cf6' }} onClick={() => showNotification('Management escalation triggered and notification sent.')}>Trigger Exec Workflow</button>
               </div>
             </div>
           )}
@@ -543,7 +778,14 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-primary" style={{ background: '#10b981', color: '#fff' }}>Save Follow-up Details</button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ background: '#10b981', color: '#fff' }} 
+                  onClick={handleDeptUpdate}
+                  disabled={isUpdatingDept}
+                >
+                  {isUpdatingDept ? 'Saving...' : 'Save Follow-up Details'}
+                </button>
               </div>
             </div>
           )}
@@ -610,7 +852,7 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-primary" style={{ background: '#8b5cf6', color: '#fff' }}>Save Close-Out Details</button>
+                <button className="btn btn-primary" style={{ background: '#8b5cf6', color: '#fff' }} onClick={() => { handleDeptUpdate(); showNotification('NCR close-out completed and status updated.'); }}>Save Close-Out Details</button>
               </div>
             </div>
           )}

@@ -113,8 +113,8 @@ def get_incident(
     
     branch_map = {b["id"]: b["name"] for b in db.branches}
     
-    # Simple conversion to dict for response
-    return {
+    # Return all attributes dynamically
+    res = {
         "id": incident.id,
         "type": incident.type,
         "status": incident.status,
@@ -125,6 +125,55 @@ def get_incident(
         "customer_name": getattr(incident, 'customer_name', 'N/A'),
         "branch_department": branch_map.get(getattr(incident, "branch_id", None), "N/A")
     }
+    
+    # Add investigation fields present on the object
+    investigation_fields = [
+        "investigation_outcome", "legal_counsel_engaged", "medical_treatment_required",
+        "lost_time_injury", "notifiable_safework", "root_cause", "corrective_action",
+        "corrective_action_owner", "corrective_action_due_date", "chro_cro_notified",
+        "workers_comp_claim", "containment_actions", "personal_data_involved",
+        "notifiable_privacy_breach", "cio_notified", "regulator_involved",
+        "notified_regulator", "penalty_imposed", "financial_value", "actual_loss",
+        "recovery_possible", "recovery_amount", "write_off_required",
+        "cfo_notified", "cro_notified", "police_reported", "dept_section_updated",
+        "formal_claim_issued", "insurer_notified", "risk_level", "management_escalation",
+        "cor", "responsible_party"
+    ]
+    
+    for field in investigation_fields:
+        val = getattr(incident, field, None)
+        if val is not None and val != "":
+            res[field] = val
+            
+    return res
+
+@router.patch("/{incident_id}", response_model=dict)
+def patch_incident(
+    incident_id: str,
+    update_data: dict,
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    incident = next((i for i in db.incidents if str(i.id) == str(incident_id)), None)
+    
+    if not incident:
+        # Create a side-store record for Dataverse/PA IDs
+        new_incident = Incident(
+            id=incident_id, 
+            type=update_data.get("type", "SyncRecord"),
+            location=update_data.get("location", "Sync"),
+            description=update_data.get("description", "Metadata only record"),
+            branch_id=update_data.get("branch_id")
+        )
+        db.add(new_incident)
+        incident = new_incident
+    
+    for key, value in update_data.items():
+        # Avoid overwriting id
+        if key == 'id': continue
+        setattr(incident, key, value)
+            
+    return {"message": "Incident updated", "incident_id": incident.id}
 
 @router.put("/{incident_id}/status", response_model=dict)
 def update_incident_status(

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Text, Boolean
 from sqlalchemy.orm import relationship
 from app.models.base import Base
 
@@ -68,6 +68,37 @@ class Incident(Base):
     risk_team_assigned = Column(String, nullable=True)
     legal_notes = Column(Text, nullable=True)
     risk_notes = Column(Text, nullable=True)
+
+    # Department Investigation Fields
+    investigation_outcome = Column(Text, nullable=True)
+    legal_counsel_engaged = Column(String, nullable=True)
+    medical_treatment_required = Column(String, nullable=True)
+    lost_time_injury = Column(String, nullable=True)
+    notifiable_safework = Column(String, nullable=True)
+    root_cause = Column(Text, nullable=True)
+    corrective_action = Column(Text, nullable=True)
+    corrective_action_owner = Column(String, nullable=True)
+    corrective_action_due_date = Column(String, nullable=True)
+    chro_cro_notified = Column(String, nullable=True)
+    workers_comp_claim = Column(String, nullable=True)
+    containment_actions = Column(Text, nullable=True)
+    personal_data_involved = Column(String, nullable=True)
+    notifiable_privacy_breach = Column(String, nullable=True)
+    cio_notified = Column(String, nullable=True)
+    regulator_involved = Column(String, nullable=True)
+    notified_regulator = Column(String, nullable=True)
+    penalty_imposed = Column(String, nullable=True)
+    financial_value = Column(String, nullable=True)
+    actual_loss = Column(String, nullable=True)
+    recovery_possible = Column(String, nullable=True)
+    recovery_amount = Column(String, nullable=True)
+    write_off_required = Column(String, nullable=True)
+    cfo_notified = Column(String, nullable=True)
+    cro_notified = Column(String, nullable=True)
+    police_reported = Column(String, nullable=True)
+    
+    # Flags
+    dept_section_updated = Column(Boolean, nullable=True, default=False)
 
     creator = relationship("User", foreign_keys=[creator_id])
     assigned_to = relationship("User", foreign_keys=[assigned_to_id])

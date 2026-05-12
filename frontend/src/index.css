@@ -514,7 +514,7 @@ p {
 
 .sidebar-content {
   flex: 1;
-  padding: 2.5rem 2.5rem 5rem;
+  padding: 0.5rem 2.5rem 5rem;
   overflow-y: auto;
   max-width: 1380px;
   width: 100%;

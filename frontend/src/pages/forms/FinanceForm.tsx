@@ -13,34 +13,32 @@ const Field = ({label,req,children}:{label:string;req?:boolean;children:React.Re
   <div><label className="overline">{label}{req&&<span style={{color:'#ef4444',marginLeft:3}}>*</span>}</label>{children}</div>
 );
 
+const FINANCE_INCIDENT_TYPES = [
+  "Invoice Fraud", "BEC", "Payment Error", "Duplicate Payment", 
+  "Overcharge", "Undercharge", "FX Error", "Unauthorised Transaction", 
+  "Write-Off Required", "Travel Disruption", "Other"
+];
+
 export default function FinanceForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
   const [f, setF] = useState<any>(() => {
     if (initialData) {
       return {
         ...initialData,
-        incident_ref: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
-        incident_id: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
-        ncr_ref: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        incident_id: initialData.incident_number_str || initialData.incident_id || `FIN-${initialData.id}`,
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         date_reported: initialData.date_reported || initialData.date || today(),
-        date_logged: initialData.date_logged || initialData.date || today(),
-        reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || 'System User',
-        logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || 'System User',
-        employee_name: initialData.employee_name || initialData.customer_name || '',
+        reported_by: initialData.reported_by || initialData.logged_by || 'System User',
         business_unit: initialData.business_unit || '',
         branch_department: initialData.branch_department || '',
         incident_type: initialData.incident_type || initialData.type || '',
-        description: initialData.description || initialData.short_description || '',
-        short_description: initialData.short_description || initialData.description || '',
-        location_of_incident: initialData.location_of_incident || initialData.location || '',
-        system_job_number: initialData.system_job_number || initialData.job_number || '',
+        description: initialData.description || '',
       };
     }
     return {
     incident_id: generateId(), date_of_incident:'', date_reported: today(),
-    reported_by: localStorage.getItem('role')||'Current User',
+    reported_by: localStorage.getItem('email')||'Current User',
     business_unit:'', branch_department:'',
-    incident_type:'Travel Disruption', description:'',
+    incident_type:'', description:'',
     financial_value:'', actual_financial_loss:'', recovery_possible:'', recovery_amount:'',
     cfo_notified:'', cro_notified:'', police_reported:'', insurer_notified:'',
     root_cause:'', corrective_action:'', write_off_required:'', files: [] as File[]
@@ -50,29 +48,10 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const enrichedDescription = `
-${f.description}
-
---- FINANCE DETAILS ---
-Financial Value Involved (AUD): ${f.financial_value || 'N/A'}
-Actual Financial Loss (AUD): ${f.actual_financial_loss || 'N/A'}
-Recovery Possible: ${f.recovery_possible || 'N/A'}
-Recovery Amount (AUD): ${f.recovery_amount || 'N/A'}
-Write-Off Required: ${f.write_off_required || 'N/A'}
-
---- NOTIFICATIONS ---
-CFO Notified: ${f.cfo_notified || 'N/A'}
-CRO Notified: ${f.cro_notified || 'N/A'}
-Police Reported: ${f.police_reported || 'N/A'}
-Insurer Notified: ${f.insurer_notified || 'N/A'}
-
---- INVESTIGATION ---
-Root Cause: ${f.root_cause || 'N/A'}
-Corrective Action: ${f.corrective_action || 'N/A'}
-    `.trim();
-
-    if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
+    if (onSubmit) onSubmit(f);
   };
+
+  const isCreateMode = !initialData;
 
   return (
     <form onSubmit={submitForm} style={{display:'flex',flexDirection:'column',gap:'2rem', pointerEvents: readOnly ? 'none' : 'auto', opacity: readOnly ? 0.95 : 1}}>
@@ -104,87 +83,92 @@ Corrective Action: ${f.corrective_action || 'N/A'}
             </Field>
           </div>
           <Field label="Incident Type *" req>
-            <div style={{padding:'0.75rem 1rem',background:'rgba(59,130,246,0.08)',borderRadius:8,border:'1px solid rgba(59,130,246,0.25)'}}>
-              <span style={{fontWeight:600,color:'var(--accent-fg)'}}>Travel Disruption</span>
-              <p style={{fontSize:'0.75rem',marginTop:2}}>Finance incidents are currently scoped to Travel Disruption events.</p>
-            </div>
+            <select className="input-field" value={f.incident_type} onChange={e=>upd('incident_type',e.target.value)} required>
+              <option value="">— Select —</option>
+              {FINANCE_INCIDENT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
           </Field>
           <Field label="Description of Incident (factual only) *" req>
-            <textarea className="input-field" style={{minHeight:130}} placeholder="Describe the financial incident, travel disruption, or related financial impact in factual terms..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
+            <textarea className="input-field" style={{minHeight:130}} placeholder="Describe the financial incident in factual terms..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
           
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <CurrencyInput 
-              label="Financial Value Involved" 
-              value={f.financial_value} 
-              onChange={v => upd('financial_value', v)} 
-            />
-            <CurrencyInput 
-              label="Actual Financial Loss" 
-              value={f.actual_financial_loss} 
-              onChange={v => upd('actual_financial_loss', v)} 
-            />
-          </div>
+          {/* Only show these fields in detail view (if initialData exists) */}
+          {!isCreateMode && (
+            <>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
+                <CurrencyInput 
+                  label="Financial Value Involved" 
+                  value={f.financial_value} 
+                  onChange={v => upd('financial_value', v)} 
+                />
+                <CurrencyInput 
+                  label="Actual Financial Loss" 
+                  value={f.actual_loss} 
+                  onChange={v => upd('actual_loss', v)} 
+                />
+              </div>
 
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem'}}>
-            <Field label="Recovery Possible">
-              <select className="input-field" value={f.recovery_possible} onChange={e=>upd('recovery_possible',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <CurrencyInput 
-              label="Recovery Amount" 
-              value={f.recovery_amount} 
-              onChange={v => upd('recovery_amount', v)} 
-            />
-            <Field label="Write-Off Required">
-              <select className="input-field" value={f.write_off_required} onChange={e=>upd('write_off_required',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem'}}>
+                <Field label="Recovery Possible">
+                  <select className="input-field" value={f.recovery_possible} onChange={e=>upd('recovery_possible',e.target.value)}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </Field>
+                <CurrencyInput 
+                  label="Recovery Amount" 
+                  value={f.recovery_amount} 
+                  onChange={v => upd('recovery_amount', v)} 
+                />
+                <Field label="Write-Off Required">
+                  <select className="input-field" value={f.write_off_required} onChange={e=>upd('write_off_required',e.target.value)}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </Field>
+              </div>
 
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="CFO Notified">
-              <select className="input-field" value={f.cfo_notified} onChange={e=>upd('cfo_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="CRO Notified">
-              <select className="input-field" value={f.cro_notified} onChange={e=>upd('cro_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Police Reported">
-              <select className="input-field" value={f.police_reported} onChange={e=>upd('police_reported',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Insurer Notified">
-              <select className="input-field" value={f.insurer_notified} onChange={e=>upd('insurer_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
+                <Field label="CFO Notified">
+                  <select className="input-field" value={f.cfo_notified} onChange={e=>upd('cfo_notified',e.target.value)}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </Field>
+                <Field label="CRO Notified">
+                  <select className="input-field" value={f.cro_notified} onChange={e=>upd('cro_notified',e.target.value)}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </Field>
+                <Field label="Police Reported">
+                  <select className="input-field" value={f.police_reported} onChange={e=>upd('police_reported',e.target.value)}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </Field>
+                <Field label="Insurer Notified">
+                  <select className="input-field" value={f.insurer_notified} onChange={e=>upd('insurer_notified',e.target.value)}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </Field>
+              </div>
 
-          <Field label="Root Cause">
-            <input type="text" className="input-field" value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} />
-          </Field>
-          <Field label="Corrective Action">
-            <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
-          </Field>
+              <Field label="Root Cause">
+                <input type="text" className="input-field" value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} />
+              </Field>
+              <Field label="Corrective Action">
+                <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
+              </Field>
+            </>
+          )}
 
           <Field label="Supporting Evidence (Attachments)">
             <input type="file" multiple className="input-field" style={{padding:'0.5rem'}} onChange={e=>{
