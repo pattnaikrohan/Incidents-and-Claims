@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search as SearchIcon, FileText, ShieldAlert, Package, FileWarning, AlertTriangle } from 'lucide-react';
+import { Search as SearchIcon, FileText, Package, FileWarning, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
