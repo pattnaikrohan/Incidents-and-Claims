@@ -52,12 +52,6 @@ export default function Login() {
     setMousePos({ x: moveX, y: moveY });
   };
 
-  const handlePaneMouseMove = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    setPaneX(x);
-  };
-
 
 
   return (
@@ -158,9 +152,6 @@ export default function Login() {
 
         {/* LEFT PANE: Hero & Brand */}
         <div
-          onMouseMove={handlePaneMouseMove}
-          onMouseEnter={() => setIsHoveringPane(true)}
-          onMouseLeave={() => setIsHoveringPane(false)}
           style={{
             flex: '0 0 35%',
             background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.9) 100%)',

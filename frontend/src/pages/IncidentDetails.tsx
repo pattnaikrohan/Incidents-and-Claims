@@ -19,7 +19,7 @@ import { getIncidentCategory, CATEGORY_META, isDeptSectionFilled, canSeeDeptSect
 
 export default function IncidentDetails() {
   const { id } = useParams();
-  const { role } = useAuth();
+  const { role, email } = useAuth();
   const [incident, setIncident] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -154,7 +154,7 @@ export default function IncidentDetails() {
       const ownerFields = ['corrective_action_owner', 'investigation_owner'];
       ownerFields.forEach(field => {
         if (!updatedIncident[field] || updatedIncident[field] === 'full_access') {
-          updatedIncident[field] = userEmail || role;
+          updatedIncident[field] = email || role;
         }
       });
 

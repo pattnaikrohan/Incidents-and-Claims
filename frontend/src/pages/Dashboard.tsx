@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ShieldAlert, CheckCircle, Activity, TrendingUp, TrendingDown, Zap, Database } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, BarChart, Bar } from 'recharts';
 import { Link } from 'react-router-dom';
