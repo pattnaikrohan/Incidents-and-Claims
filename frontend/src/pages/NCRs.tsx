@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Filter, FileWarning, RefreshCw, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Filter, FileWarning, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';

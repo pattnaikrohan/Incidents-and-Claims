@@ -144,14 +144,6 @@ export default function IncidentDetails() {
     }
   };
 
-  const handleResolve = async () => {
-    try {
-      await api.put(`/incidents/${id}/status`, { status: 'Resolved' });
-      await fetchIncident();
-    } catch (error) {
-      console.error('Resolution failed:', error);
-    }
-  };
 
   const handleDeptUpdate = async () => {
     if (!incident) return;
@@ -162,7 +154,7 @@ export default function IncidentDetails() {
       const ownerFields = ['corrective_action_owner', 'investigation_owner'];
       ownerFields.forEach(field => {
         if (!updatedIncident[field] || updatedIncident[field] === 'full_access') {
-          updatedIncident[field] = email || role;
+          updatedIncident[field] = userEmail || role;
         }
       });
 
@@ -416,7 +408,6 @@ export default function IncidentDetails() {
             const deptFilled = isDeptSectionFilled(incident, category);
             const canSee = canSeeDeptSection(role, category);
             const canEdit = canEditDeptSection(role, category);
-            const showRC = canSeeRCSection(role);
             const showConfNotes = canSeeConfidentialNotes(role);
             const isAwaiting = !deptFilled && !canEdit;
 

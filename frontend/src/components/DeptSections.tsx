@@ -1,4 +1,4 @@
-import { Users, Lock as LockIcon } from 'lucide-react';
+import { Lock as LockIcon } from 'lucide-react';
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div><label className="overline">{label}</label>{children}</div>

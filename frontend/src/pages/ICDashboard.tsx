@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis } from 'recharts';
@@ -25,8 +24,6 @@ export default function ICDashboard() {
   }
 
   incidents.sort((a: any, b: any) => new Date(b.created_at || b.date || 0).getTime() - new Date(a.created_at || a.date || 0).getTime());
-
-  const hasData = incidents.length > 0;
 
   // --- KPI Calculations ---
   const totalOpen = incidents.filter(n => n.status?.toLowerCase().includes('open')).length;

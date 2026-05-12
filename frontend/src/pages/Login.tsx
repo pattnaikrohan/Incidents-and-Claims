@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Mail, Lock, ArrowRight, ShieldCheck, Zap, Activity, Globe } from 'lucide-react';
+import { ShieldAlert, Mail, Lock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
 import { api } from '../services/api';
 import logo from '../assets/aaw_new.png';
@@ -13,8 +13,6 @@ export default function Login() {
   const [password, setPassword] = useState('Access2026!');
   const [error, setError] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
-  const [paneX, setPaneX] = useState(-50);
-  const [isHoveringPane, setIsHoveringPane] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleSubmit = async (e: React.FormEvent) => {

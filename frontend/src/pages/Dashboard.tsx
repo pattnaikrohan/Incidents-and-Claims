@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ShieldAlert, CheckCircle, Activity, TrendingUp, TrendingDown, Zap, Database } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, BarChart, Bar } from 'recharts';
 import { Link } from 'react-router-dom';
@@ -6,19 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
 import { ChartWrapper } from '../components/ChartWrapper';
 
-interface DashboardStats {
-  total_incidents: number;
-  total_open: number;
-  total_closed: number;
-  total_review?: number;
-  by_type: { type: string; count: number }[];
-  by_branch: { branch: string; count: number }[];
-  monthly?: { name: string; incidents: number; resolved: number }[];
-}
-
 export default function Dashboard() {
   const { role, branchName, businessUnit } = useAuth();
-  const { incidents: rawIncidents, loading, isRefreshing } = useIncidents(2000);
+  const { incidents: rawIncidents, loading } = useIncidents(2000);
   
   // Apply RBAC
   let incidents = rawIncidents;
