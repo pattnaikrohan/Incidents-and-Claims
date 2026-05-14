@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
 
-function generateId() { return `ITS-${Date.now().toString(36).toUpperCase()}`; }
+function generateId() { let p = 'ITS'; let c = parseInt(localStorage.getItem('seq_'+p) || '0', 10) + 1; localStorage.setItem('seq_'+p, c.toString()); return p + '-' + c.toString(36).toUpperCase(); }
 function today() { return new Date().toLocaleDateString('en-AU'); }
 
 const IT_TYPES = ['Data Breach','Ransomware / Malware','Phishing Attack','Unauthorised Access',
@@ -102,18 +102,18 @@ Corrective Action: ${f.corrective_action || 'N/A'}
       <div className="card">
         <h3 className="overline" style={{marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:6,color:'#06b6d4'}}><Lock size={14}/> IT &amp; Security Incident Log</h3>
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <Field label="Date of Incident *" req>
+          <Field label="Date of Incident" req>
             <input type="date" className="input-field" value={f.date_of_incident} onChange={e=>upd('date_of_incident',e.target.value)} required/>
           </Field>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Business Unit *" req>
+            <Field label="Business Unit" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
                 {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
-            <Field label="Branch / Department *" req>
+            <Field label="Branch / Department" req>
               <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
                 {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
@@ -121,17 +121,17 @@ Corrective Action: ${f.corrective_action || 'N/A'}
               </select>
             </Field>
           </div>
-          <Field label="Incident Type *" req>
+          <Field label="Incident Type" req>
             <select className="input-field" value={f.incident_type} onChange={e=>upd('incident_type',e.target.value)} required>
               <option value="">— Select type —</option>
               {f.incident_type && !IT_TYPES.includes(f.incident_type) && <option value={f.incident_type}>{f.incident_type}</option>}
               {IT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
-          <Field label="Systems / Data Affected *" req>
+          <Field label="Systems / Data Affected" req>
             <textarea className="input-field" style={{minHeight:90}} placeholder="List all systems, databases, or data categories affected..." value={f.systems_data_affected} onChange={e=>upd('systems_data_affected',e.target.value)} required/>
           </Field>
-          <Field label="Description of Incident (factual only) *" req>
+          <Field label="Description of Incident (factual only)" req>
             <textarea className="input-field" style={{minHeight:110}} placeholder="Objective account of the security or IT incident..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
           <Field label="Containment Actions Taken">

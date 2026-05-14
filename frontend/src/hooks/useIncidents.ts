@@ -12,11 +12,13 @@ export function useIncidents(pollingInterval = 2000) {
       const STANDARD_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw';
       const NCR_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0045b29424d14bec952421cf0ef7b051/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=n-bzHfDvrFFtQmiKjB0c9xngFKJqJU7sRqtU5DoM4Pg';
       const COR_POLLING_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9024d22093174eb39dac78207b4cda85/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=heqXTA7X3BXTrv1hL29NB6_UOLzek3DMeWeNpsofToQ';
+      const CLAIMS_POLLING_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3bc5af8e02904409b61b7b389f73a591/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Z0sD7CY2GhZLzteUBjeoiHFQiJYFb0PWbA4W6OkDXBU';
 
-      const [stdRes, ncrRes, corRes] = await Promise.all([
+      const [stdRes, ncrRes, corRes, claimsRes] = await Promise.all([
         fetch(STANDARD_FLOW_URL),
         fetch(NCR_FLOW_URL),
-        fetch(COR_POLLING_URL)
+        fetch(COR_POLLING_URL),
+        fetch(CLAIMS_POLLING_URL)
       ]);
       
       const safeParse = async (res: Response) => {
@@ -33,7 +35,8 @@ export function useIncidents(pollingInterval = 2000) {
       const payloads = await Promise.all([
         safeParse(stdRes),
         safeParse(ncrRes),
-        safeParse(corRes)
+        safeParse(corRes),
+        safeParse(claimsRes)
       ]);
 
       const getCount = (p: any, key: string) => {
@@ -47,6 +50,7 @@ export function useIncidents(pollingInterval = 2000) {
       console.log('Standard Payload Categories:', Object.keys(payloads[0]));
       console.log('NCR Records Count:', getCount(payloads[1], 'ncr_incidents'));
       console.log('CoR Records Count:', getCount(payloads[2], 'cor_incidents'));
+      console.log('Claims Records Count:', getCount(payloads[3], 'claims_incidents'), '| Raw Keys:', Object.keys(payloads[3] || {}));
 
       const allNewIncidents: any[] = [];
 
@@ -105,6 +109,37 @@ export function useIncidents(pollingInterval = 2000) {
               claim_estimate: raw.cr991_incidentclaimestimate || '',
               incident_summary: raw.cr991_incidentsummary || raw.cr991_cargodescription || '',
               root_cause: raw.cr991_rootcause || '',
+              // CoR fields
+              cor: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
+              cor_type: raw.cr991_cortype || '',
+              company_role: raw.cr991_companysrole || '',
+              cor_risk_level: raw.cr991_corrisklevel || 'Low',
+              cor_status: raw["cr991_corincidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
+              cor_assessment: raw.cr991_corassessment || '',
+              cor_corrective_action: raw.cr991_corcorrectiveaction || '',
+              cor_action_implemented: raw.cr991_corcaimplemented || 'No',
+              // Claims fields
+              claim_reference: raw.cr991_claimreferencenumber || '',
+              claim_date: raw.cr991_dateofclaim || '',
+              claimant: raw.cr991_claimant || '',
+              claim_time_bar: raw.cr991_timebar || '',
+              claim_type: raw["cr991_claimtype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimtype || '',
+              claim_direction: raw["cr991_claimdirection@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimdirection || '',
+              claim_amount: raw.cr991_claimamount || '',
+              paid_amount: raw.cr991_paidamount || '',
+              insurance_paid: raw.cr991_insurancepaidamount || '',
+              deductible: raw.cr991_deductible || '',
+              recovery_amount: raw.cr991_recoveryamount || '',
+              outstanding_balance: raw.cr991_outstandingbalance || '',
+              writeoff_required: raw["cr991_writeoffrequired@OData.Community.Display.V1.FormattedValue"] || raw.cr991_writeoffrequired || 'No',
+              writeoff_amount: raw.cr991_writeoffamount || '',
+              writeoff_approved_by: raw.cr991_writeoffapprovedby || '',
+              writeoff_date: raw.cr991_writeoffdate || '',
+              claim_state: raw.cr991_claimstate || '',
+              claim_status: raw["cr991_claimstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimstatus || 'Open',
+              // Liability fields
+              responsible_party: raw["cr991_responsibleparty@OData.Community.Display.V1.FormattedValue"] || '',
+              risk_level: raw["cr991_risklevel@OData.Community.Display.V1.FormattedValue"] || '',
             });
           });
         }

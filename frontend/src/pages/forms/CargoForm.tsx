@@ -23,9 +23,8 @@ const CLAIM_TYPES = [
 
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
 
-function generateId(prefix: string) {
-  return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
-}
+function generateId(prefix: string) { let c = parseInt(localStorage.getItem("seq_"+prefix) || "0", 10) + 1; localStorage.setItem("seq_"+prefix, c.toString()); return prefix + "-" + c.toString(36).toUpperCase(); }
+
 function today() {
   return new Date().toLocaleDateString('en-AU');
 }
@@ -176,20 +175,20 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
         <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
           {inp('short_description','Brief description of the incident','text',true)}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
-            <Field label="Date of Incident *" req>
+            <Field label="Date of Incident" req>
               <input type="date" className="input-field" value={f.date_of_incident} onChange={e=>upd('date_of_incident',e.target.value)} required/>
             </Field>
             {sel('mode',['Sea','Air','Rail','Road'],true)}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
-            <Field label="Business Unit *" req>
+            <Field label="Business Unit" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
                 {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(bu => <option key={bu} value={bu}>{bu}</option>)}
               </select>
             </Field>
-            <Field label="Branch / Department *" req>
+            <Field label="Branch / Department" req>
               <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
                 {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
@@ -270,10 +269,10 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
       {/* Summary & Root Cause */}
       <div className="card">
         <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
-          <Field label="Incident Summary *" req>
+          <Field label="Incident Summary" req>
             <textarea className="input-field" style={{ minHeight:90 }} placeholder="Factual summary of what occurred..." value={f.incident_summary} onChange={e=>upd('incident_summary',e.target.value)} required/>
           </Field>
-          <Field label="Root Cause *" req>
+          <Field label="Root Cause" req>
             <textarea className="input-field" style={{ minHeight:90 }} placeholder="Identified root cause..." value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} required/>
           </Field>
         </div>

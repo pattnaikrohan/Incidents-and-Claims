@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Incidents from './pages/Incidents';
 import IncidentDetails from './pages/IncidentDetails';
+import CoRDetails from './pages/CoRDetails';
+import ClaimDetails from './pages/ClaimDetails';
 import NewIncident from './pages/NewIncident';
 import Search from './pages/Search';
 import Reports from './pages/Reports';
@@ -71,6 +73,16 @@ export default function App() {
           <Route path="/incidents/:id" element={
             <ProtectedRoute>
               <IncidentDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/cors/:id" element={
+            <ProtectedRoute>
+              <CoRDetails />
+            </ProtectedRoute>
+          } />
+          <Route path="/claims/:id" element={
+            <ProtectedRoute>
+              <ClaimDetails />
             </ProtectedRoute>
           } />
           <Route path="/search" element={

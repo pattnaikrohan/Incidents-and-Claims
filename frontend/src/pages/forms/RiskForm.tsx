@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Shield } from 'lucide-react';
 import { CurrencyInput } from '../../components/CurrencyInput';
 
-function generateId() { return `RCI-${Date.now().toString(36).toUpperCase()}`; }
+function generateId() { let p = 'RCI'; let c = parseInt(localStorage.getItem('seq_'+p) || '0', 10) + 1; localStorage.setItem('seq_'+p, c.toString()); return p + '-' + c.toString(36).toUpperCase(); }
 function today() { return new Date().toLocaleDateString('en-AU'); }
 
 const RISK_TYPES = ['Regulatory Breach','Policy Non-Compliance','AML/CTF Breach','Sanctions Violation',
@@ -88,18 +88,18 @@ Corrective Action Owner: ${f.corrective_action_owner || 'N/A'}
       <div className="card">
         <h3 className="overline" style={{marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:6,color:'#10b981'}}><Shield size={14}/> Risk &amp; Compliance Incident Log</h3>
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <Field label="Date of Incident *" req>
+          <Field label="Date of Incident" req>
             <input type="date" className="input-field" value={f.date_of_incident} onChange={e=>upd('date_of_incident',e.target.value)} required/>
           </Field>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Business Unit *" req>
+            <Field label="Business Unit" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
                 {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
-            <Field label="Branch / Department *" req>
+            <Field label="Branch / Department" req>
               <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
                 {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
@@ -107,17 +107,17 @@ Corrective Action Owner: ${f.corrective_action_owner || 'N/A'}
               </select>
             </Field>
           </div>
-          <Field label="Incident Type *" req>
+          <Field label="Incident Type" req>
             <select className="input-field" value={f.incident_type} onChange={e=>upd('incident_type',e.target.value)} required>
               <option value="">— Select type —</option>
               {f.incident_type && !RISK_TYPES.includes(f.incident_type) && <option value={f.incident_type}>{f.incident_type}</option>}
               {RISK_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
-          <Field label="Regulation / Policy Breached *" req>
+          <Field label="Regulation / Policy Breached" req>
             <textarea className="input-field" style={{minHeight:90}} placeholder="e.g. Customs Act 1901 s.64, Anti-Money Laundering and Counter-Terrorism Financing Act 2006..." value={f.regulation_policy_breached} onChange={e=>upd('regulation_policy_breached',e.target.value)} required/>
           </Field>
-          <Field label="Description of Incident (factual only) *" req>
+          <Field label="Description of Incident (factual only)" req>
             <textarea className="input-field" style={{minHeight:110}} placeholder="Objective account of the compliance or risk incident..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
 

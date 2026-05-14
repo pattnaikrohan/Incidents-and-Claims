@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Users } from 'lucide-react';
 
-function generateId() { return `HRI-${Date.now().toString(36).toUpperCase()}`; }
+function generateId() { let p = 'HRI'; let c = parseInt(localStorage.getItem('seq_'+p) || '0', 10) + 1; localStorage.setItem('seq_'+p, c.toString()); return p + '-' + c.toString(36).toUpperCase(); }
 function today() { return new Date().toLocaleDateString('en-AU'); }
 
 const HR_TYPES = ['Misconduct','Bullying & Harassment','Discrimination','Grievance','Performance Issue',
@@ -84,21 +84,21 @@ HR Confidential Notes: ${f.notes || 'N/A'}
       <div className="card">
         <h3 className="overline" style={{marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:6}}><Users size={14}/> HR Incident Log</h3>
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <Field label="Date of Incident *" req>
+          <Field label="Date of Incident" req>
             <input type="date" className="input-field" value={f.date_of_incident} onChange={e=>upd('date_of_incident',e.target.value)} required/>
           </Field>
-          <Field label="Employee Name *" req>
+          <Field label="Employee Name" req>
             <input className="input-field" placeholder="Full name of employee involved" value={f.employee_name} onChange={e=>upd('employee_name',e.target.value)} required/>
           </Field>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Business Unit *" req>
+            <Field label="Business Unit" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
                 {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
-            <Field label="Branch / Department *" req>
+            <Field label="Branch / Department" req>
               <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
                 {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
@@ -106,23 +106,23 @@ HR Confidential Notes: ${f.notes || 'N/A'}
               </select>
             </Field>
           </div>
-          <Field label="Incident Type *" req>
+          <Field label="Incident Type" req>
             <select className="input-field" value={f.incident_type} onChange={e=>upd('incident_type',e.target.value)} required>
               <option value="">— Select type —</option>
               {f.incident_type && !HR_TYPES.includes(f.incident_type) && <option value={f.incident_type}>{f.incident_type}</option>}
               {HR_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
-          <Field label="Description of Incident (factual only) *" req>
+          <Field label="Description of Incident (factual only)" req>
             <textarea className="input-field" style={{minHeight:110}} placeholder="Factual account only — no assumptions..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
           <Field label="Witnesses (if any)">
             <textarea className="input-field" style={{minHeight:70}} placeholder="Names and contact details of witnesses..." value={f.witnesses} onChange={e=>upd('witnesses',e.target.value)}/>
           </Field>
-          <Field label="Immediate Action Taken *" req>
+          <Field label="Immediate Action Taken" req>
             <textarea className="input-field" style={{minHeight:90}} placeholder="Actions taken immediately following the incident..." value={f.immediate_action} onChange={e=>upd('immediate_action',e.target.value)} required/>
           </Field>
-          <Field label="Investigation Required *" req>
+          <Field label="Investigation Required" req>
             <div style={{display:'flex',gap:'1rem',marginTop:4}}>
               {['Yes','No'].map(v=>(
                 <label key={v} style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',padding:'0.6rem 1.25rem',borderRadius:8,

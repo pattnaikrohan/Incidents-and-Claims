@@ -339,29 +339,41 @@ export default function Incidents() {
                     borderBottom: isExpanded ? '1px solid var(--border-base)' : 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <div style={{ 
                       width: '32px', height: '32px', borderRadius: '8px', 
                       background: `${category.color}10`, color: category.color, 
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       border: `1px solid ${category.color}20`,
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      flexShrink: 0
                     }}>
                       <Icon size={18} strokeWidth={1.5} />
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--fg-base)', display: 'flex', alignItems: 'center', gap: '0.6rem', letterSpacing: '-0.01em' }}>
+                    <div style={{ width: '280px', flexShrink: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--fg-base)', letterSpacing: '-0.01em' }}>
                         {category.label}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', marginTop: '0.05rem', fontWeight: 500 }}>
+                        {category.desc}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <div style={{ 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        minWidth: '32px', height: '24px', padding: '0 0.5rem', 
+                        background: categoryIncidents.length > 0 ? `${category.color}10` : 'var(--bg-subtle)', 
+                        border: `1px solid ${categoryIncidents.length > 0 ? `${category.color}30` : 'var(--border-base)'}`,
+                        borderRadius: '12px',
+                        boxShadow: categoryIncidents.length > 0 ? `inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 8px -2px ${category.color}20` : 'none'
+                      }}>
                         <span style={{ 
-                          fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.4rem', 
-                          background: categoryIncidents.length > 0 ? category.color : 'var(--bg-subtle)', 
-                          borderRadius: '20px', color: categoryIncidents.length > 0 ? '#fff' : 'var(--fg-faint)', 
-                          border: categoryIncidents.length === 0 ? '1px solid var(--border-base)' : 'none'
+                          fontSize: '0.8rem', fontWeight: 800, 
+                          color: categoryIncidents.length > 0 ? category.color : 'var(--fg-muted)' 
                         }}>
                           {categoryIncidents.length}
                         </span>
                       </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', marginTop: '0.05rem', fontWeight: 500 }}>{category.desc}</div>
                     </div>
                   </div>
 
@@ -551,7 +563,7 @@ export default function Incidents() {
                             filteredIncidents.map((incident, i) => (
                               <tr 
                                 key={i} 
-                                onClick={() => navigate(`/incidents/${incident.id}`, { state: { source: pageSource } })} 
+                                onClick={() => navigate(pageSource === 'cors' ? `/cors/${incident.id}` : pageSource === 'claims' ? `/claims/${incident.id}` : `/incidents/${incident.id}`, { state: { source: pageSource } })} 
                                 style={{ 
                                   cursor: 'pointer', 
                                   background: 'var(--bg-surface)', 

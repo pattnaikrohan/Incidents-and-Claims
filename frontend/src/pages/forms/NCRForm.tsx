@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FileWarning } from 'lucide-react';
 
-function generateId() { return `NCR-${Date.now().toString(36).toUpperCase()}`; }
+function generateId() { let p = 'NCR'; let c = parseInt(localStorage.getItem('seq_'+p) || '0', 10) + 1; localStorage.setItem('seq_'+p, c.toString()); return p + '-' + c.toString(36).toUpperCase(); }
 function today() { return new Date().toLocaleDateString('en-AU'); }
 
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
@@ -79,14 +79,14 @@ Related Record Reference: ${f.related_record || 'N/A'}
       <div className="card">
         <h3 className="overline" style={{marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:6,color:'#8b5cf6'}}><FileWarning size={14}/> RECORD IDENTIFICATION</h3>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-          <Field label="Business Unit (BU) *" req>
+          <Field label="Business Unit (BU)" req>
             <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
               <option value="">— Select —</option>
               {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
               {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
-          <Field label="Branch *" req>
+          <Field label="Branch" req>
             <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
               <option value="">— Select —</option>
               {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
@@ -99,7 +99,7 @@ Related Record Reference: ${f.related_record || 'N/A'}
       <div className="card">
         <h3 className="overline" style={{marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:6,color:'#8b5cf6'}}><FileWarning size={14}/> NON-CONFORMANCE DETAILS</h3>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'1rem'}}>
-          <Field label="Level of Nonconformity *" req>
+          <Field label="Level of Nonconformity" req>
             <select className="input-field" value={f.level_of_nonconformity} onChange={e=>upd('level_of_nonconformity',e.target.value)} required>
               <option value="">— Select —</option>
               {f.level_of_nonconformity && !['Minor', 'Major', 'Critical'].includes(f.level_of_nonconformity) && <option value={f.level_of_nonconformity}>{f.level_of_nonconformity}</option>}
@@ -108,7 +108,7 @@ Related Record Reference: ${f.related_record || 'N/A'}
               <option value="Critical">Critical</option>
             </select>
           </Field>
-          <Field label="Identification of NC *" req>
+          <Field label="Identification of NC" req>
             <select className="input-field" value={f.identification} onChange={e=>upd('identification',e.target.value)} required>
               <option value="">— Select —</option>
               {f.identification && !['Process Failure', 'Product Defect', 'Service Failure', 'Audit Finding', 'Customer Complaint', 'Other'].includes(f.identification) && <option value={f.identification}>{f.identification}</option>}
@@ -143,7 +143,7 @@ Related Record Reference: ${f.related_record || 'N/A'}
         </div>
         
         <div style={{display:'flex',flexDirection:'column',gap:'1rem'}}>
-          <Field label="Description of NC *" req>
+          <Field label="Description of NC" req>
             <textarea className="input-field" style={{minHeight:100}} placeholder="Provide full factual details..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
           <Field label="Immediate Containment Action">
