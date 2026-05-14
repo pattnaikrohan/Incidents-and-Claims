@@ -1,17 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FileText, Filter, Briefcase, AlertTriangle, Shield, Users, RefreshCw, ChevronDown, ChevronUp, Package, HeartPulse, Lock, DollarSign, FileWarning } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useIncidents } from '../hooks/useIncidents';
 
 export default function Incidents() {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentPath = location.pathname;
+  const pageSource = currentPath.includes('/claims') ? 'claims' : 
+                     currentPath.includes('/cors') ? 'cors' : 
+                     currentPath.includes('/insurers') ? 'insurers' :
+                     currentPath.includes('/escalations') ? 'escalations' :
+                     currentPath.includes('/ncrs') ? 'ncrs' : 'incidents';
   const [activeTab, setActiveTab] = useState('active');
-  const [incidents, setIncidents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { role, branchName, businessUnit } = useAuth();
+  const { incidents, loading, isRefreshing, handleManualRefresh } = useIncidents(2000);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     // Auto-expand relevant section for dept-specific roles
     const base = { cargo: false, hr: false, whs: false, it: false, risk: false, finance: false, ncr: false };
@@ -35,6 +40,19 @@ export default function Incidents() {
     ncr: { field: 'date', dir: 'desc' },
   });
   const [filterStates, setFilterStates] = useState<Record<string, any>>({}); // category: { status: [], branch: [] }
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setActiveFilterMenu(null);
+      }
+    }
+    if (activeFilterMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [activeFilterMenu]);
 
   const INCIDENT_TYPES = [
     { id: 'cargo', label: 'Cargo & Equipment', icon: Package, color: '#f59e0b', desc: 'Cargo damage, theft, equipment failure', columns: ['Reference', 'Job Number', 'Classification', 'Jurisdiction', 'Customer', 'Lodged Date', 'Status', 'Exposure'] },
@@ -82,330 +100,6 @@ export default function Incidents() {
 
   // Cache and backend DB fetch removed to rely completely on Power Automate
 
-  const fetchLatestFromPA = async () => {
-    try {
-      console.log('Polling Power Automate for latest incidents...');
-      const response = await fetch('https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw');
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Power Automate polling failed:', response.status, errorText);
-        return;
-      }
-
-      const payload = await response.json();
-      console.log('Received structured data from Power Automate:', Object.keys(payload));
-      
-      const allNewIncidents: any[] = [];
-
-      // ── CARGO & EQUIPMENT ─────────────────────────────────
-      if (Array.isArray(payload.cargo_equipment_incidents)) {
-        payload.cargo_equipment_incidents.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_cargoequipmentincidentid || raw.id,
-            category: 'cargo',
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Cargo & Equipment',
-            location: raw.cr991_locationofincident || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
-            value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || 'Pending',
-            description: raw.cr991_shortdescription || raw.cr991_cargodescription || 'No description',
-            job_number: raw.cr991_systemjobnumber || 'N/A',
-            customer_name: raw.cr991_customer || 'N/A',
-            formal_claim_issued: 'No',
-            cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
-            insurer_notified: raw["cr991_insurernotified@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-            // ── CargoForm-specific fields ──
-            short_description: raw.cr991_shortdescription || '',
-            date_of_incident: raw.cr991_dateofincident || '',
-            date_logged: raw.cr991_datelogged || '',
-            logged_by: raw.cr991_loggedby || '',
-            mode: raw.cr991_mode || '',
-            system_job_number: raw.cr991_systemjobnumber || '',
-            mbl_mawb_issued: raw["cr991_mblmawbissued@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            mbl_mawb_number: raw.cr991_mblmawbnumber || '',
-            hbl_hawb_issued: raw["cr991_hblhawbissued@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            hbl_hawb_number: raw.cr991_hblhawbnumber || '',
-            customer: raw.cr991_customer || '',
-            container_numbers: raw.cr991_containernumbers || '',
-            origin: raw.cr991_origin || '',
-            destination: raw.cr991_destination || '',
-            cargo_description: raw.cr991_cargodescription || '',
-            cargo_value: raw.cr991_cargovalue || '',
-            location_of_incident: raw.cr991_locationofincident || '',
-            origin_agent: raw.cr991_originagent || '',
-            destination_agent: raw.cr991_destinationagent || '',
-            shipping_line: raw.cr991_shippinglineairline || '',
-            coloader: raw.cr991_coloader || '',
-            transport_company: raw.cr991_transportcompany || '',
-            scope_of_work: raw.cr991_scopeofwork || '',
-            incident_types: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] ? [raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"].trim()] : [],
-            corrective_actions: raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"] ? [raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"].trim()] : [],
-            claim_estimate: raw.cr991_incidentclaimestimate || '',
-          });
-        });
-      }
-
-      // ── HUMAN RESOURCES ───────────────────────────────────
-      if (Array.isArray(payload.human_resources_incidents)) {
-        payload.human_resources_incidents.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_humanresourcesincidentid || raw.id,
-            category: 'hr',
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Human Resources',
-            location: raw.cr991_locationofincident || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
-            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-            employee_involved: raw.cr991_employee || raw.cr991_employeeinvolved || 'N/A',
-            formal_claim_issued: 'No',
-            cor_required: 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-            // ── HRForm-specific fields ──
-            date_of_incident: raw.cr991_dateofincident || '',
-            date_logged: raw.cr991_datelogged || '',
-            logged_by: raw.cr991_loggedby || '',
-            employee_name: raw.cr991_employee || raw.cr991_employeeinvolved || '',
-            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-            witnesses: raw.cr991_witnesses || '',
-            immediate_action: raw.cr991_immediateaction || '',
-            investigation_required: raw["cr991_investigationrequired@OData.Community.Display.V1.FormattedValue"] || '',
-            investigation_outcome: raw.cr991_investigationoutcome || '',
-            corrective_action: raw.cr991_correctiveaction || '',
-            legal_counsel_engaged: raw["cr991_legalcounselengaged@OData.Community.Display.V1.FormattedValue"] || '',
-            close_out_date: raw.cr991_closeoutdate || '',
-            notes: raw.cr991_notes || '',
-          });
-        });
-      }
-
-      // ── WH&S ──────────────────────────────────────────────
-      if (Array.isArray(payload.workplace_health_safety_incidents)) {
-        payload.workplace_health_safety_incidents.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_workplacehealthsafetyincidentid || raw.id,
-            category: 'whs',
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'WH&S Incident',
-            location: raw.cr991_locationofincident || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
-            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-            formal_claim_issued: 'No',
-            cor_required: 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-            // ── WHSForm-specific fields ──
-            date_of_incident: raw.cr991_dateofincident || '',
-            date_logged: raw.cr991_datelogged || '',
-            logged_by: raw.cr991_loggedby || '',
-            persons_involved: raw.cr991_personsinvolved || '',
-            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-            injury_details: raw.cr991_injurydetails || '',
-            medical_treatment_required: raw["cr991_medicaltreatmentrequired@OData.Community.Display.V1.FormattedValue"] || '',
-            lost_time_injury: raw["cr991_losttimeinjury@OData.Community.Display.V1.FormattedValue"] || '',
-            notifiable_safework: raw["cr991_notifiablesafework@OData.Community.Display.V1.FormattedValue"] || '',
-            date_notified_regulator: raw.cr991_datenotifiedregulator || '',
-            root_cause: raw.cr991_rootcause || '',
-            corrective_action: raw.cr991_correctiveaction || '',
-            corrective_action_owner: raw.cr991_correctiveactionowner || '',
-            corrective_action_due_date: raw.cr991_correctiveactionduedate || '',
-            chro_cro_notified: raw["cr991_chro_cronotified@OData.Community.Display.V1.FormattedValue"] || '',
-            workers_comp_claim: raw["cr991_workerscompclaim@OData.Community.Display.V1.FormattedValue"] || '',
-          });
-        });
-      }
-
-      // ── IT & SECURITY ─────────────────────────────────────
-      if (Array.isArray(payload.it_security_incidents)) {
-        payload.it_security_incidents.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_itsecurityincidentid || raw.id,
-            category: 'it',
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'IT & Security',
-            location: raw.cr991_locationofincident || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
-            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-            system_affected: raw.cr991_system || raw.cr991_systemaffected || 'N/A',
-            formal_claim_issued: 'No',
-            cor_required: 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-            // ── ITForm-specific fields ──
-            date_of_incident: raw.cr991_dateofincident || '',
-            date_logged: raw.cr991_datelogged || '',
-            logged_by: raw.cr991_loggedby || '',
-            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-            number_of_users_affected: raw.cr991_numberofusersaffected || '',
-            data_breach: raw["cr991_databreach@OData.Community.Display.V1.FormattedValue"] || '',
-            data_type_compromised: raw.cr991_datatypecompromised || '',
-            notifiable_data_breach: raw["cr991_notifiabledatabreach@OData.Community.Display.V1.FormattedValue"] || '',
-            it_support_ticket_ref: raw.cr991_itsupportticketref || '',
-            root_cause: raw.cr991_rootcause || '',
-            system_restored: raw["cr991_systemrestored@OData.Community.Display.V1.FormattedValue"] || '',
-          });
-        });
-      }
-
-      // ── RISK & COMPLIANCE ─────────────────────────────────
-      if (Array.isArray(payload.risk_compliance_incidents)) {
-        payload.risk_compliance_incidents.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_riskcomplianceincidentid || raw.id,
-            category: 'risk',
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Risk & Compliance',
-            location: raw.cr991_locationofincident || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
-            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-            regulatory_body: raw.cr991_regulatorybody || 'N/A',
-            formal_claim_issued: 'No',
-            cor_required: 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-            // ── RiskForm-specific fields ──
-            date_of_incident: raw.cr991_dateofincident || '',
-            date_logged: raw.cr991_datelogged || '',
-            logged_by: raw.cr991_loggedby || '',
-            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-            legislation_policy_breached: raw.cr991_legislationpolicybreached || '',
-            financial_penalty_estimate: raw.cr991_financialpenaltyestimate || '',
-            regulator_notified: raw["cr991_regulatornotified@OData.Community.Display.V1.FormattedValue"] || '',
-            date_regulator_notified: raw.cr991_dateregulatornotified || '',
-            remediation_plan: raw.cr991_remediationplan || '',
-            board_notified: raw["cr991_boardnotified@OData.Community.Display.V1.FormattedValue"] || '',
-          });
-        });
-      }
-
-      // ── FINANCE ───────────────────────────────────────────
-      if (Array.isArray(payload.finance_incidents)) {
-        payload.finance_incidents.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_financeincidentid || raw.id,
-            category: 'finance',
-            incident_number_str: raw.cr991_incidentid,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Finance',
-            location: raw.cr991_locationofincident || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open',
-            description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-            transaction_ref: raw.cr991_transactionref || 'N/A',
-            formal_claim_issued: 'No',
-            cor_required: 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-            // ── FinanceForm-specific fields ──
-            date_of_incident: raw.cr991_dateofincident || '',
-            date_logged: raw.cr991_datelogged || '',
-            logged_by: raw.cr991_loggedby || '',
-            incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-            financial_impact_aud: raw.cr991_financialimpactaud || '',
-            vendor_customer_name: raw.cr991_vendorcustomername || '',
-            police_notified: raw["cr991_policenotified@OData.Community.Display.V1.FormattedValue"] || '',
-            bank_notified: raw["cr991_banknotified@OData.Community.Display.V1.FormattedValue"] || '',
-            recovery_possible: raw["cr991_recoverypossible@OData.Community.Display.V1.FormattedValue"] || '',
-            control_failure_identified: raw.cr991_controlfailureidentified || '',
-          });
-        });
-      }
-
-      // ── BACKWARDS COMPATIBILITY: handle flat array response ─
-      if (Array.isArray(payload)) {
-        payload.forEach((raw: any) => {
-          allNewIncidents.push({
-            id: raw.cr991_cargoequipmentincidentid || raw.id,
-            category: 'cargo',
-            incident_number_str: raw.cr991_incidentid || raw.incident_number_str,
-            type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.type || 'Cargo & Equipment',
-            location: raw.cr991_locationofincident || raw.location || 'N/A',
-            branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || raw.branch_department || 'N/A',
-            business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || raw.business_unit || 'N/A',
-            date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || raw.date || '').split(' ')[0],
-            status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || raw.status || 'Open',
-            value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || 'Pending',
-            description: raw.cr991_shortdescription || raw.description || 'No description',
-            job_number: raw.cr991_systemjobnumber || raw.job_number || 'N/A',
-            customer_name: raw.cr991_customer || 'N/A',
-            formal_claim_issued: 'No',
-            cor_required: 'No',
-            management_escalation: 'No',
-            created_at: raw.createdon,
-          });
-        });
-      }
-
-      // Filter to only valid records
-      const validNew = allNewIncidents.filter((inc: any) => inc.id);
-
-      // ── SYNC WITH BACKEND METADATA ──────────────────────────
-      // Power Automate only provides core incident data. 
-      // We must merge the investigation metadata from our backend.
-      try {
-        const response = await api.get('/incidents');
-        const backendIncidents = response.data || [];
-        validNew.forEach(inc => {
-          const match = backendIncidents.find((bi: any) => String(bi.id) === String(inc.id));
-          if (match) {
-            // Merge metadata fields while preserving PA core fields
-            // Fields like _dept_section_updated, investigation_outcome, root_cause, etc.
-            Object.keys(match).forEach(key => {
-              if (match[key] !== null && match[key] !== undefined && match[key] !== '') {
-                inc[key] = match[key];
-              }
-            });
-          }
-        });
-      } catch (err) {
-        console.warn('Metadata sync skip:', err);
-      }
-
-      setIncidents([...validNew]);
-      // Keep cache synced strictly for the details page navigation
-      localStorage.setItem('incidents_cache', JSON.stringify(validNew));
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to fetch from Power Automate (CORS or Network Error):', error);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLatestFromPA();
-  }, []);
-
-  // Poll for latest incident via Power Automate flow every 2s
-  useEffect(() => {
-    const interval = setInterval(fetchLatestFromPA, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleManualRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchLatestFromPA(); // Fetch latest from PA only
-    setIsRefreshing(false);
-  };
-
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center' }}>Synchronizing Digital Twin Register...</div>;
 
   let displayedIncidents = incidents;
@@ -439,16 +133,6 @@ export default function Incidents() {
     }
   }
 
-  if (location.pathname === '/claims') {
-    displayedIncidents = displayedIncidents.filter(i => i.formal_claim_issued === 'Yes');
-  } else if (location.pathname === '/cors') {
-    displayedIncidents = displayedIncidents.filter(i => i.cor_required === 'Yes');
-  } else if (location.pathname === '/insurers') {
-    displayedIncidents = displayedIncidents.filter(i => i.insurer_notified === 'Yes');
-  } else if (location.pathname === '/escalations') {
-    displayedIncidents = displayedIncidents.filter(i => i.management_escalation === 'Yes');
-  }
-
   // Apply tab filter
   displayedIncidents = displayedIncidents.filter(i => {
     if (activeTab === 'active') return !i.status?.includes('Closed') && i.status !== 'Draft';
@@ -456,23 +140,14 @@ export default function Incidents() {
     if (activeTab === 'drafts') return i.status === 'Draft';
     return true;
   });
-
-  const isClaims = location.pathname === '/claims';
-  const isCors = location.pathname === '/cors';
-  const isInsurers = location.pathname === '/insurers';
-  const isEscalations = location.pathname === '/escalations';
   
-  const pageTitle = isClaims 
-    ? 'Claims Register' 
-    : isCors 
-    ? 'CORs Register' 
-    : isInsurers
-    ? 'Insurer Notifications'
-    : isEscalations
-    ? 'Management Escalations'
-    : 'Incident Register';
-  const HeaderIcon = isClaims ? Briefcase : isCors ? AlertTriangle : isInsurers ? Shield : isEscalations ? Users : FileText;
-  const headerColor = isClaims ? '#10b981' : isCors ? '#f97316' : isInsurers ? '#06b6d4' : isEscalations ? '#8b5cf6' : '#6366f1';
+  const pageTitle = pageSource === 'claims' ? 'Claims Management' : 
+                    pageSource === 'cors' ? 'CoR Compliance' : 
+                    pageSource === 'insurers' ? 'Insurer Notifications' :
+                    pageSource === 'escalations' ? 'Management Escalations' :
+                    pageSource === 'ncrs' ? 'Non-Conformance Reports' : 'Incident Register';
+  const HeaderIcon = pageSource === 'claims' ? Briefcase : pageSource === 'cors' ? AlertTriangle : pageSource === 'ncrs' ? FileWarning : FileText;
+  const headerColor = pageSource === 'claims' ? '#10b981' : pageSource === 'cors' ? '#f97316' : pageSource === 'ncrs' ? '#eab308' : '#6366f1';
 
   return (
     <div className="fade-in">
@@ -587,7 +262,17 @@ export default function Incidents() {
             return true;
           })
           .map(category => {
-            const categoryIncidents = displayedIncidents.filter(i => getCategory(i) === category.id);
+            const categoryIncidents = displayedIncidents
+              .filter(i => getCategory(i) === category.id)
+              .filter(i => {
+                if (pageSource === 'claims') return i.formal_claim_issued === 'Yes';
+                if (pageSource === 'cors') return i.cor === 'Yes' || i.cor_required === 'Yes';
+                if (pageSource === 'insurers') return i.insurer_notified === 'Yes';
+                if (pageSource === 'escalations') return i.management_escalation === 'Yes';
+                if (pageSource === 'ncrs') return category.id === 'ncr';
+                return true;
+              });
+
             const filteredIncidents = categoryIncidents
               .filter(inc => {
                 const q = (sectionFilters[category.id] || '').toLowerCase();
@@ -600,7 +285,8 @@ export default function Incidents() {
                 if (fState) {
                   if (fState.status && fState.status.length > 0 && !fState.status.includes(inc.status)) return false;
                   if (fState.branch && fState.branch.length > 0 && !fState.branch.includes(inc.branch_department)) return false;
-                  if (fState.jurisdiction && fState.jurisdiction.length > 0 && !fState.jurisdiction.includes(inc.location)) return false;
+                  if (fState.bu && fState.bu.length > 0 && !fState.bu.includes(inc.business_unit)) return false;
+                  if (fState.customer && fState.customer.length > 0 && !fState.customer.includes(inc.customer_name || inc.customer)) return false;
                 }
                 return true;
               })
@@ -716,6 +402,7 @@ export default function Incidents() {
                             
                             {activeFilterMenu === category.id && (
                               <div 
+                                ref={filterMenuRef}
                                 onClick={e => e.stopPropagation()}
                                 style={{ 
                                   position: 'absolute', top: '110%', right: 0, zIndex: 100,
@@ -725,9 +412,54 @@ export default function Incidents() {
                                 }}
                               >
                                 <div style={{ marginBottom: '0.75rem' }}>
+                                  <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Business Unit</div>
+                                  <select 
+                                    className="input-field" 
+                                    style={{ height: '28px', fontSize: '0.7rem', padding: '2px 4px' }}
+                                    value={filterStates[category.id]?.bu?.[0] || ''}
+                                    onChange={e => setFilterStates(prev => ({ ...prev, [category.id]: { ...prev[category.id], bu: e.target.value ? [e.target.value] : [] } }))}
+                                  >
+                                    <option value="">All Units</option>
+                                    {Array.from(new Set(categoryIncidents.map(i => i.business_unit).filter(Boolean))).map(bu => (
+                                      <option key={bu} value={bu}>{bu}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div style={{ marginBottom: '0.75rem' }}>
+                                  <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Branch / Department</div>
+                                  <select 
+                                    className="input-field" 
+                                    style={{ height: '28px', fontSize: '0.7rem', padding: '2px 4px' }}
+                                    value={filterStates[category.id]?.branch?.[0] || ''}
+                                    onChange={e => setFilterStates(prev => ({ ...prev, [category.id]: { ...prev[category.id], branch: e.target.value ? [e.target.value] : [] } }))}
+                                  >
+                                    <option value="">All Branches</option>
+                                    {Array.from(new Set(categoryIncidents.map(i => i.branch_department).filter(Boolean))).map(br => (
+                                      <option key={br} value={br}>{br}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div style={{ marginBottom: '0.75rem' }}>
+                                  <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Customer</div>
+                                  <select 
+                                    className="input-field" 
+                                    style={{ height: '28px', fontSize: '0.7rem', padding: '2px 4px' }}
+                                    value={filterStates[category.id]?.customer?.[0] || ''}
+                                    onChange={e => setFilterStates(prev => ({ ...prev, [category.id]: { ...prev[category.id], customer: e.target.value ? [e.target.value] : [] } }))}
+                                  >
+                                    <option value="">All Customers</option>
+                                    {Array.from(new Set(categoryIncidents.map(i => i.customer_name || i.customer).filter(Boolean))).map(cust => (
+                                      <option key={cust} value={cust}>{cust}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div style={{ marginBottom: '0.75rem' }}>
                                   <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Status</div>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    {['Open - Incident Logged', 'Open - Under Investigation', 'Open - Corrective Action Pending', 'Open - Formal Claim', 'Closed - No Further Action'].map(status => {
+                                    {['Open', 'Open - Under Investigation', 'Open - Corrective Action Pending', 'Open - Formal Claim', 'Closed - No Further Action'].map(status => {
                                       const isSelected = (filterStates[category.id]?.status || []).includes(status);
                                       return (
                                         <label key={status} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', cursor: 'pointer', padding: '2px 0' }}>
@@ -746,20 +478,7 @@ export default function Incidents() {
                                     })}
                                   </div>
                                 </div>
-                                <div style={{ marginBottom: '0.75rem' }}>
-                                  <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Jurisdiction</div>
-                                  <select 
-                                    className="input-field" 
-                                    style={{ height: '28px', fontSize: '0.7rem', padding: '2px 4px' }}
-                                    value={filterStates[category.id]?.jurisdiction?.[0] || ''}
-                                    onChange={e => setFilterStates(prev => ({ ...prev, [category.id]: { ...prev[category.id], jurisdiction: e.target.value ? [e.target.value] : [] } }))}
-                                  >
-                                    <option value="">All States</option>
-                                    {Array.from(new Set(categoryIncidents.map(i => i.location).filter(Boolean))).map(loc => (
-                                      <option key={loc} value={loc}>{loc}</option>
-                                    ))}
-                                  </select>
-                                </div>
+
                                 <button 
                                   className="btn btn-secondary" 
                                   style={{ width: '100%', fontSize: '0.65rem', padding: '4px' }}
@@ -832,7 +551,7 @@ export default function Incidents() {
                             filteredIncidents.map((incident, i) => (
                               <tr 
                                 key={i} 
-                                onClick={() => navigate(`/incidents/${incident.id}`)} 
+                                onClick={() => navigate(`/incidents/${incident.id}`, { state: { source: pageSource } })} 
                                 style={{ 
                                   cursor: 'pointer', 
                                   background: 'var(--bg-surface)', 

@@ -10,6 +10,7 @@ from app.models.incidents import Incident, IncidentNote
 router = APIRouter()
 
 class IncidentCreate(BaseModel):
+    incident_id: str | None = None
     type: str
     location: str
     description: str
@@ -46,7 +47,7 @@ def create_incident(
                 break
 
     new_incident = Incident(
-        id=len(db.incidents) + 1,
+        id=incident_in.incident_id if incident_in.incident_id else str(len(db.incidents) + 1),
         type=incident_in.type,
         location=incident_in.location,
         description=incident_in.description,
@@ -107,9 +108,14 @@ def get_incident(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    incident = next((i for i in db.incidents if str(i.id) == str(incident_id)), None)
+    # Case-insensitive search
+    search_id = incident_id.strip().lower()
+    incident = next((i for i in db.incidents if str(i.get("id") if isinstance(i, dict) else i.id).lower() == search_id), None)
+    
     if not incident:
-        raise HTTPException(status_code=404, detail="Incident not found")
+        # Incident not found locally; it may only exist in Dataverse or was created before the recent restart.
+        # Returning 404 allows the frontend to fall back on the Power Automate Digital Twin data.
+        raise HTTPException(status_code=404, detail="Incident not found locally")
     
     branch_map = {b["id"]: b["name"] for b in db.branches}
     
@@ -182,12 +188,31 @@ def update_incident_status(
     db = Depends(get_db),
     current_user = Depends(require_risk_compliance_role)
 ):
-    incident = next((i for i in db.incidents if str(i.id) == str(incident_id)), None)
-    if not incident:
-        raise HTTPException(status_code=404, detail="Incident not found")
+    incident = next((i for i in db.incidents if str(i.get("id") if isinstance(i, dict) else i.id) == str(incident_id)), None)
     
-    incident.status = status_update.status
-    return {"message": "Status updated", "status": incident.status}
+    if not incident:
+        # Create a side-store record for Dataverse/PA IDs so we can store the status locally
+        new_incident = Incident(
+            id=incident_id, 
+            type="SyncRecord",
+            location="Sync",
+            description="Metadata only record",
+            status=status_update.status
+        )
+        db.add(new_incident)
+        incident = new_incident
+    else:
+        # Update existing record
+        if isinstance(incident, dict):
+            incident["status"] = status_update.status
+            db._save()
+        else:
+            incident.status = status_update.status
+            db._save()
+            
+    # Also return the actual status so frontend updates correctly
+    current_status = incident.get("status") if isinstance(incident, dict) else incident.status
+    return {"message": "Status updated", "status": current_status}
 
 @router.get("/{incident_id}/notes", response_model=List[dict])
 def list_incident_notes(

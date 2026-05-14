@@ -41,10 +41,18 @@ const Field = ({ label, req, children }: { label: string; req?: boolean; childre
 
 export default function CargoForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
   const [f, setF] = useState<any>(() => {
+    const prefix = 'CEI';
+    const storageKey = `draft_incident_id_${prefix}`;
+    const stableId = initialData?.incident_id || initialData?.incident_number_str || sessionStorage.getItem(storageKey) || generateId(prefix);
+    
+    if (!initialData && !sessionStorage.getItem(storageKey)) {
+      sessionStorage.setItem(storageKey, stableId);
+    }
+
     if (initialData) {
       return {
         ...initialData,
-        incident_id: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        incident_id: stableId,
         short_description: initialData.short_description || initialData.description || '',
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         system_job_number: initialData.system_job_number || initialData.job_number || '',
@@ -53,10 +61,14 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
         customer: initialData.customer || initialData.customer_name || '',
         date_logged: initialData.date_logged || initialData.date || today(),
         logged_by: initialData.logged_by || 'System User',
+        scope_of_work: initialData.scope_of_work || '',
+        role_performed: initialData.role_performed || '',
+        root_cause: initialData.root_cause || '',
+        claim_estimate: initialData.claim_estimate || '',
       };
     }
     return {
-      incident_id: generateId('CEI'),
+      incident_id: stableId,
       short_description: '', date_of_incident: '', date_logged: today(),
       logged_by: localStorage.getItem('role') || 'Current User',
       business_unit: '', branch_department: '', system_job_number: '',
@@ -92,13 +104,19 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
     </Field>
   );
 
-  const sel = (key: string, options: string[], req = false) => (
-    <Field label={key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())} req={req}>
-      <select className="input-field" value={(f as any)[key]} onChange={e => upd(key, e.target.value)} required={req}>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </Field>
-  );
+  const sel = (key: string, options: string[], req = false) => {
+    const val = (f as any)[key];
+    const needsCustomOption = val && !options.includes(val);
+    return (
+      <Field label={key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())} req={req}>
+        <select className="input-field" value={val} onChange={e => upd(key, e.target.value)} required={req}>
+          <option value="">— Select —</option>
+          {needsCustomOption && <option value={val}>{val}</option>}
+          {options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </Field>
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,12 +185,14 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
             <Field label="Business Unit *" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
+                {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(bu => <option key={bu} value={bu}>{bu}</option>)}
               </select>
             </Field>
             <Field label="Branch / Department *" req>
-              <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit}>
+              <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
+                {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
                 {(BRANCH_MAPPING[f.business_unit] || []).map(br => <option key={br} value={br}>{br}</option>)}
               </select>
             </Field>

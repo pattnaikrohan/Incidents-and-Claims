@@ -39,6 +39,17 @@ export default function NewIncident() {
     setError('');
     try {
       const files: File[] = data.files || [];
+      // Helper to ensure dates are in ISO 8601 (YYYY-MM-DD) for Power Automate
+      const formatToISO = (val: any) => {
+        if (!val || typeof val !== 'string') return val;
+        // Check if DD/MM/YYYY
+        const parts = val.split('/');
+        if (parts.length === 3 && parts[0].length <= 2) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        }
+        return val;
+      };
+
       const payload = {
         ...data,
         category: type,
@@ -46,6 +57,9 @@ export default function NewIncident() {
         location: data.location || data.location_of_incident || data.branch_department || 'N/A',
         description: data.description || data.incident_summary || 'N/A',
         job_number: data.system_job_number || data.job_number || '',
+        // Format common date fields
+        date_of_incident: formatToISO(data.date_of_incident),
+        date_reported: formatToISO(data.date_reported),
         // Ensure arrays are converted to strings for the backend schema
         corrective_actions: Array.isArray(data.corrective_actions) ? data.corrective_actions.join(', ') : data.corrective_actions,
         incident_types: Array.isArray(data.incident_types) ? data.incident_types.join(', ') : data.incident_types,
@@ -55,10 +69,23 @@ export default function NewIncident() {
       const response = await api.post('/incidents', payload);
       const incidentId = response.data.incident_id;
       if (files.length > 0) {
+        // Map category to exact Azure Blob Storage folder name
+        const FOLDER_MAP: Record<string, string> = {
+          cargo: 'Cargo & Equipment Incident',
+          hr: 'Human Resources Incident',
+          whs: 'WH&S Incident',
+          it: 'IT & Security Incident',
+          risk: 'Risk & Compliance Incident',
+          finance: 'Finance Incident',
+          ncr: 'Non-Conformance Report (NCR)',
+        };
+        const folderType = FOLDER_MAP[type] || 'General Incident';
+        const typeQuery = `?incident_type=${encodeURIComponent(folderType)}`;
+        
         for (const file of files) {
           const fd = new FormData();
           fd.append('file', file);
-          await api.post(`/documents/incident/${incidentId}/upload`, fd, {
+          await api.post(`/documents/incident/${incidentId}/upload${typeQuery}`, fd, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
         }

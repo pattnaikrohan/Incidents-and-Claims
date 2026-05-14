@@ -82,10 +82,11 @@ export function canSeeDeptSection(role: string | null, category: IncidentCategor
  * Only the actual department team can edit their section.
  */
 export function canEditDeptSection(role: string | null, category: IncidentCategory): boolean {
+  if (role === 'full_access') return true;
   if (role === 'hr_access' && (category === 'hr' || category === 'whs')) return true;
   if (role === 'whs_access' && category === 'whs') return true;
   if (role === 'it_access' && category === 'it') return true;
-  if (role === 'risk_compliance' && (category === 'risk' || category === 'cargo')) return true;
+  if (role === 'risk_compliance' && (category === 'risk' || category === 'cargo' || category === 'ncr')) return true;
   if (role === 'finance_access' && category === 'finance') return true;
   return false;
 }

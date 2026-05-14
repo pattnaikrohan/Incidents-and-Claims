@@ -39,10 +39,37 @@ export default function Login() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       navigate('/');
     } catch (err: any) {
-      setAuthStatus('error');
-      setError(err.response?.data?.detail || 'Authentication failed. Verify your credentials.');
+      console.warn('Backend authentication failed, attempting local demo fallback...', err);
+      
+      // MOCK FALLBACK for demo purposes if backend is down
+      const mockPersonas: any = {
+        'full.access@aaw.com': { role: 'full_access', name: 'Global Admin' },
+        'risk.compliance@aaw.com': { role: 'risk_compliance', name: 'Risk & Compliance' },
+        'aaw.global.logistics.au.manager@aaw.com': { role: 'bu_access', name: 'BU Manager', business_unit: 'AAW Global Logistics - AU' },
+        'people.safety@aaw.com': { role: 'hr_access', name: 'People & Safety' },
+        'submit.only@aaw.com': { role: 'submit_only', name: 'Operator' }
+      };
+
+      if (mockPersonas[email] && password === 'Access2026!') {
+        const user = mockPersonas[email];
+        login('mock_token', user.role, email, null, user.name, user.business_unit);
+        setAuthStatus('success');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        navigate('/');
+      } else {
+        setAuthStatus('error');
+        setError(err.response?.data?.detail || 'Authentication failed. Verify your credentials or use the Persona Selector.');
+      }
     }
   };
+
+  const PERSONAS = [
+    { label: 'Admin', email: 'full.access@aaw.com', role: 'full_access', icon: Zap, color: '#f59e0b' },
+    { label: 'Risk & Comp', email: 'risk.compliance@aaw.com', role: 'risk_compliance', icon: ShieldCheck, color: '#10b981' },
+    { label: 'BU Manager', email: 'aaw.global.logistics.au.manager@aaw.com', role: 'bu_access', icon: ArrowRight, color: '#3b82f6' },
+    { label: 'HR & Safety', email: 'people.safety@aaw.com', role: 'hr_access', icon: Mail, color: '#8b5cf6' },
+    { label: 'Operator', email: 'submit.only@aaw.com', role: 'submit_only', icon: Lock, color: '#64748b' }
+  ];
 
   // Parallax Background Effect
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -164,6 +191,7 @@ export default function Login() {
             overflow: 'hidden',
             cursor: 'default'
           }}>
+                {/* Persona Quick Selector would go here if needed */}
           {/* Decorative Background Elements */}
           <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '120%', height: '120%', background: 'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.15) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
@@ -336,13 +364,13 @@ export default function Login() {
                   <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
                   {[
                     // CORE
                     { role: 'Global Admin', email: 'full.access@aaw.com', color: '#6366f1', desc: 'Full Oversight' },
                     { role: 'Risk & Comp', email: 'risk.compliance@aaw.com', color: '#10b981', desc: 'R&C Manager' },
-                    { role: 'People & Safety', email: 'people.andsafety@aaw.com', color: '#ec4899', desc: 'HR / WHS' },
-                    { role: 'IT Security', email: 'it.andsecurity@aaw.com', color: '#06b6d4', desc: 'Cyber/CIO' },
+                    { role: 'People & Safety', email: 'people.safety@aaw.com', color: '#ec4899', desc: 'HR / WHS' },
+                    { role: 'IT Security', email: 'it.security@aaw.com', color: '#06b6d4', desc: 'Cyber/CIO' },
                     { role: 'Finance', email: 'finance@aaw.com', color: '#3b82f6', desc: 'CFO / Loss' },
                     
                     // BU MANAGERS
@@ -358,18 +386,32 @@ export default function Login() {
                     { role: 'Brokerage', email: 'aaw.brokerage@aaw.com', color: '#a855f7', desc: 'Brokerage' },
                     { role: 'Coastalbridge', email: 'coastalbridge@aaw.com', color: '#a855f7', desc: 'Coastalbridge' },
                   ].map((acc) => (
-                    <button type="button" key={acc.email + acc.role} onClick={() => { setEmail(acc.email); setPassword('Access2026!'); }} className="elite-persona-card">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <button 
+                      type="button" 
+                      key={acc.email + acc.role} 
+                      onClick={() => { 
+                        setEmail(acc.email); 
+                        setPassword('Access2026!'); 
+                        // Visual feedback
+                        setTimeout(() => {
+                           const form = document.querySelector('form');
+                           if (form) form.requestSubmit();
+                        }, 200);
+                      }} 
+                      className="elite-persona-card"
+                      style={{ padding: '1.25rem' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{
-                          width: '24px', height: '24px', borderRadius: '6px', background: `${acc.color}10`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${acc.color}20`,
+                          width: '40px', height: '40px', borderRadius: '12px', background: `${acc.color}08`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${acc.color}15`,
                           transition: 'all 0.3s ease', flexShrink: 0
                         }} className="icon-box">
-                          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: acc.color, boxShadow: `0 0 5px ${acc.color}40` }} />
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: acc.color, boxShadow: `0 0 10px ${acc.color}50` }} />
                         </div>
                         <div style={{ textAlign: 'left', minWidth: 0 }}>
-                          <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.role}</div>
-                          <div style={{ fontSize: '0.5rem', color: '#64748b', fontWeight: 500, marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{acc.desc}</div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>{acc.role}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>{acc.desc}</div>
                         </div>
                       </div>
                     </button>

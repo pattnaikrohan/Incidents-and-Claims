@@ -96,12 +96,14 @@ Corrective Action Due Date: ${f.corrective_action_due_date || 'N/A'}
             <Field label="Business Unit *" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
+                {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
             <Field label="Branch / Department *" req>
-              <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit}>
+              <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
+                {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
                 {(BRANCH_MAPPING[f.business_unit] || []).map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
@@ -115,6 +117,7 @@ Corrective Action Due Date: ${f.corrective_action_due_date || 'N/A'}
           <Field label="Incident Type *" req>
             <select className="input-field" value={f.incident_type} onChange={e=>upd('incident_type',e.target.value)} required>
               <option value="">— Select type —</option>
+              {f.incident_type && !WHS_TYPES.includes(f.incident_type) && <option value={f.incident_type}>{f.incident_type}</option>}
               {WHS_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>

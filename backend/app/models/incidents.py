@@ -6,7 +6,7 @@ from app.models.base import Base
 class Incident(Base):
     __tablename__ = "incidents"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     type = Column(String, index=True)
     date = Column(DateTime, default=datetime.utcnow)
     location = Column(String)
@@ -110,7 +110,7 @@ class IncidentNote(Base):
     __tablename__ = "incident_notes"
     
     id = Column(Integer, primary_key=True, index=True)
-    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    incident_id = Column(String, ForeignKey("incidents.id"))
     author_id = Column(Integer, ForeignKey("users.id"), nullable=True) # Null for system messages
     message = Column(Text, nullable=False)
     note_type = Column(String, default="user") # 'user' or 'system'
@@ -123,7 +123,7 @@ class Document(Base):
     __tablename__ = "documents"
     
     id = Column(Integer, primary_key=True, index=True)
-    incident_id = Column(Integer, ForeignKey("incidents.id"))
+    incident_id = Column(String, ForeignKey("incidents.id"))
     file_name = Column(String, nullable=False)
     storage_location = Column(String, nullable=False)
     uploader_id = Column(Integer, ForeignKey("users.id"))
@@ -140,5 +140,5 @@ class AuditLog(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     action_type = Column(String, nullable=False)
     entity_type = Column(String, nullable=False)
-    entity_id = Column(Integer, nullable=False)
+    entity_id = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)

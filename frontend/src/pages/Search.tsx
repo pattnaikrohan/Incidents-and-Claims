@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search as SearchIcon, Package, FileWarning, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { useIncidents } from '../hooks/useIncidents';
 
 export default function Search() {
   const [query, setQuery] = useState('');
@@ -11,23 +12,11 @@ export default function Search() {
   const [searched, setSearched] = useState(false);
   const navigate = useNavigate();
 
+  const { incidents } = useIncidents(2000);
+
   useEffect(() => {
-    const load = async () => {
-      let data: any[] = [];
-      try {
-        const res = await api.get('/incidents');
-        data = res.data || [];
-      } catch (e) {}
-      const localStr = localStorage.getItem('incidents_cache');
-      if (localStr) {
-        const localData = JSON.parse(localStr);
-        const existingIds = new Set(data.map((i: any) => i.id));
-        localData.forEach((i: any) => { if (!existingIds.has(i.id)) data.push(i); });
-      }
-      setAllIncidents(data);
-    };
-    load();
-  }, []);
+    setAllIncidents(incidents);
+  }, [incidents]);
 
   const doSearch = () => {
     if (!query.trim()) { setResults([]); setSearched(false); return; }

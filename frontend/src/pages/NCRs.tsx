@@ -3,13 +3,13 @@ import { FileText, Filter, FileWarning, RefreshCw, AlertTriangle } from 'lucide-
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useIncidents } from '../hooks/useIncidents';
 
 export default function NCRs() {
   const navigate = useNavigate();
-  const [ncrs, setNcrs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { role, branchName, businessUnit } = useAuth();
+  const { incidents, loading, isRefreshing, handleManualRefresh } = useIncidents(2000);
+  const [ncrs, setNcrs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
@@ -17,25 +17,8 @@ export default function NCRs() {
 
   const fetchNCRs = async () => {
     try {
-      let allIncidents: any[] = [];
-      try {
-        const res = await api.get('/incidents');
-        allIncidents = res.data || [];
-      } catch (e) {
-        console.warn('Backend unavailable, using local cache');
-      }
-
-      const localStr = localStorage.getItem('incidents_cache');
-      if (localStr) {
-        const localData = JSON.parse(localStr);
-        const existingIds = new Set(allIncidents.map((i: any) => i.id));
-        localData.forEach((i: any) => {
-          if (!existingIds.has(i.id)) allIncidents.push(i);
-        });
-      }
-
-      // Filter NCRs only
-      let ncrData = allIncidents.filter((i: any) => {
+      // Filter NCRs from live incidents
+      let ncrData = incidents.filter((i: any) => {
         const t = (i.type || '').toLowerCase();
         const cat = i.category || '';
         const ref = (i.incident_number_str || '').toUpperCase();
@@ -53,18 +36,16 @@ export default function NCRs() {
 
       setNcrs(ncrData);
     } catch (err) {
-      console.error('Failed to load NCRs:', err);
-    } finally {
-      setLoading(false);
+      console.error('Failed to process NCRs:', err);
     }
   };
 
-  useEffect(() => { fetchNCRs(); }, []);
+  useEffect(() => {
+    fetchNCRs();
+  }, [incidents]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchNCRs();
-    setIsRefreshing(false);
+  const handleRefreshClick = async () => {
+    await handleManualRefresh();
   };
 
   // Apply filters
@@ -119,7 +100,7 @@ export default function NCRs() {
 
       {/* Controls */}
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <button className="btn btn-secondary" onClick={handleRefresh} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+        <button className="btn btn-secondary" onClick={handleManualRefresh} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
           <RefreshCw size={14} className={isRefreshing ? 'spin-animation' : ''} /> Refresh
         </button>
         <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>

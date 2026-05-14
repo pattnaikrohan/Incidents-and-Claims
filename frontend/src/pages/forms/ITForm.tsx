@@ -35,6 +35,18 @@ export default function ITForm({ onSubmit, onCancel, loading, initialData, readO
         short_description: initialData.short_description || initialData.description || '',
         location_of_incident: initialData.location_of_incident || initialData.location || '',
         system_job_number: initialData.system_job_number || initialData.job_number || '',
+        systems_data_affected: initialData.systems_data_affected || initialData.system_affected || '',
+        containment_actions: initialData.containment_actions || '',
+        personal_data_involved: initialData.personal_data_involved || '',
+        number_of_records: initialData.number_of_records || initialData.number_of_users_affected || '',
+        notifiable_privacy_breach: initialData.notifiable_privacy_breach || initialData.notifiable_data_breach || '',
+        date_notified_oaic: initialData.date_notified_oaic || '',
+        cio_notified: initialData.cio_notified || '',
+        cro_notified: initialData.cro_notified || '',
+        cyber_specialist_engaged: initialData.cyber_specialist_engaged || '',
+        insurer_notified: initialData.insurer_notified || '',
+        root_cause: initialData.root_cause || '',
+        corrective_action: initialData.corrective_action || '',
       };
     }
     return {
@@ -97,12 +109,14 @@ Corrective Action: ${f.corrective_action || 'N/A'}
             <Field label="Business Unit *" req>
               <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
                 <option value="">— Select —</option>
+                {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
                 {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
             <Field label="Branch / Department *" req>
-              <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit}>
+              <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
                 <option value="">— Select —</option>
+                {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
                 {(BRANCH_MAPPING[f.business_unit] || []).map(t=><option key={t} value={t}>{t}</option>)}
               </select>
             </Field>
@@ -110,6 +124,7 @@ Corrective Action: ${f.corrective_action || 'N/A'}
           <Field label="Incident Type *" req>
             <select className="input-field" value={f.incident_type} onChange={e=>upd('incident_type',e.target.value)} required>
               <option value="">— Select type —</option>
+              {f.incident_type && !IT_TYPES.includes(f.incident_type) && <option value={f.incident_type}>{f.incident_type}</option>}
               {IT_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>

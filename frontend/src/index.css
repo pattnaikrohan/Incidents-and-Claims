@@ -739,3 +739,5 @@ tr:last-child td {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85em;
 }
+
+@keyframes spin { 100% { transform: rotate(360deg); } }

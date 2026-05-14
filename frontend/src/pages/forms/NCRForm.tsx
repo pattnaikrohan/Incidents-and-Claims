@@ -82,12 +82,14 @@ Related Record Reference: ${f.related_record || 'N/A'}
           <Field label="Business Unit (BU) *" req>
             <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
               <option value="">— Select —</option>
+              {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
               {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
           <Field label="Branch *" req>
-            <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit}>
+            <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
               <option value="">— Select —</option>
+              {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
               {(BRANCH_MAPPING[f.business_unit] || []).map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
@@ -100,6 +102,7 @@ Related Record Reference: ${f.related_record || 'N/A'}
           <Field label="Level of Nonconformity *" req>
             <select className="input-field" value={f.level_of_nonconformity} onChange={e=>upd('level_of_nonconformity',e.target.value)} required>
               <option value="">— Select —</option>
+              {f.level_of_nonconformity && !['Minor', 'Major', 'Critical'].includes(f.level_of_nonconformity) && <option value={f.level_of_nonconformity}>{f.level_of_nonconformity}</option>}
               <option value="Minor">Minor</option>
               <option value="Major">Major</option>
               <option value="Critical">Critical</option>
@@ -108,6 +111,7 @@ Related Record Reference: ${f.related_record || 'N/A'}
           <Field label="Identification of NC *" req>
             <select className="input-field" value={f.identification} onChange={e=>upd('identification',e.target.value)} required>
               <option value="">— Select —</option>
+              {f.identification && !['Process Failure', 'Product Defect', 'Service Failure', 'Audit Finding', 'Customer Complaint', 'Other'].includes(f.identification) && <option value={f.identification}>{f.identification}</option>}
               <option value="Process Failure">Process Failure</option>
               <option value="Product Defect">Product Defect</option>
               <option value="Service Failure">Service Failure</option>
@@ -122,6 +126,7 @@ Related Record Reference: ${f.related_record || 'N/A'}
           <Field label="At Fault Party">
             <select className="input-field" value={f.at_fault_party} onChange={e=>upd('at_fault_party',e.target.value)}>
               <option value="">— Select —</option>
+              {f.at_fault_party && !['AAW Group (Internal)', 'Supplier', 'Subcontractor', 'Customer', 'Other'].includes(f.at_fault_party) && <option value={f.at_fault_party}>{f.at_fault_party}</option>}
               <option value="AAW Group (Internal)">AAW Group (Internal)</option>
               <option value="Supplier">Supplier</option>
               <option value="Subcontractor">Subcontractor</option>
