@@ -151,24 +151,27 @@ export default function IncidentDetails() {
       const targetId = finalIncident?.incident_number_str || id;
 
       // 2. Fetch latest metadata from backend (Investigation findings, Liability, etc.)
-      try {
-        const response = await api.get(`/incidents/${targetId}`);
-        const backendData = response.data;
-        
-        if (backendData) {
-          if (finalIncident) {
-            // Enrich Dataverse record with backend metadata, ignoring nulls or empty strings from the backend
-            const cleanBackendData = Object.fromEntries(
-              Object.entries(backendData).filter(([_, v]) => v !== null && v !== undefined && v !== '')
-            );
-            finalIncident = { ...finalIncident, ...cleanBackendData };
-          } else {
-            finalIncident = backendData;
+      // Skip backend fetch for CEI IDs as they are handled via Digital Twin polling
+      if (targetId && !targetId.toString().startsWith('CEI-')) {
+        try {
+          const response = await api.get(`/incidents/${targetId}`);
+          const backendData = response.data;
+          
+          if (backendData) {
+            if (finalIncident) {
+              // Enrich Dataverse record with backend metadata, ignoring nulls or empty strings from the backend
+              const cleanBackendData = Object.fromEntries(
+                Object.entries(backendData).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+              );
+              finalIncident = { ...finalIncident, ...cleanBackendData };
+            } else {
+              finalIncident = backendData;
+            }
           }
-        }
-      } catch (err: any) {
-        if (err.response?.status !== 404) {
-          console.warn('Backend metadata fetch failed:', err);
+        } catch (err: any) {
+          if (err.response?.status !== 404) {
+            console.warn('Backend metadata fetch failed:', err);
+          }
         }
       }
 

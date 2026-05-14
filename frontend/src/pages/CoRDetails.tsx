@@ -1,7 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Clock, MapPin, Briefcase, ChevronDown, Shield, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
 import { useState, useEffect } from 'react';
 import { useIncidents } from '../hooks/useIncidents';
 import { getIncidentCategory, CATEGORY_META } from '../utils/incidentRoles';
@@ -32,53 +31,8 @@ export default function CoRDetails() {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  const fetchIncident = async () => {
-    setLoading(true);
-    try {
-      // Try API first
-      const resp = await api.get(`/incidents/${id}`);
-      if (resp.data) {
-        setIncident(resp.data);
-        setCor({
-          cor_type: resp.data.cor_type || '',
-          company_role: resp.data.company_role || '',
-          cor_risk_level: resp.data.cor_risk_level || 'Low',
-          cor_status: resp.data.cor_status || 'Open',
-          cor_assessment: resp.data.cor_assessment || '',
-          cor_corrective_action: resp.data.cor_corrective_action || '',
-          cor_action_implemented: resp.data.cor_action_implemented || 'No',
-        });
-      }
-    } catch {
-      // Fallback to local cache
-      const cached = incidents.find((i: any) =>
-        i.id?.toString() === id ||
-        i.incident_number_str === id ||
-        i.incident_number_str === `CEI-${id}`
-      );
-      if (cached) {
-        setIncident(cached);
-        setCor({
-          cor_type: cached.cor_type || '',
-          company_role: cached.company_role || '',
-          cor_risk_level: cached.cor_risk_level || 'Low',
-          cor_status: cached.cor_status || 'Open',
-          cor_assessment: cached.cor_assessment || '',
-          cor_corrective_action: cached.cor_corrective_action || '',
-          cor_action_implemented: cached.cor_action_implemented || 'No',
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (id) fetchIncident();
-  }, [id]);
-
-  useEffect(() => {
-    if (!incident && incidents.length > 0 && id) {
+    if (incidents.length > 0 && id) {
       const cached = incidents.find((i: any) =>
         i.id?.toString() === id ||
         i.incident_number_str === id ||
@@ -97,9 +51,13 @@ export default function CoRDetails() {
           cor_action_implemented: cached.cor_action_implemented || prev.cor_action_implemented,
         }));
         setLoading(false);
+      } else {
+        // If not in cache, we might still be loading
+        setLoading(false);
       }
     }
   }, [incidents, id]);
+
 
   const PA_COR_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1cb43ed7dac84fcca1fe51f0c9b654cb/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=FW9jJLWiwW1fymo7QX7kw3XyqZicA95uwH3Adu4eNGg';
 
