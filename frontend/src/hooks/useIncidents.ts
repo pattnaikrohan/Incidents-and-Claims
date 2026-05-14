@@ -52,7 +52,25 @@ export function useIncidents(pollingInterval = 2000) {
       console.log('CoR Records Count:', getCount(payloads[2], 'cor_incidents'));
       console.log('Claims Records Count:', getCount(payloads[3], 'claims_incidents'), '| Raw Keys:', Object.keys(payloads[3] || {}));
 
-      const allNewIncidents: any[] = [];
+      const mergedMap = new Map<string, any>();
+
+      const addOrMerge = (obj: any) => {
+        if (!obj.id) return;
+        const id = String(obj.id);
+        if (mergedMap.has(id)) {
+          const existing = mergedMap.get(id);
+          const merged = { ...existing };
+          Object.keys(obj).forEach(key => {
+            const newVal = obj[key];
+            if (newVal && newVal !== 'N/A' && newVal !== 'No description' && newVal !== '' && newVal !== 'No') {
+              merged[key] = newVal;
+            }
+          });
+          mergedMap.set(id, merged);
+        } else {
+          mergedMap.set(id, obj);
+        }
+      };
 
       payloads.forEach(payload => {
         if (!payload) return;
@@ -60,7 +78,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── CARGO & EQUIPMENT ─────────────────────────────────
         if (Array.isArray(payload.cargo_equipment_incidents)) {
           payload.cargo_equipment_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_cargoequipmentincidentid || raw.id,
               category: 'cargo',
               incident_number_str: raw.cr991_incidentid,
@@ -147,7 +165,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── HUMAN RESOURCES ───────────────────────────────────
         if (Array.isArray(payload.human_resources_incidents)) {
           payload.human_resources_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_humanresourcesincidentid || raw.id,
               category: 'hr',
               incident_number_str: raw.cr991_incidentid,
@@ -185,7 +203,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── WH&S ──────────────────────────────────────────────
         if (Array.isArray(payload.workplace_health_safety_incidents)) {
           payload.workplace_health_safety_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_workplacehealthsafetyincidentid || raw.id,
               category: 'whs',
               incident_number_str: raw.cr991_incidentid,
@@ -223,7 +241,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── IT & SECURITY ─────────────────────────────────────
         if (Array.isArray(payload.it_security_incidents)) {
           payload.it_security_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_itsecurityincidentid || raw.id,
               category: 'it',
               incident_number_str: raw.cr991_incidentid,
@@ -257,7 +275,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── RISK & COMPLIANCE ─────────────────────────────────
         if (Array.isArray(payload.risk_compliance_incidents)) {
           payload.risk_compliance_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_riskcomplianceincidentid || raw.id,
               category: 'risk',
               incident_number_str: raw.cr991_incidentid,
@@ -290,7 +308,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── FINANCE ───────────────────────────────────────────
         if (Array.isArray(payload.finance_incidents)) {
           payload.finance_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_financeincidentid || raw.id,
               category: 'finance',
               incident_number_str: raw.cr991_incidentid,
@@ -323,7 +341,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── NCR ───────────────────────────────────────────
         if (Array.isArray(payload.ncr_incidents)) {
           payload.ncr_incidents.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_ncrincidentid || raw.id,
               category: 'ncr',
               incident_number_str: raw.cr991_incidentid,
@@ -349,7 +367,7 @@ export function useIncidents(pollingInterval = 2000) {
         // ── BACKWARDS COMPATIBILITY ─
         if (Array.isArray(payload) && !(payload as any).cargo_equipment_incidents) {
           payload.forEach((raw: any) => {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_cargoequipmentincidentid || raw.id,
               category: 'cargo',
               incident_number_str: raw.cr991_incidentid || raw.incident_number_str,
@@ -375,7 +393,7 @@ export function useIncidents(pollingInterval = 2000) {
         ncrArray.forEach((raw: any) => {
           // Check for NCR ID or Number
           if (raw.cr991_nonconformancereportsid || raw.cr991_number?.startsWith('NCR')) {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_nonconformancereportsid || raw.id,
               category: 'ncr',
               incident_number_str: raw.cr991_number || raw.cr991_incidentid,
@@ -402,7 +420,7 @@ export function useIncidents(pollingInterval = 2000) {
         corArray.forEach((raw: any) => {
           // Check for CoR specific ID or common pattern
           if (raw.cr991_corincidentid || raw.cr991_number?.startsWith('COR') || (raw.id && !raw.cr991_nonconformancereportsid)) {
-            allNewIncidents.push({
+            addOrMerge({
               id: raw.cr991_corincidentid || raw.id,
               category: 'cor',
               incident_number_str: raw.cr991_incidentid || raw.cr991_number,
@@ -419,20 +437,42 @@ export function useIncidents(pollingInterval = 2000) {
             });
           }
         });
+
+        // ── CLAIMS RECORDS (Enhanced Mapping) ────────────────
+        const claimsArray = Array.isArray(payload.claims_incidents) ? payload.claims_incidents : (Array.isArray(payload.body) ? payload.body : (Array.isArray(payload) ? payload : []));
+        claimsArray.forEach((raw: any) => {
+          // If it has cargo-specific fields or claim fields, map it to cargo category
+          if (raw.cr991_cargoequipmentincidentid || raw.cr991_claimreferencenumber) {
+            addOrMerge({
+              id: raw.cr991_cargoequipmentincidentid || raw.id,
+              category: 'cargo',
+              incident_number_str: raw.cr991_incidentid,
+              // Claims fields
+              claim_reference: raw.cr991_claimreferencenumber || '',
+              claim_date: raw.cr991_dateofclaim || '',
+              claimant: raw.cr991_claimant || '',
+              claim_time_bar: raw.cr991_timebar || '',
+              claim_type: raw["cr991_claimtype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimtype || '',
+              claim_direction: raw["cr991_claimdirection@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimdirection || '',
+              claim_amount: raw.cr991_claimamount || '',
+              paid_amount: raw.cr991_paidamount || '',
+              insurance_paid: raw.cr991_insurancepaidamount || '',
+              deductible: raw.cr991_deductible || '',
+              recovery_amount: raw.cr991_recoveryamount || '',
+              outstanding_balance: raw.cr991_outstandingbalance || '',
+              writeoff_required: raw["cr991_writeoffrequired@OData.Community.Display.V1.FormattedValue"] || raw.cr991_writeoffrequired || 'No',
+              writeoff_amount: raw.cr991_writeoffamount || '',
+              writeoff_approved_by: raw.cr991_writeoffapprovedby || '',
+              writeoff_date: raw.cr991_writeoffdate || '',
+              claim_state: raw.cr991_claimstate || '',
+              claim_status: raw["cr991_claimstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimstatus || 'Open',
+              created_at: raw.createdon,
+            });
+          }
+        });
       });
 
-      const validNew = allNewIncidents.filter((inc: any) => inc.id);
-      
-      // Deduplicate by ID to be safe
-      const seen = new Set();
-      const unique = validNew.filter(i => {
-        const id = String(i.id);
-        if (seen.has(id)) return false;
-        seen.add(id);
-        return true;
-      });
-
-      setIncidents(unique);
+      setIncidents(Array.from(mergedMap.values()));
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch from Power Automate:', error);
