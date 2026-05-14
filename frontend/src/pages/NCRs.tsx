@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Filter, FileWarning, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+
 import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
 
@@ -44,9 +44,7 @@ export default function NCRs() {
     fetchNCRs();
   }, [incidents]);
 
-  const handleRefreshClick = async () => {
-    await handleManualRefresh();
-  };
+
 
   // Apply filters
   const filteredNCRs = ncrs

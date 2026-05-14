@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, FileText, Clock, MapPin, Briefcase, UserPlus, ChevronDown, ChevronRight, Shield, AlertTriangle, FileWarning, Users, HeartPulse, Lock as LockIcon, DollarSign, Edit2, Paperclip, Download, ExternalLink, X, Maximize, UploadCloud, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CollaborationFeed from '../components/CollaborationFeed';
@@ -142,6 +142,7 @@ export default function IncidentDetails() {
     cor_action_implemented: 'No'
   });
   const [isEditingForm, setIsEditingForm] = useState(false);
+  const location = useLocation();
   const source = location.state?.source;
 
   const fetchIncident = async () => {

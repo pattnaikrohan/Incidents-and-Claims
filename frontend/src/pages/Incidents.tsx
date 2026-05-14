@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileText, Filter, Briefcase, AlertTriangle, Shield, Users, RefreshCw, ChevronDown, ChevronUp, Package, HeartPulse, Lock, DollarSign, FileWarning } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+
 import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
 

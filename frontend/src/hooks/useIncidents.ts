@@ -69,7 +69,6 @@ export function useIncidents(pollingInterval = 2000) {
               value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || 'Pending',
               description: raw.cr991_shortdescription || raw.cr991_cargodescription || 'No description',
               job_number: raw.cr991_systemjobnumber || 'N/A',
-              job_number: raw.cr991_systemjobnumber || 'N/A',
               customer_name: raw.cr991_customer || 'N/A',
               formal_claim_issued: raw["cr991_formalclaimissued@OData.Community.Display.V1.FormattedValue"] || 'No',
               cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
@@ -313,7 +312,7 @@ export function useIncidents(pollingInterval = 2000) {
         }
 
         // ── BACKWARDS COMPATIBILITY ─
-        if (Array.isArray(payload) && !payload.cargo_equipment_incidents) {
+        if (Array.isArray(payload) && !(payload as any).cargo_equipment_incidents) {
           payload.forEach((raw: any) => {
             allNewIncidents.push({
               id: raw.cr991_cargoequipmentincidentid || raw.id,

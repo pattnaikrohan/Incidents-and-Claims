@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search as SearchIcon, Package, FileWarning, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../services/api';
+
 import { useIncidents } from '../hooks/useIncidents';
 
 export default function Search() {

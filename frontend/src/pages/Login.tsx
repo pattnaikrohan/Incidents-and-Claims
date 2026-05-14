@@ -63,13 +63,7 @@ export default function Login() {
     }
   };
 
-  const PERSONAS = [
-    { label: 'Admin', email: 'full.access@aaw.com', role: 'full_access', icon: Zap, color: '#f59e0b' },
-    { label: 'Risk & Comp', email: 'risk.compliance@aaw.com', role: 'risk_compliance', icon: ShieldCheck, color: '#10b981' },
-    { label: 'BU Manager', email: 'aaw.global.logistics.au.manager@aaw.com', role: 'bu_access', icon: ArrowRight, color: '#3b82f6' },
-    { label: 'HR & Safety', email: 'people.safety@aaw.com', role: 'hr_access', icon: Mail, color: '#8b5cf6' },
-    { label: 'Operator', email: 'submit.only@aaw.com', role: 'submit_only', icon: Lock, color: '#64748b' }
-  ];
+
 
   // Parallax Background Effect
   const handleMouseMove = (e: React.MouseEvent) => {
