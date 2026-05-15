@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { DEFAULT_STATUSES } from '../utils/incidentConstants';
 
 export function useIncidents(pollingInterval = 2000) {
   const [incidents, setIncidents] = useState<any[]>([]);
@@ -57,32 +58,78 @@ export function useIncidents(pollingInterval = 2000) {
       const mapRawToClean = (raw: any) => {
         const clean: any = {};
         Object.keys(raw).forEach(key => {
-          if (key.startsWith('cr991_')) {
-            let cleanKey = key.replace('cr991_', '');
-            if (cleanKey === 'shortdescription') cleanKey = 'short_description';
-            if (cleanKey === 'dateofincident') cleanKey = 'date_of_incident';
-            if (cleanKey === 'datelogged') cleanKey = 'date_logged';
-            if (cleanKey === 'loggedby') cleanKey = 'logged_by';
-            if (cleanKey === 'businessunit') cleanKey = 'business_unit';
-            if (cleanKey === 'branchdepartment') cleanKey = 'branch_department';
-            if (cleanKey === 'incidenttype') cleanKey = 'incident_type';
-            if (cleanKey === 'rootcause') cleanKey = 'root_cause';
-            if (cleanKey === 'correctiveaction') cleanKey = 'corrective_action';
-            if (cleanKey === 'systemjobnumber') cleanKey = 'system_job_number';
-            if (cleanKey === 'incidentsummary') cleanKey = 'incident_summary';
-            if (cleanKey === 'locationofincident') cleanKey = 'location_of_incident';
-            if (cleanKey === 'cargodescription') cleanKey = 'cargo_description';
-            if (cleanKey === 'cargovalue') cleanKey = 'cargo_value';
-            if (cleanKey === 'containernumbers') cleanKey = 'container_numbers';
-            if (cleanKey === 'originagent') cleanKey = 'origin_agent';
-            if (cleanKey === 'destinationagent') cleanKey = 'destination_agent';
-            if (cleanKey === 'shippinglineairline') cleanKey = 'shipping_line';
-            if (cleanKey === 'scopeofwork') cleanKey = 'scope_of_work';
-            if (cleanKey === 'roleperformed') cleanKey = 'role_performed';
-            if (cleanKey === 'claimestimate') cleanKey = 'claim_estimate';
-            if (cleanKey === 'intenttoclaim') cleanKey = 'intent_to_claim';
-            if (cleanKey === 'attachments' || cleanKey === 'files' || cleanKey === 'evidence') cleanKey = 'attachments';
-            clean[cleanKey] = raw[key];
+          const lowerKey = key.toLowerCase();
+          let cleanKey = lowerKey;
+          
+          if (lowerKey.startsWith('cr991_')) {
+            cleanKey = lowerKey.replace('cr991_', '');
+          }
+
+          if (
+            cleanKey === 'incidentid' || cleanKey === 'incident_id' || 
+            cleanKey === 'incidentnumber' || cleanKey === 'incident_number' || 
+            cleanKey === 'incidentref' || cleanKey === 'incident_ref' || 
+            cleanKey === 'referencenumber' || cleanKey === 'reference_number' || 
+            cleanKey === 'name' || cleanKey === 'ref' || cleanKey === 'number' ||
+            cleanKey === 'hrid' || cleanKey === 'hr_id' ||
+            cleanKey === 'whsid' || cleanKey === 'whs_id' ||
+            cleanKey === 'itid' || cleanKey === 'it_id' ||
+            cleanKey === 'ncr_ref' || cleanKey === 'ncrref' ||
+            cleanKey === 'ncr_number' || cleanKey === 'ncrnumber'
+          ) cleanKey = 'incident_number_str';
+          
+          if (cleanKey === 'shortdescription') cleanKey = 'short_description';
+          if (cleanKey === 'dateofincident') cleanKey = 'date_of_incident';
+          if (cleanKey === 'datelogged') cleanKey = 'date_logged';
+          if (cleanKey === 'loggedby') cleanKey = 'logged_by';
+          if (cleanKey === 'businessunit') cleanKey = 'business_unit';
+          if (cleanKey === 'branchdepartment') cleanKey = 'branch_department';
+          if (cleanKey === 'incidenttype') cleanKey = 'incident_type';
+          if (cleanKey === 'rootcause') cleanKey = 'root_cause';
+          if (cleanKey === 'correctiveaction') cleanKey = 'corrective_action';
+          if (cleanKey === 'systemjobnumber') cleanKey = 'system_job_number';
+          if (cleanKey === 'incidentsummary') cleanKey = 'incident_summary';
+          if (cleanKey === 'locationofincident') cleanKey = 'location_of_incident';
+          if (cleanKey === 'cargodescription') cleanKey = 'cargo_description';
+          if (cleanKey === 'cargovalue') cleanKey = 'cargo_value';
+          if (cleanKey === 'containernumbers') cleanKey = 'container_numbers';
+          if (cleanKey === 'originagent') cleanKey = 'origin_agent';
+          if (cleanKey === 'destinationagent') cleanKey = 'destination_agent';
+          if (cleanKey === 'shippinglineairline') cleanKey = 'shipping_line';
+          if (cleanKey === 'scopeofwork') cleanKey = 'scope_of_work';
+          if (cleanKey === 'roleperformed') cleanKey = 'role_performed';
+          if (cleanKey === 'claimestimate') cleanKey = 'claim_estimate';
+          if (cleanKey === 'intenttoclaim') cleanKey = 'intent_to_claim';
+          if (cleanKey === 'attachments' || cleanKey === 'files' || cleanKey === 'evidence') cleanKey = 'attachments';
+          
+          // Liability & Risk fields
+          if (cleanKey.includes('responsible') || cleanKey.includes('atfaultparty')) cleanKey = 'responsible_party';
+          if (cleanKey.includes('claimissued') || cleanKey.includes('formalclaim')) cleanKey = 'formal_claim_issued';
+          if (cleanKey.includes('insurernotified')) cleanKey = 'insurer_notified';
+          if (cleanKey.includes('risklevel')) cleanKey = 'risk_level';
+          if (cleanKey.includes('escalation')) cleanKey = 'management_escalation';
+          if (cleanKey.includes('incidentstatus')) cleanKey = 'status';
+          if (cleanKey === 'cor') cleanKey = 'cor_required';
+          if (cleanKey === 'chro') cleanKey = 'chro_notified';
+          if (cleanKey === 'workerscompclaim') cleanKey = 'workers_comp_claim';
+
+          // Catch FormattedValue labels and prioritize them
+          const isFormatted = lowerKey.includes('@odata.community.display.v1.formattedvalue');
+          const targetKey = isFormatted ? cleanKey.split('@')[0] : cleanKey;
+          
+          let val = raw[key];
+          
+          // Status Standardisation: Map 'Open - New' or 'Open' to 'Open - Incident Logged'
+          if (targetKey === 'status' && val) {
+            const s = String(val).toLowerCase();
+            if (s === 'open' || s === 'open - new') {
+              val = 'Open - Incident Logged';
+            }
+          }
+
+          // Prioritize formatted values; only set raw value if formatted isn't already there
+          if (isFormatted || clean[targetKey] === undefined) {
+            clean[targetKey] = val;
           }
         });
         Object.keys(raw).forEach(key => {
@@ -134,13 +181,13 @@ export function useIncidents(pollingInterval = 2000) {
               branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
               business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
               date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
+              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || DEFAULT_STATUSES.cargo,
               value: raw.cr991_incidentclaimestimate || raw.cr991_cargovalue || 'Pending',
               description: raw.cr991_shortdescription || raw.cr991_cargodescription || 'No description',
               job_number: raw.cr991_systemjobnumber || 'N/A',
               customer_name: raw.cr991_customer || 'N/A',
               formal_claim_issued: raw["cr991_formalclaimissued@OData.Community.Display.V1.FormattedValue"] || 'No',
-              cor_required: raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
+              cor_required: (raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' || raw.cr991_cor === true || raw.cr991_cor === 1 || raw.cr991_cor === 'Yes') ? 'Yes' : 'No',
               insurer_notified: raw["cr991_insurernotified@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
               management_escalation: raw["cr991_managementescalation@OData.Community.Display.V1.FormattedValue"] || 'No',
               created_at: raw.createdon,
@@ -190,21 +237,26 @@ export function useIncidents(pollingInterval = 2000) {
         // ── HUMAN RESOURCES ───────────────────────────────────
         if (Array.isArray(payload.human_resources_incidents)) {
           payload.human_resources_incidents.forEach((raw: any) => {
+            const clean = mapRawToClean(raw);
+            const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('HR-')) as string;
+            
             addOrMerge({
-              id: raw.cr991_humanresourcesincidentid || raw.id,
+              id: clean.humanresourcesincidentid || raw.id,
               category: 'hr',
-              incident_number_str: raw.cr991_incidentid,
-              type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Human Resources',
-              location: raw.cr991_locationofincident || 'N/A',
-              branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
-              description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-              employee_involved: raw.cr991_employee || raw.cr991_employeeinvolved || 'N/A',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              incident_number_str: clean.incident_number_str || foundFriendlyId || `HR-${(clean.humanresourcesincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
+              type: clean.incident_type || 'Human Resources',
+              location: clean.location_of_incident || 'N/A',
+              branch_department: clean.branch_department || 'N/A',
+              business_unit: clean.business_unit || 'N/A',
+              date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
+              status: clean.status || 'Open - Incident Logged',
+              description: clean.short_description || clean.incident_summary || 'No description',
+              employee_involved: clean.employee || clean.employeeinvolved || 'N/A',
+              formal_claim_issued: clean.formal_claim_issued || 'No',
+              cor_required: clean.cor_required || 'No',
+              management_escalation: clean.management_escalation || 'No',
+              responsible_party: clean.responsible_party || '',
+              risk_level: clean.risk_level || '',
               created_at: raw.createdon,
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
@@ -228,20 +280,25 @@ export function useIncidents(pollingInterval = 2000) {
         // ── WH&S ──────────────────────────────────────────────
         if (Array.isArray(payload.workplace_health_safety_incidents)) {
           payload.workplace_health_safety_incidents.forEach((raw: any) => {
+            const clean = mapRawToClean(raw);
+            const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('WHS-')) as string;
+
             addOrMerge({
-              id: raw.cr991_workplacehealthsafetyincidentid || raw.id,
+              id: clean.workplacehealthsafetyincidentid || raw.id,
               category: 'whs',
-              incident_number_str: raw.cr991_incidentid,
-              type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'WH&S Incident',
-              location: raw.cr991_locationofincident || 'N/A',
-              branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
-              description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              incident_number_str: clean.incident_number_str || foundFriendlyId || `WHS-${(clean.workplacehealthsafetyincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
+              type: clean.incident_type || 'WH&S Incident',
+              location: clean.location_of_incident || 'N/A',
+              branch_department: clean.branch_department || 'N/A',
+              business_unit: clean.business_unit || 'N/A',
+              date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
+              status: clean.status || 'Open - Incident Logged',
+              description: clean.short_description || clean.incident_summary || 'No description',
+              formal_claim_issued: clean.formal_claim_issued || 'No',
+              cor_required: clean.cor_required || 'No',
+              management_escalation: clean.management_escalation || 'No',
+              responsible_party: clean.responsible_party || '',
+              risk_level: clean.risk_level || '',
               created_at: raw.createdon,
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
@@ -266,21 +323,24 @@ export function useIncidents(pollingInterval = 2000) {
         // ── IT & SECURITY ─────────────────────────────────────
         if (Array.isArray(payload.it_security_incidents)) {
           payload.it_security_incidents.forEach((raw: any) => {
+            const clean = mapRawToClean(raw);
+            const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('IT-')) as string;
+
             addOrMerge({
-              id: raw.cr991_itsecurityincidentid || raw.id,
+              id: clean.itsecurityincidentid || raw.id,
               category: 'it',
-              incident_number_str: raw.cr991_incidentid,
-              type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'IT & Security',
-              location: raw.cr991_locationofincident || 'N/A',
-              branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
-              description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-              system_affected: raw.cr991_system || raw.cr991_systemaffected || 'N/A',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              incident_number_str: clean.incident_number_str || foundFriendlyId || `IT-${(clean.itsecurityincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
+              type: clean.incident_type || 'IT & Security',
+              location: clean.location_of_incident || 'N/A',
+              branch_department: clean.branch_department || 'N/A',
+              business_unit: clean.business_unit || 'N/A',
+              date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
+              status: clean.status || 'Open - Incident Logged',
+              description: clean.short_description || clean.incident_summary || 'No description',
+              system_affected: clean.system || clean.systemaffected || 'N/A',
+              formal_claim_issued: clean.formal_claim_issued || 'No',
+              cor_required: clean.cor_required || 'No',
+              management_escalation: clean.management_escalation || 'No',
               created_at: raw.createdon,
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
@@ -300,21 +360,24 @@ export function useIncidents(pollingInterval = 2000) {
         // ── RISK & COMPLIANCE ─────────────────────────────────
         if (Array.isArray(payload.risk_compliance_incidents)) {
           payload.risk_compliance_incidents.forEach((raw: any) => {
+            const clean = mapRawToClean(raw);
+            const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && (v.startsWith('RC-') || v.startsWith('RCI-'))) as string;
+
             addOrMerge({
-              id: raw.cr991_riskcomplianceincidentid || raw.id,
+              id: clean.riskcomplianceincidentid || raw.id,
               category: 'risk',
-              incident_number_str: raw.cr991_incidentid,
-              type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Risk & Compliance',
-              location: raw.cr991_locationofincident || 'N/A',
-              branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
-              description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-              regulatory_body: raw.cr991_regulatorybody || 'N/A',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              incident_number_str: clean.incident_number_str || foundFriendlyId || `RC-${(clean.riskcomplianceincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
+              type: clean.incident_type || 'Risk & Compliance',
+              location: clean.location_of_incident || 'N/A',
+              branch_department: clean.branch_department || 'N/A',
+              business_unit: clean.business_unit || 'N/A',
+              date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
+              status: clean.status || 'Open - Incident Logged',
+              description: clean.short_description || clean.incident_summary || 'No description',
+              regulatory_body: clean.regulatorybody || 'N/A',
+              formal_claim_issued: clean.formal_claim_issued || 'No',
+              cor_required: clean.cor_required || 'No',
+              management_escalation: clean.management_escalation || 'No',
               created_at: raw.createdon,
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
@@ -333,21 +396,24 @@ export function useIncidents(pollingInterval = 2000) {
         // ── FINANCE ───────────────────────────────────────────
         if (Array.isArray(payload.finance_incidents)) {
           payload.finance_incidents.forEach((raw: any) => {
+            const clean = mapRawToClean(raw);
+            const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('FIN-')) as string;
+
             addOrMerge({
-              id: raw.cr991_financeincidentid || raw.id,
+              id: clean.financeincidentid || raw.id,
               category: 'finance',
-              incident_number_str: raw.cr991_incidentid,
-              type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'Finance',
-              location: raw.cr991_locationofincident || 'N/A',
-              branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
-              description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-              transaction_ref: raw.cr991_transactionref || 'N/A',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              incident_number_str: clean.incident_number_str || foundFriendlyId || `FIN-${(clean.financeincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
+              type: clean.incident_type || 'Finance',
+              location: clean.location_of_incident || 'N/A',
+              branch_department: clean.branch_department || 'N/A',
+              business_unit: clean.business_unit || 'N/A',
+              date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
+              status: clean.status || 'Open - Incident Logged',
+              description: clean.short_description || clean.incident_summary || 'No description',
+              transaction_ref: clean.transactionref || 'N/A',
+              formal_claim_issued: clean.formal_claim_issued || 'No',
+              cor_required: clean.cor_required || 'No',
+              management_escalation: clean.management_escalation || 'No',
               created_at: raw.createdon,
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
@@ -366,22 +432,24 @@ export function useIncidents(pollingInterval = 2000) {
         // ── NCR ───────────────────────────────────────────
         if (Array.isArray(payload.ncr_incidents)) {
           payload.ncr_incidents.forEach((raw: any) => {
+            const clean = mapRawToClean(raw);
+            const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('NCR-')) as string;
+
             addOrMerge({
-              id: raw.cr991_ncrincidentid || raw.id,
+              id: clean.ncrincidentid || raw.id,
               category: 'ncr',
-              incident_number_str: raw.cr991_incidentid,
-              type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || 'NCR',
-              location: raw.cr991_locationofincident || 'N/A',
-              branch_department: raw["cr991_branchdepartment@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              business_unit: raw["cr991_businessunit@OData.Community.Display.V1.FormattedValue"] || 'N/A',
-              date: (raw["overriddencreatedon@OData.Community.Display.V1.FormattedValue"] || raw.cr991_datelogged || '').split(' ')[0],
-              status: raw["cr991_incidentstatus@OData.Community.Display.V1.FormattedValue"] || 'Open - Incident Logged',
-              description: raw.cr991_shortdescription || raw.cr991_incidentsummary || 'No description',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              incident_number_str: clean.incident_number_str || foundFriendlyId || `NCR-${(clean.ncrincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
+              type: clean.incident_type || 'NCR',
+              location: clean.location_of_incident || 'N/A',
+              branch_department: clean.branch_department || 'N/A',
+              business_unit: clean.business_unit || 'N/A',
+              date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
+              status: clean.status || 'Open - Incident Logged',
+              description: clean.short_description || clean.incident_summary || 'No description',
+              formal_claim_issued: clean.formal_claim_issued || 'No',
+              cor_required: clean.cor_required || 'No',
+              management_escalation: clean.management_escalation || 'No',
               created_at: raw.createdon,
-              // Basic NCR fields (if needed for filtering)
               nc_type: raw["cr991_nctype@OData.Community.Display.V1.FormattedValue"] || '',
               root_cause: raw.cr991_rootcause || '',
               preventative_action: raw.cr991_preventativeaction || '',
@@ -406,9 +474,9 @@ export function useIncidents(pollingInterval = 2000) {
               description: raw.cr991_shortdescription || raw.description || 'No description',
               job_number: raw.cr991_systemjobnumber || raw.job_number || 'N/A',
               customer_name: raw.cr991_customer || 'N/A',
-              formal_claim_issued: 'No',
-              cor_required: 'No',
-              management_escalation: 'No',
+              formal_claim_issued: raw.cr991_formalclaimissued || 'No',
+              cor_required: raw.cr991_cor || 'No',
+              management_escalation: raw.cr991_managementescalation || 'No',
               created_at: raw.createdon,
             }, raw);
           });
@@ -448,6 +516,8 @@ export function useIncidents(pollingInterval = 2000) {
             addOrMerge({
               id: raw.cr991_corincidentid || raw.id,
               category: 'cor',
+              cor: 'Yes',
+              cor_required: 'Yes',
               incident_number_str: raw.cr991_incidentid || raw.cr991_number,
               type: 'Chain of Responsibility',
               location: raw.cr991_location || 'N/A',

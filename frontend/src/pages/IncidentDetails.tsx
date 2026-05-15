@@ -1,4 +1,5 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
+import { INCIDENT_STATUSES } from '../utils/incidentConstants';
 import { ArrowLeft, FileText, Clock, MapPin, Briefcase, UserPlus, ChevronDown, ChevronRight, Shield, AlertTriangle, FileWarning, Users, HeartPulse, Lock as LockIcon, DollarSign, Edit2, Paperclip, Download, ExternalLink, X, Maximize, UploadCloud, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import CollaborationFeed from '../components/CollaborationFeed';
@@ -151,8 +152,18 @@ export default function IncidentDetails() {
       const targetId = finalIncident?.incident_number_str || id;
 
       // 2. Fetch latest metadata from backend (Investigation findings, Liability, etc.)
-      // Skip backend fetch for CEI IDs as they are handled via Digital Twin polling
-      if (targetId && !targetId.toString().startsWith('CEI-')) {
+      // Skip backend fetch for Digital Twin categories handled via direct polling
+      const isDigitalTwin = targetId && (
+        targetId.toString().startsWith('CEI-') ||
+        targetId.toString().startsWith('HR-') ||
+        targetId.toString().startsWith('WHS-') ||
+        targetId.toString().startsWith('IT-') ||
+        targetId.toString().startsWith('RC-') ||
+        targetId.toString().startsWith('FIN-') ||
+        targetId.toString().startsWith('NCR-')
+      );
+
+      if (targetId && !isDigitalTwin) {
         try {
           const response = await api.get(`/incidents/${targetId}`);
           const backendData = response.data;
@@ -496,11 +507,9 @@ export default function IncidentDetails() {
                     onChange={(e) => setLiability({...liability, status: e.target.value})}
                     style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', paddingRight: '2rem', height: '36px', minWidth: '220px', appearance: 'none', background: 'var(--bg-surface)', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border-base)', boxShadow: 'var(--shadow-sm)' }}
                   >
-                    <option value="Open - Incident Logged">Open - Incident Logged</option>
-                    <option value="Open - Under Investigation">Open - Under Investigation</option>
-                    <option value="Open - Corrective Action Pending">Open - Corrective Action Pending</option>
-                    <option value="Open - Formal Claim">Open - Formal Claim</option>
-                    <option value="Closed - No Further Action">Closed - No Further Action</option>
+                    {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                   <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)', pointerEvents: 'none' }} />
                 </div>
@@ -759,11 +768,9 @@ export default function IncidentDetails() {
               <div style={{ gridColumn: 'span 2' }}>
                 <label className="overline">Incident Status</label>
                 <select className="input-field" value={liability.status} onChange={(e) => setLiability({...liability, status: e.target.value})}>
-                  <option value="Open - Incident Logged">Open - Incident Logged</option>
-                  <option value="Open - Under Investigation">Open - Under Investigation</option>
-                  <option value="Open - Corrective Action Pending">Open - Corrective Action Pending</option>
-                  <option value="Open - Formal Claim">Open - Formal Claim</option>
-                  <option value="Closed - No Further Action">Closed - No Further Action</option>
+                  {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -865,8 +872,9 @@ export default function IncidentDetails() {
                     value={liability.cor_status}
                     onChange={(e) => setLiability({...liability, cor_status: e.target.value})}
                   >
-                    <option value="Open">Open</option>
-                    <option value="Closed">Closed</option>
+                    {['Open', 'Close'].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
@@ -1084,11 +1092,13 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </div>
                 <div>
                   <label className="overline">Status</label>
-                  <select className="input-field">
-                    <option>Open - Pending Assessment</option>
-                    <option>In Progress - Implementing CA/PA</option>
-                    <option>Pending QA Validation</option>
-                    <option>Closed</option>
+                  <select 
+                    className="input-field"
+                    onChange={(e) => setLiability({...liability, status: e.target.value})}
+                  >
+                    {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
                   </select>
                 </div>
               </div>

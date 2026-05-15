@@ -49,8 +49,10 @@ export default function HRForm({ onSubmit, onCancel, loading, initialData, readO
   });
 
   useEffect(() => {
-    if (incident_id && !initialData && f.incident_ref !== incident_id) {
+    const isPending = !f.incident_ref || f.incident_ref.includes('PENDING');
+    if (incident_id && !initialData && isPending && f.incident_ref !== incident_id) {
       upd('incident_ref', incident_id);
+      upd('incident_id', incident_id);
     }
   }, [incident_id, initialData, f.incident_ref]);
   const upd = (k:string,v:any) => setF((p:any)=>({...p,[k]:v}));

@@ -73,9 +73,10 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
     };
   });
 
-  // Keep ID in sync if it arrives late from parent
+  // Keep ID in sync if it arrives late from parent (only if we don't have a real one yet)
   useEffect(() => {
-    if (incident_id && !initialData && f.incident_id !== incident_id) {
+    const isPending = !f.incident_id || f.incident_id.includes('PENDING');
+    if (incident_id && !initialData && isPending && f.incident_id !== incident_id) {
       upd('incident_id', incident_id);
     }
   }, [incident_id, initialData, f.incident_id]);

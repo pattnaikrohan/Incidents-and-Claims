@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileText, Filter, Briefcase, AlertTriangle, Shield, Users, RefreshCw, ChevronDown, ChevronUp, Package, HeartPulse, Lock, DollarSign, FileWarning } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { INCIDENT_STATUSES } from '../utils/incidentConstants';
 
 import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
@@ -136,9 +137,9 @@ export default function Incidents() {
   // Final filter by tab
   displayedIncidents = displayedIncidents.filter(i => {
     const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
-    const isLocalDraft = draftRegistry.includes(i.incident_number_str) || draftRegistry.includes(i.incident_id);
+    const isLocalDraft = draftRegistry.includes(String(i.incident_number_str || '')) || draftRegistry.includes(String(i.incident_id || ''));
     
-    const status = (i.status || '').toLowerCase();
+    const status = String(i.status || '').toLowerCase();
     
     if (activeTab === 'active') {
       // If it's a local draft, it shouldn't be in Active, even if backend says 'Open'
@@ -486,7 +487,7 @@ export default function Incidents() {
                                 <div style={{ marginBottom: '0.75rem' }}>
                                   <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Status</div>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    {['Open', 'Open - Under Investigation', 'Open - Corrective Action Pending', 'Open - Formal Claim', 'Closed - No Further Action'].map(status => {
+                                    {(INCIDENT_STATUSES[category.id] || INCIDENT_STATUSES.cargo).map(status => {
                                       const isSelected = (filterStates[category.id]?.status || []).includes(status);
                                       return (
                                         <label key={status} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', cursor: 'pointer', padding: '2px 0' }}>
@@ -501,7 +502,7 @@ export default function Incidents() {
                                           />
                                           {status}
                                         </label>
-                                      );
+                                      )
                                     })}
                                   </div>
                                 </div>
@@ -574,28 +575,42 @@ export default function Incidents() {
                                 No active records found in this category.
                               </td>
                             </tr>
-                          ) : (
-                            filteredIncidents.map((incident, i) => (
-                              <tr 
-                                key={i} 
-                                onClick={() => {
-                                  const status = (incident.status || '').toLowerCase();
-                                  const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
-                                  const isLocalDraft = draftRegistry.includes(incident.incident_number_str) || draftRegistry.includes(incident.incident_id);
-                                  const isDraft = status.includes('draft') || isLocalDraft;
+                          ) : filteredIncidents.map((incident, i) => {
+                                  const isCoR = (
+                                    String(incident.cor_required).toLowerCase() === 'yes' || 
+                                    String(incident.cor).toLowerCase() === 'yes' || 
+                                    incident.cor === true || 
+                                    incident.cor === 1 || 
+                                    String(incident.cor_formatted).toLowerCase() === 'yes' ||
+                                    String(incident.cor_required).toLowerCase() === 'true' ||
+                                    String(incident.cor).toLowerCase() === 'true' ||
+                                    String(incident.type).toLowerCase().includes('chain of responsibility') ||
+                                    String(incident.incident_types).toLowerCase().includes('chain of responsibility') ||
+                                    (incident.type && /\bCOR\b/i.test(incident.type))
+                                  )
 
-                                  if (isDraft && activeTab === 'drafts') {
-                                    navigate(`/incidents/new?type=${category.id}&draftId=${incident.id}`);
-                                  } else {
-                                    navigate(pageSource === 'cors' ? `/cors/${incident.id}` : pageSource === 'claims' ? `/claims/${incident.id}` : `/incidents/${incident.id}`, { state: { source: pageSource } });
-                                  }
-                                }}
-                                style={{ 
-                                  cursor: 'pointer', 
-                                  background: 'var(--bg-surface)', 
-                                  boxShadow: 'var(--shadow-sm)',
-                                  transition: 'all 0.2s ease',
-                                }}
+                                  return (
+                                    <tr 
+                                      key={i} 
+                                      onClick={() => {
+                                        const status = (incident.status || '').toLowerCase();
+                                        const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
+                                        const isLocalDraft = draftRegistry.includes(incident.incident_number_str) || draftRegistry.includes(incident.incident_id);
+                                        const isDraft = status.includes('draft') || isLocalDraft;
+
+                                        if (isDraft && activeTab === 'drafts') {
+                                          navigate(`/incidents/new?type=${category.id}&draftId=${incident.id}`);
+                                        } else {
+                                          navigate(pageSource === 'cors' ? `/cors/${incident.id}` : pageSource === 'claims' ? `/claims/${incident.id}` : `/incidents/${incident.id}`, { state: { source: pageSource } });
+                                        }
+                                      }}
+                                      style={{ 
+                                        cursor: 'pointer', 
+                                        background: 'var(--bg-surface)', 
+                                        boxShadow: 'var(--shadow-sm)',
+                                        transition: 'all 0.2s ease',
+                                        borderLeft: isCoR ? `4px solid #f97316` : '4px solid transparent',
+                                      }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.transform = 'translateY(-1px)';
                                   e.currentTarget.style.boxShadow = '0 4px 8px -2px rgba(0,0,0,0.1)';
@@ -607,8 +622,29 @@ export default function Incidents() {
                                   e.currentTarget.style.background = 'var(--bg-surface)';
                                 }}
                               >
-                                <td style={{ fontWeight: 700, color: 'var(--fg-base)', padding: '0.4rem 0 0.4rem 1.5rem', whiteSpace: 'nowrap', borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', border: '1px solid transparent', borderRight: 'none' }}>
+                                <td style={{ fontWeight: 700, color: 'var(--fg-base)', padding: isCoR ? '0.4rem 0 0.4rem 0.5rem' : '0.4rem 0 0.4rem 1.5rem', whiteSpace: 'nowrap', borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', border: '1px solid transparent', borderRight: 'none', transition: 'padding 0.2s ease' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    {isCoR && (
+                                      <div style={{ 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        alignItems: 'center', 
+                                        lineHeight: 1.1,
+                                        padding: '4px 3px', 
+                                        background: '#fff7ed', 
+                                        color: '#c2410c', 
+                                        borderRadius: '4px',
+                                        fontSize: '0.55rem',
+                                        fontWeight: 900,
+                                        boxShadow: '0 2px 4px rgba(249,115,22,0.1)',
+                                        marginRight: '2px',
+                                        border: '1px solid #fdba74'
+                                      }}>
+                                        <span>C</span>
+                                        <span>O</span>
+                                        <span>R</span>
+                                      </div>
+                                    )}
                                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: category.color, boxShadow: `0 0 8px ${category.color}60` }}></div>
                                     <span style={{ fontSize: '0.8rem' }}>{incident.incident_number_str || `INC-${incident.id}`}</span>
                                   </div>
@@ -668,8 +704,8 @@ export default function Incidents() {
                                 <td className="monospaced" style={{ color: 'var(--fg-muted)', fontWeight: 600, fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.date}</td>
                                 <td style={{ padding: '0.4rem 0.75rem', borderTopRightRadius: '10px', borderBottomRightRadius: '10px', border: '1px solid transparent', borderLeft: 'none' }}>
                                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                    <span className={`badge badge-${incident.status?.includes('Closed') ? 'closed' : incident.status?.includes('Open') ? 'open' : 'review'}`} style={{ fontWeight: 700, padding: '0.2rem 0.6rem', fontSize: '0.65rem' }}>
-                                      {incident.status}
+                                    <span className={`badge badge-${(String(incident.status || '').toLowerCase().includes('closed') || String(incident.status || '').toLowerCase() === 'close') ? 'closed' : (String(incident.status || '').toLowerCase().includes('open') || String(incident.status || '').toLowerCase() === 'new') ? 'open' : 'review'}`} style={{ fontWeight: 700, padding: '0.2rem 0.6rem', fontSize: '0.65rem' }}>
+                                      {String(incident.status || '')}
                                     </span>
                                   </div>
                                 </td>
@@ -679,8 +715,8 @@ export default function Incidents() {
                                   </td>
                                 )}
                               </tr>
-                            ))
-                          )}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

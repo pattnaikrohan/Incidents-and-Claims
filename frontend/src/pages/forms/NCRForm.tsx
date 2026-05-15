@@ -49,7 +49,8 @@ export default function NCRForm({ onSubmit, onCancel, loading, initialData, read
   });
 
   useEffect(() => {
-    if (incident_id && !initialData && f.incident_id !== incident_id) {
+    const isPending = !f.incident_id || f.incident_id.includes('PENDING');
+    if (incident_id && !initialData && isPending && f.incident_id !== incident_id) {
       upd('incident_id', incident_id);
     }
   }, [incident_id, initialData, f.incident_id]);

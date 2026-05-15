@@ -1,5 +1,6 @@
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { DEFAULT_STATUSES } from '../utils/incidentConstants';
 import { ArrowLeft, Package, Users, HeartPulse, Lock, Shield, DollarSign, FileWarning } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -45,8 +46,10 @@ export default function NewIncident() {
     return incidents.find(i => i.id === draftId || i.incident_id === draftId || i.incident_number_str === draftId);
   }, [draftId, incidents]);
 
-  // Logic to find the next available ID by checking the live register
-  const nextId = (() => {
+  // Generate a sticky ID so it doesn't change while the user is filling out the form
+  const [stickyId, setStickyId] = useState('');
+
+  const calculatedNextId = useMemo(() => {
     if (!meta) return '';
     const prefix = meta.prefix;
     const relatedIds = incidents
@@ -55,7 +58,6 @@ export default function NewIncident() {
       .map(id => {
         const parts = id.split('-');
         const seqStr = parts[1];
-        // Try to parse as base 36 (like generateId does) or as a simple integer
         const seq = parseInt(seqStr, 10);
         if (!isNaN(seq)) return seq;
         const b36 = parseInt(seqStr, 36);
@@ -64,7 +66,19 @@ export default function NewIncident() {
     
     const maxSeq = relatedIds.length > 0 ? Math.max(...relatedIds) : 0;
     return `${prefix}-${(maxSeq + 1).toString().padStart(3, '0')}`;
-  })();
+  }, [meta, incidents]);
+
+  // Set stickyId once we have a calculated ID and haven't set it yet
+  useEffect(() => {
+    if (calculatedNextId && !stickyId) {
+      setStickyId(calculatedNextId);
+    }
+  }, [calculatedNextId, stickyId]);
+
+  // Reset stickyId if type changes
+  useEffect(() => {
+    setStickyId('');
+  }, [type]);
 
   const handleSubmit = async (data: any, isDraft = false) => {
     setLoading(true);
@@ -82,11 +96,22 @@ export default function NewIncident() {
         return val;
       };
 
+      const currentIncidentId = data.incident_id || stickyId;
       const payload = {
         ...data,
+        incident_id: currentIncidentId,
+        incident_ref: currentIncidentId,
+        // Add explicit cr991 keys to help Power Automate mapping
+        cr991_incidentid: currentIncidentId,
+        cr991_incidentref: currentIncidentId,
+        cr991_number: currentIncidentId,
+        cr991_name: currentIncidentId,
+        cr991_hrid: currentIncidentId,
+        cr991_whsid: currentIncidentId,
+        cr991_ncrref: currentIncidentId,
         category: type,
         type: meta.label,
-        status: isDraft ? 'Draft' : 'Open - Incident Logged',
+        status: isDraft ? 'Draft' : (DEFAULT_STATUSES[type] || 'Open - New'),
         is_draft: isDraft, // Explicit flag for Power Automate
         location: data.location || data.location_of_incident || data.branch_department || 'N/A',
         description: data.description || data.incident_summary || 'N/A',
@@ -167,7 +192,7 @@ export default function NewIncident() {
           if (isDraft) {
             // Add to local draft registry to force it into the Drafts tab even if backend returns 'Open'
             const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
-            const currentId = data.incident_id || nextId;
+            const currentId = data.incident_id || stickyId;
             if (currentId && !draftRegistry.includes(currentId)) {
               draftRegistry.push(currentId);
               localStorage.setItem('incident_draft_registry', JSON.stringify(draftRegistry));
@@ -315,13 +340,13 @@ export default function NewIncident() {
       )}
 
       {/* Dynamic Form */}
-      {type === 'cargo' && <CargoForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
-      {type === 'hr' && <HRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
-      {type === 'whs' && <WHSForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
-      {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
-      {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
-      {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
-      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'cargo' && <CargoForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'hr' && <HRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'whs' && <WHSForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
     </div>
   );
 }
