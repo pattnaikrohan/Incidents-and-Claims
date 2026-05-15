@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Package, UploadCloud, X, FileText } from 'lucide-react';
 import { CurrencyInput } from '../../components/CurrencyInput';
+import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
+
+function today() {
+  return new Date().toLocaleDateString('en-AU');
+}
 
 const INCIDENT_TYPES = [
   'Abandoned Cargo','Cargo Damage','Cargo Theft','Container Seal Breach',
@@ -21,15 +26,7 @@ const CLAIM_TYPES = [
   'Company intent to claim against customer (Supporting Evidence required)'
 ];
 
-import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
-
-function generateId(prefix: string) { let c = parseInt(localStorage.getItem("seq_"+prefix) || "0", 10) + 1; localStorage.setItem("seq_"+prefix, c.toString()); return prefix + "-" + c.toString(36).toUpperCase(); }
-
-function today() {
-  return new Date().toLocaleDateString('en-AU');
-}
-
-interface Props { onSubmit?: (data: any) => void; onCancel?: () => void; loading?: boolean; initialData?: any; readOnly?: boolean; }
+interface Props { onSubmit?: (data: any, isDraft?: boolean) => void; onCancel?: () => void; loading?: boolean; initialData?: any; readOnly?: boolean; incident_id?: string; }
 
 const Field = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
   <div>
@@ -38,16 +35,10 @@ const Field = ({ label, req, children }: { label: string; req?: boolean; childre
   </div>
 );
 
-export default function CargoForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
+export default function CargoForm({ onSubmit, onCancel, loading, initialData, readOnly, incident_id }: Props) {
   const [f, setF] = useState<any>(() => {
-    const prefix = 'CEI';
-    const storageKey = `draft_incident_id_${prefix}`;
-    const stableId = initialData?.incident_id || initialData?.incident_number_str || sessionStorage.getItem(storageKey) || generateId(prefix);
+    const stableId = initialData?.incident_id || initialData?.incident_number_str || incident_id || 'CEI-PENDING';
     
-    if (!initialData && !sessionStorage.getItem(storageKey)) {
-      sessionStorage.setItem(storageKey, stableId);
-    }
-
     if (initialData) {
       return {
         ...initialData,
@@ -81,6 +72,13 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
       incident_summary: '', root_cause: '', claim_estimate: '',
     };
   });
+
+  // Keep ID in sync if it arrives late from parent
+  useEffect(() => {
+    if (incident_id && !initialData && f.incident_id !== incident_id) {
+      upd('incident_id', incident_id);
+    }
+  }, [incident_id, initialData, f.incident_id]);
   const [incidentTypes, setIncidentTypes] = useState<string[]>(
     initialData?.incident_types ? (typeof initialData.incident_types === 'string' ? initialData.incident_types.split(', ') : initialData.incident_types) : []
   );
@@ -115,6 +113,11 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
         </select>
       </Field>
     );
+  };
+
+  const handleDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onSubmit) onSubmit({ ...f, status: 'Draft', incident_types: incidentTypes, corrective_actions: correctiveActions, claim_types: claimTypes, files }, true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -342,13 +345,49 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
             </div>
           ))}
         </div>}
+        
+        {/* Existing Attachments from Draft */}
+        {initialData?.attachments && Array.isArray(initialData.attachments) && initialData.attachments.length > 0 && (
+          <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-base)', paddingTop: '1rem' }}>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--fg-faint)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Existing Draft Attachments</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {initialData.attachments.map((at: any, i: number) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.875rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={13} color="#3b82f6"/>
+                    {at.name || at.filename || `Attachment ${i+1}`}
+                  </span>
+                  <div style={{ fontSize: '0.7rem', color: '#3b82f6', fontWeight: 700 }}>PREVIOUSLY UPLOADED</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
       {!readOnly && (
-        <div style={{ display:'flex', justifyContent:'flex-end', gap:'1rem' }}>
-          <button type="button" onClick={onCancel} className="btn btn-secondary" style={{ padding:'0.75rem 2rem' }}>Cancel</button>
-          <button type="submit" className="btn btn-primary" disabled={loading} style={{ padding:'0.75rem 2.5rem' }}>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          gap: '0.75rem', 
+          marginTop: '1.5rem', 
+          padding: '1rem', 
+          background: 'rgba(255, 255, 255, 0.25)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '12px',
+          border: '1px solid var(--border-base)',
+        }}>
+          <button type="button" onClick={onCancel} className="btn btn-danger">
+            <X size={16} />
+            Cancel
+          </button>
+          <button type="button" onClick={handleDraft} className="btn btn-warning" disabled={loading}>
+            <UploadCloud size={16} />
+            Save as Draft
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            <FileText size={16} />
             {loading ? 'Submitting...' : 'Submit Incident'}
           </button>
         </div>

@@ -1,13 +1,11 @@
-import { useState } from 'react';
-import { DollarSign } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, X, Save, Send } from 'lucide-react';
 import { CurrencyInput } from '../../components/CurrencyInput';
-
-function generateId() { let p = 'FIN'; let c = parseInt(localStorage.getItem('seq_'+p) || '0', 10) + 1; localStorage.setItem('seq_'+p, c.toString()); return p + '-' + c.toString(36).toUpperCase(); }
-function today() { return new Date().toLocaleDateString('en-AU'); }
-
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
 
-interface Props { onSubmit?: (d: any)=>void; onCancel?: ()=>void; loading?: boolean; initialData?: any; readOnly?: boolean; }
+function today() { return new Date().toLocaleDateString('en-AU'); }
+
+interface Props { onSubmit?: (d: any, isDraft?: boolean)=>void; onCancel?: ()=>void; loading?: boolean; initialData?: any; readOnly?: boolean; incident_id?: string; }
 
 const Field = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div><label className="overline">{label}{req&&<span style={{color:'#ef4444',marginLeft:3}}>*</span>}</label>{children}</div>
@@ -19,12 +17,14 @@ const FINANCE_INCIDENT_TYPES = [
   "Write-Off Required", "Travel Disruption", "Other"
 ];
 
-export default function FinanceForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
+export default function FinanceForm({ onSubmit, onCancel, loading, initialData, readOnly, incident_id }: Props) {
   const [f, setF] = useState<any>(() => {
+    const stableId = initialData?.incident_number_str || initialData?.incident_id || incident_id || 'FIN-PENDING';
+    
     if (initialData) {
       return {
         ...initialData,
-        incident_id: initialData.incident_number_str || initialData.incident_id || `FIN-${initialData.id}`,
+        incident_id: stableId,
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         date_reported: initialData.date_reported || initialData.date || today(),
         reported_by: initialData.reported_by || initialData.logged_by || 'System User',
@@ -35,20 +35,31 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
       };
     }
     return {
-    incident_id: generateId(), date_of_incident:'', date_reported: today(),
-    reported_by: localStorage.getItem('email')||'Current User',
-    business_unit:'', branch_department:'',
-    incident_type:'', description:'',
-    financial_value:'', actual_financial_loss:'', recovery_possible:'', recovery_amount:'',
-    cfo_notified:'', cro_notified:'', police_reported:'', insurer_notified:'',
-    root_cause:'', corrective_action:'', write_off_required:'', files: [] as File[]
-  };
+      incident_id: stableId, date_of_incident:'', date_reported: today(),
+      reported_by: localStorage.getItem('email')||'Current User',
+      business_unit:'', branch_department:'',
+      incident_type:'', description:'',
+      financial_value:'', actual_financial_loss:'', recovery_possible:'', recovery_amount:'',
+      cfo_notified:'', cro_notified:'', police_reported:'', insurer_notified:'',
+      root_cause:'', corrective_action:'', write_off_required:'', files: [] as File[]
+    };
   });
+
+  useEffect(() => {
+    if (incident_id && !initialData && f.incident_id !== incident_id) {
+      upd('incident_id', incident_id);
+    }
+  }, [incident_id, initialData, f.incident_id]);
   const upd = (k:string,v:any) => setF((p:any)=>({...p,[k]:v}));
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSubmit) onSubmit(f);
+  };
+
+  const handleDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onSubmit) onSubmit({ ...f, status: 'Draft' }, true);
   };
 
   const isCreateMode = !initialData;
@@ -181,13 +192,32 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
         </div>
       </div>
 
+      {/* Actions */}
       {!readOnly && (
-      <div style={{display:'flex',justifyContent:'flex-end',gap:'1rem'}}>
-        <button type="button" onClick={onCancel} className="btn btn-secondary" style={{padding:'0.75rem 2rem'}}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{padding:'0.75rem 2.5rem'}}>
-          {loading?'Submitting...':'Submit Incident'}
-        </button>
-      </div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          gap: '0.75rem', 
+          marginTop: '1.5rem', 
+          padding: '1rem', 
+          background: 'rgba(255, 255, 255, 0.25)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '12px',
+          border: '1px solid var(--border-base)',
+        }}>
+          <button type="button" onClick={onCancel} className="btn btn-danger">
+            <X size={16} />
+            Cancel
+          </button>
+          <button type="button" onClick={handleDraft} className="btn btn-warning" disabled={loading}>
+            <Save size={16} />
+            Save as Draft
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            <Send size={16} />
+            {loading ? 'Submitting...' : 'Submit Incident'}
+          </button>
+        </div>
       )}
       </fieldset>
     </form>

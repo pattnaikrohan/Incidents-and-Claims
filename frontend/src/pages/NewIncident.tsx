@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ArrowLeft, Package, Users, HeartPulse, Lock, Shield, DollarSign, FileWarning } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -12,29 +12,61 @@ import RiskForm from './forms/RiskForm';
 import FinanceForm from './forms/FinanceForm';
 import NCRForm from './forms/NCRForm';
 
-const FORM_META: Record<string, { label: string; icon: any; color: string; desc: string }> = {
-  cargo: { label: 'Cargo & Equipment Incident', icon: Package, color: '#f59e0b', desc: 'Log cargo damage, theft, equipment failure and related events.' },
-  hr: { label: 'Human Resources Incident', icon: Users, color: '#8b5cf6', desc: 'Report HR matters including misconduct, grievances, and policy breaches.' },
-  whs: { label: 'WH&S Incident', icon: HeartPulse, color: '#ef4444', desc: 'Report workplace health, safety incidents, near misses, and injuries.' },
-  it: { label: 'IT & Security Incident', icon: Lock, color: '#06b6d4', desc: 'Report cyber incidents, data breaches, outages, and unauthorised access.' },
-  risk: { label: 'Risk & Compliance Incident', icon: Shield, color: '#10b981', desc: 'Report regulatory breaches, policy non-compliance, and sanctions violations.' },
-  finance: { label: 'Finance Incident', icon: DollarSign, color: '#3b82f6', desc: 'Report financial incidents and travel disruption events.' },
-  ncr: { label: 'Non-Conformance Report (NCR)', icon: FileWarning, color: '#eab308', desc: 'Log non-conformance reports, process failures, and defects.' },
+import { useIncidents } from '../hooks/useIncidents';
+
+const FORM_META: Record<string, { label: string; icon: any; color: string; desc: string; prefix: string }> = {
+  cargo: { label: 'Cargo & Equipment Incident', icon: Package, color: '#f59e0b', desc: 'Log cargo damage, theft, equipment failure and related events.', prefix: 'CEI' },
+  hr: { label: 'Human Resources Incident', icon: Users, color: '#8b5cf6', desc: 'Report HR matters including misconduct, grievances, and policy breaches.', prefix: 'HR' },
+  whs: { label: 'WH&S Incident', icon: HeartPulse, color: '#ef4444', desc: 'Report workplace health, safety incidents, near misses, and injuries.', prefix: 'WHS' },
+  it: { label: 'IT & Security Incident', icon: Lock, color: '#06b6d4', desc: 'Report cyber incidents, data breaches, outages, and unauthorised access.', prefix: 'ITS' },
+  risk: { label: 'Risk & Compliance Incident', icon: Shield, color: '#10b981', desc: 'Report regulatory breaches, policy non-compliance, and sanctions violations.', prefix: 'RCI' },
+  finance: { label: 'Finance Incident', icon: DollarSign, color: '#3b82f6', desc: 'Report financial incidents and travel disruption events.', prefix: 'FIN' },
+  ncr: { label: 'Non-Conformance Report (NCR)', icon: FileWarning, color: '#eab308', desc: 'Log non-conformance reports, process failures, and defects.', prefix: 'NCR' },
 };
 
 export default function NewIncident() {
   const navigate = useNavigate();
   const { role } = useAuth();
+  const { incidents, loading: incidentsLoading } = useIncidents(0); // No polling needed here, just the list
   const [params] = useSearchParams();
   const type = params.get('type') || '';
+  const draftId = params.get('draftId') || '';
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Incident submitted successfully. Redirecting…');
 
   const meta = FORM_META[type];
+  
+  // Load existing draft data if draftId is present
+  const draftData = useMemo(() => {
+    if (!draftId) return null;
+    return incidents.find(i => i.id === draftId || i.incident_id === draftId || i.incident_number_str === draftId);
+  }, [draftId, incidents]);
 
-  const handleSubmit = async (data: any) => {
+  // Logic to find the next available ID by checking the live register
+  const nextId = (() => {
+    if (!meta) return '';
+    const prefix = meta.prefix;
+    const relatedIds = incidents
+      .map(i => i.incident_number_str || '')
+      .filter(id => id.startsWith(prefix + '-'))
+      .map(id => {
+        const parts = id.split('-');
+        const seqStr = parts[1];
+        // Try to parse as base 36 (like generateId does) or as a simple integer
+        const seq = parseInt(seqStr, 10);
+        if (!isNaN(seq)) return seq;
+        const b36 = parseInt(seqStr, 36);
+        return isNaN(b36) ? 0 : b36;
+      });
+    
+    const maxSeq = relatedIds.length > 0 ? Math.max(...relatedIds) : 0;
+    return `${prefix}-${(maxSeq + 1).toString().padStart(3, '0')}`;
+  })();
+
+  const handleSubmit = async (data: any, isDraft = false) => {
     setLoading(true);
     setError('');
     try {
@@ -54,6 +86,8 @@ export default function NewIncident() {
         ...data,
         category: type,
         type: meta.label,
+        status: isDraft ? 'Draft' : 'Open - Incident Logged',
+        is_draft: isDraft, // Explicit flag for Power Automate
         location: data.location || data.location_of_incident || data.branch_department || 'N/A',
         description: data.description || data.incident_summary || 'N/A',
         job_number: data.system_job_number || data.job_number || '',
@@ -66,8 +100,11 @@ export default function NewIncident() {
         claim_types: Array.isArray(data.claim_types) ? data.claim_types.join(', ') : data.claim_types,
       };
       delete payload.files;
+      
+      // Still call our local API for DB storage, but Power Automate is the source of truth for the Digital Twin
       const response = await api.post('/incidents', payload);
       const incidentId = response.data.incident_id;
+      
       if (files.length > 0) {
         // Map category to exact Azure Blob Storage folder name
         const FOLDER_MAP: Record<string, string> = {
@@ -90,8 +127,9 @@ export default function NewIncident() {
           });
         }
       }
+      
       try {
-        console.log('Sending payload to Power Automate:', payload);
+        console.log(`Sending ${isDraft ? 'DRAFT' : 'FINAL'} payload to Power Automate:`, payload);
         const NCR_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/6052791d58f14461b7056e1c63a0183f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=cdTd3jGh8msQCVrZRvMYwQlmrH_nsY5i1gsBVoyk7UI';
         const DEFAULT_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/465821937cf347c9b5eec4737d068fdd/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZUR4iYLZmuytbGXp0uaTvqXkvT927AsbYf9_RtJF2lE';
         
@@ -105,8 +143,8 @@ export default function NewIncident() {
 
         if (!flowRes.ok) {
           if (flowRes.status === 502) {
-             console.warn('Power Automate returned 502 NoResponse. This usually means the flow was triggered successfully but either timed out (took >2 mins) or is missing an HTTP Response action at the end of the flow.');
-             setSuccessMessage(`${meta.label} registered. (Note: Workflow triggered but returned no response).`);
+             console.warn('Power Automate returned 502 NoResponse.');
+             setSuccessMessage(`${meta.label} ${isDraft ? 'Draft' : ''} registered. (Note: Workflow triggered but returned no response).`);
           } else {
              const errorText = await flowRes.text();
              console.error('Power Automate rejected the request:', flowRes.status, errorText);
@@ -114,19 +152,35 @@ export default function NewIncident() {
           }
         } else {
           console.log('Power Automate flow triggered successfully!');
-          setSuccessMessage(`${meta.label} registered and workflow triggered successfully.`);
+          setSuccessMessage(`${meta.label} ${isDraft ? 'Draft' : ''} registered and workflow triggered successfully.`);
         }
       } catch (flowErr: any) {
         console.error('Power Automate Flow error:', flowErr);
-        // Still show success for the incident creation, but alert about the flow failure in the console
-        setSuccessMessage(`${meta.label} registered successfully, but workflow trigger failed.`);
+        setSuccessMessage(`${meta.label} ${isDraft ? 'Draft' : ''} registered successfully, but workflow trigger failed.`);
       }
 
       setSuccess(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
         const isManager = ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '');
-        if (isManager) {
+        if (isDraft || isManager) {
+          if (isDraft) {
+            // Add to local draft registry to force it into the Drafts tab even if backend returns 'Open'
+            const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
+            const currentId = data.incident_id || nextId;
+            if (currentId && !draftRegistry.includes(currentId)) {
+              draftRegistry.push(currentId);
+              localStorage.setItem('incident_draft_registry', JSON.stringify(draftRegistry));
+            }
+          } else {
+            // Full submission - remove from draft registry if it exists
+            const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
+            const currentId = data.incident_id;
+            if (currentId) {
+              const filtered = draftRegistry.filter((id: string) => id !== currentId);
+              localStorage.setItem('incident_draft_registry', JSON.stringify(filtered));
+            }
+          }
           navigate('/incidents');
         } else {
           navigate('/incidents/new');
@@ -134,11 +188,15 @@ export default function NewIncident() {
         }
       }, 1800);
     } catch (err: any) {
-      const detail = err.response?.data?.detail;
-      if (Array.isArray(detail)) {
-        setError(detail.map((e: any) => `${e.loc[e.loc.length - 1].replace(/_/g, ' ')}: ${e.msg}`).join(' | '));
+      if (isDraft) {
+        setError('Failed to save draft. Even drafts require basic system connectivity.');
       } else {
-        setError(detail || 'Failed to submit incident record. Please check all mandatory fields.');
+        const detail = err.response?.data?.detail;
+        if (Array.isArray(detail)) {
+          setError(detail.map((e: any) => `${e.loc[e.loc.length - 1].replace(/_/g, ' ')}: ${e.msg}`).join(' | '));
+        } else {
+          setError(detail || 'Failed to submit incident record. Please check all mandatory fields.');
+        }
       }
     } finally {
       setLoading(false);
@@ -198,7 +256,20 @@ export default function NewIncident() {
     );
   }
 
-  /* ── Render selected form ─────────────────────────────────── */
+  // Wait for incidents to load to ensure ID generation is accurate and draft data is available
+  if (incidentsLoading) {
+    return (
+      <div className="page-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div className="spinner" style={{ marginBottom: '1rem' }}></div>
+          <p style={{ color: 'var(--fg-faint)', fontWeight: 500 }}>
+            {draftId ? 'Resuming your draft...' : 'Synchronizing registry...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const Icon = meta.icon;
   return (
     <div className="fade-in" style={{ paddingBottom: '4rem' }}>
@@ -244,13 +315,13 @@ export default function NewIncident() {
       )}
 
       {/* Dynamic Form */}
-      {type === 'cargo' && <CargoForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
-      {type === 'hr' && <HRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
-      {type === 'whs' && <WHSForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
-      {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
-      {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
-      {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
-      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} />}
+      {type === 'cargo' && <CargoForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'hr' && <HRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'whs' && <WHSForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
+      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={nextId} initialData={draftData} />}
     </div>
   );
 }

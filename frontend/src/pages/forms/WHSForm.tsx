@@ -1,28 +1,28 @@
-import { useState } from 'react';
-import { HeartPulse } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { HeartPulse, X, Save, Send } from 'lucide-react';
+import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
 
-function generateId() { let p = 'WHS'; let c = parseInt(localStorage.getItem('seq_'+p) || '0', 10) + 1; localStorage.setItem('seq_'+p, c.toString()); return p + '-' + c.toString(36).toUpperCase(); }
 function today() { return new Date().toLocaleDateString('en-AU'); }
 
 const WHS_TYPES = ['Near Miss','First Aid Injury','Medical Treatment Injury','Lost Time Injury',
   'Dangerous Occurrence','Hazard Identification','Property Damage','Environmental Incident','Other'];
 
-import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
-
-interface Props { onSubmit?: (d: any)=>void; onCancel?: ()=>void; loading?: boolean; initialData?: any; readOnly?: boolean; }
+interface Props { onSubmit?: (d: any, isDraft?: boolean)=>void; onCancel?: ()=>void; loading?: boolean; initialData?: any; readOnly?: boolean; incident_id?: string; }
 
 const Field = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div><label className="overline">{label}{req&&<span style={{color:'#ef4444',marginLeft:3}}>*</span>}</label>{children}</div>
 );
 
-export default function WHSForm({ onSubmit, onCancel, loading, initialData, readOnly }: Props) {
+export default function WHSForm({ onSubmit, onCancel, loading, initialData, readOnly, incident_id }: Props) {
   const [f, setF] = useState<any>(() => {
+    const stableId = initialData?.incident_number_str || initialData?.incident_id || incident_id || 'WHS-PENDING';
+    
     if (initialData) {
       return {
         ...initialData,
-        incident_ref: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
-        incident_id: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
-        ncr_ref: initialData.incident_number_str || initialData.incident_id || `INC-${initialData.id}`,
+        incident_ref: stableId,
+        incident_id: stableId,
+        ncr_ref: stableId,
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         date_reported: initialData.date_reported || initialData.date || today(),
         date_logged: initialData.date_logged || initialData.date || today(),
@@ -39,16 +39,22 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
       };
     }
     return {
-    incident_id: generateId(), date_of_incident:'', date_reported: today(),
-    reported_by: localStorage.getItem('role')||'Current User',
-    business_unit:'', branch_department:'', persons_involved:'', location:'',
-    incident_type:'', description:'', injury_details:'',
-    medical_treatment_required:'', lost_time_injury:'', notifiable_safework:'',
-    date_notified_regulator:'', root_cause:'', corrective_action:'',
-    corrective_action_owner: localStorage.getItem('role')||'Current User',
-    corrective_action_due_date:'', chro_cro_notified:'', workers_comp_claim:'', files: [] as File[]
-  };
+      incident_id: stableId, date_of_incident:'', date_reported: today(),
+      reported_by: localStorage.getItem('role')||'Current User',
+      business_unit:'', branch_department:'', persons_involved:'', location:'',
+      incident_type:'', description:'', injury_details:'',
+      medical_treatment_required:'', lost_time_injury:'', notifiable_safework:'',
+      date_notified_regulator:'', root_cause:'', corrective_action:'',
+      corrective_action_owner: localStorage.getItem('role')||'Current User',
+      corrective_action_due_date:'', chro_cro_notified:'', workers_comp_claim:'', files: [] as File[]
+    };
   });
+
+  useEffect(() => {
+    if (incident_id && !initialData && f.incident_id !== incident_id) {
+      upd('incident_id', incident_id);
+    }
+  }, [incident_id, initialData, f.incident_id]);
   const upd = (k:string,v:any) => setF((p:any)=>({...p,[k]:v}));
 
   const submitForm = (e: React.FormEvent) => {
@@ -75,6 +81,11 @@ Corrective Action Due Date: ${f.corrective_action_due_date || 'N/A'}
     `.trim();
 
     if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
+  };
+
+  const handleDraft = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onSubmit) onSubmit({ ...f, status: 'Draft' }, true);
   };
 
   return (
@@ -196,16 +207,50 @@ Corrective Action Due Date: ${f.corrective_action_due_date || 'N/A'}
               if(e.target.files) upd('files', Array.from(e.target.files));
             }} />
           </Field>
+          
+          {/* Existing Attachments from Draft */}
+          {initialData?.attachments && Array.isArray(initialData.attachments) && initialData.attachments.length > 0 && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-faint)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Existing Draft Attachments</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {initialData.attachments.map((at: any, i: number) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--fg-base)' }}>{at.name || at.filename || `Attachment ${i+1}`}</span>
+                    <span style={{ fontSize: '0.6rem', color: '#3b82f6', fontWeight: 700 }}>UPLOADED</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Actions */}
       {!readOnly && (
-      <div style={{display:'flex',justifyContent:'flex-end',gap:'1rem'}}>
-        <button type="button" onClick={onCancel} className="btn btn-secondary" style={{padding:'0.75rem 2rem'}}>Cancel</button>
-        <button type="submit" className="btn btn-primary" disabled={loading} style={{padding:'0.75rem 2.5rem'}}>
-          {loading?'Submitting...':'Submit Incident'}
-        </button>
-      </div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'flex-end', 
+          gap: '0.75rem', 
+          marginTop: '1.5rem', 
+          padding: '1rem', 
+          background: 'rgba(255, 255, 255, 0.25)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '12px',
+          border: '1px solid var(--border-base)',
+        }}>
+          <button type="button" onClick={onCancel} className="btn btn-danger">
+            <X size={16} />
+            Cancel
+          </button>
+          <button type="button" onClick={handleDraft} className="btn btn-warning" disabled={loading}>
+            <Save size={16} />
+            Save as Draft
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            <Send size={16} />
+            {loading ? 'Submitting...' : 'Submit Incident'}
+          </button>
+        </div>
       )}
       </fieldset>
     </form>

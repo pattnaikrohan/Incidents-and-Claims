@@ -133,11 +133,26 @@ export default function Incidents() {
     }
   }
 
-  // Apply tab filter
+  // Final filter by tab
   displayedIncidents = displayedIncidents.filter(i => {
-    if (activeTab === 'active') return !i.status?.includes('Closed') && i.status !== 'Draft';
-    if (activeTab === 'closed') return i.status?.includes('Closed');
-    if (activeTab === 'drafts') return i.status === 'Draft';
+    const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
+    const isLocalDraft = draftRegistry.includes(i.incident_number_str) || draftRegistry.includes(i.incident_id);
+    
+    const status = (i.status || '').toLowerCase();
+    
+    if (activeTab === 'active') {
+      // If it's a local draft, it shouldn't be in Active, even if backend says 'Open'
+      if (isLocalDraft) return false;
+      return !status.includes('closed') && !status.includes('draft');
+    }
+    
+    if (activeTab === 'closed') return status.includes('closed');
+    
+    if (activeTab === 'drafts') {
+      // If it's in the draft registry OR has a 'Draft' status, show it here
+      return isLocalDraft || status.includes('draft');
+    }
+    
     return true;
   });
   
@@ -563,7 +578,18 @@ export default function Incidents() {
                             filteredIncidents.map((incident, i) => (
                               <tr 
                                 key={i} 
-                                onClick={() => navigate(pageSource === 'cors' ? `/cors/${incident.id}` : pageSource === 'claims' ? `/claims/${incident.id}` : `/incidents/${incident.id}`, { state: { source: pageSource } })} 
+                                onClick={() => {
+                                  const status = (incident.status || '').toLowerCase();
+                                  const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
+                                  const isLocalDraft = draftRegistry.includes(incident.incident_number_str) || draftRegistry.includes(incident.incident_id);
+                                  const isDraft = status.includes('draft') || isLocalDraft;
+
+                                  if (isDraft && activeTab === 'drafts') {
+                                    navigate(`/incidents/new?type=${category.id}&draftId=${incident.id}`);
+                                  } else {
+                                    navigate(pageSource === 'cors' ? `/cors/${incident.id}` : pageSource === 'claims' ? `/claims/${incident.id}` : `/incidents/${incident.id}`, { state: { source: pageSource } });
+                                  }
+                                }}
                                 style={{ 
                                   cursor: 'pointer', 
                                   background: 'var(--bg-surface)', 

@@ -54,21 +54,68 @@ export function useIncidents(pollingInterval = 2000) {
 
       const mergedMap = new Map<string, any>();
 
-      const addOrMerge = (obj: any) => {
+      const mapRawToClean = (raw: any) => {
+        const clean: any = {};
+        Object.keys(raw).forEach(key => {
+          if (key.startsWith('cr991_')) {
+            let cleanKey = key.replace('cr991_', '');
+            if (cleanKey === 'shortdescription') cleanKey = 'short_description';
+            if (cleanKey === 'dateofincident') cleanKey = 'date_of_incident';
+            if (cleanKey === 'datelogged') cleanKey = 'date_logged';
+            if (cleanKey === 'loggedby') cleanKey = 'logged_by';
+            if (cleanKey === 'businessunit') cleanKey = 'business_unit';
+            if (cleanKey === 'branchdepartment') cleanKey = 'branch_department';
+            if (cleanKey === 'incidenttype') cleanKey = 'incident_type';
+            if (cleanKey === 'rootcause') cleanKey = 'root_cause';
+            if (cleanKey === 'correctiveaction') cleanKey = 'corrective_action';
+            if (cleanKey === 'systemjobnumber') cleanKey = 'system_job_number';
+            if (cleanKey === 'incidentsummary') cleanKey = 'incident_summary';
+            if (cleanKey === 'locationofincident') cleanKey = 'location_of_incident';
+            if (cleanKey === 'cargodescription') cleanKey = 'cargo_description';
+            if (cleanKey === 'cargovalue') cleanKey = 'cargo_value';
+            if (cleanKey === 'containernumbers') cleanKey = 'container_numbers';
+            if (cleanKey === 'originagent') cleanKey = 'origin_agent';
+            if (cleanKey === 'destinationagent') cleanKey = 'destination_agent';
+            if (cleanKey === 'shippinglineairline') cleanKey = 'shipping_line';
+            if (cleanKey === 'scopeofwork') cleanKey = 'scope_of_work';
+            if (cleanKey === 'roleperformed') cleanKey = 'role_performed';
+            if (cleanKey === 'claimestimate') cleanKey = 'claim_estimate';
+            if (cleanKey === 'intenttoclaim') cleanKey = 'intent_to_claim';
+            if (cleanKey === 'attachments' || cleanKey === 'files' || cleanKey === 'evidence') cleanKey = 'attachments';
+            clean[cleanKey] = raw[key];
+          }
+        });
+        Object.keys(raw).forEach(key => {
+          if (key.includes('@OData.Community.Display.V1.FormattedValue')) {
+            const baseKey = key.split('@')[0].replace('cr991_', '');
+            clean[baseKey + '_formatted'] = raw[key];
+            if (baseKey === 'businessunit') clean.business_unit = raw[key];
+            if (baseKey === 'branchdepartment') clean.branch_department = raw[key];
+            if (baseKey === 'incidentstatus') clean.status = raw[key];
+            if (baseKey === 'incidenttype') clean.incident_type = raw[key];
+          }
+        });
+        return clean;
+      };
+
+      const addOrMerge = (obj: any, raw?: any) => {
         if (!obj.id) return;
         const id = String(obj.id);
+        const autoMapped = raw ? mapRawToClean(raw) : {};
+        const finalObj = { ...autoMapped, ...obj };
+        
         if (mergedMap.has(id)) {
           const existing = mergedMap.get(id);
           const merged = { ...existing };
-          Object.keys(obj).forEach(key => {
-            const newVal = obj[key];
+          Object.keys(finalObj).forEach(key => {
+            const newVal = finalObj[key];
             if (newVal && newVal !== 'N/A' && newVal !== 'No description' && newVal !== '' && newVal !== 'No') {
               merged[key] = newVal;
             }
           });
           mergedMap.set(id, merged);
         } else {
-          mergedMap.set(id, obj);
+          mergedMap.set(id, finalObj);
         }
       };
 
@@ -136,29 +183,7 @@ export function useIncidents(pollingInterval = 2000) {
               cor_assessment: raw.cr991_corassessment || '',
               cor_corrective_action: raw.cr991_corcorrectiveaction || '',
               cor_action_implemented: raw.cr991_corcaimplemented || 'No',
-              // Claims fields
-              claim_reference: raw.cr991_claimreferencenumber || '',
-              claim_date: raw.cr991_dateofclaim || '',
-              claimant: raw.cr991_claimant || '',
-              claim_time_bar: raw.cr991_timebar || '',
-              claim_type: raw["cr991_claimtype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimtype || '',
-              claim_direction: raw["cr991_claimdirection@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimdirection || '',
-              claim_amount: raw.cr991_claimamount || '',
-              paid_amount: raw.cr991_paidamount || '',
-              insurance_paid: raw.cr991_insurancepaidamount || '',
-              deductible: raw.cr991_deductible || '',
-              recovery_amount: raw.cr991_recoveryamount || '',
-              outstanding_balance: raw.cr991_outstandingbalance || '',
-              writeoff_required: raw["cr991_writeoffrequired@OData.Community.Display.V1.FormattedValue"] || raw.cr991_writeoffrequired || 'No',
-              writeoff_amount: raw.cr991_writeoffamount || '',
-              writeoff_approved_by: raw.cr991_writeoffapprovedby || '',
-              writeoff_date: raw.cr991_writeoffdate || '',
-              claim_state: raw.cr991_claimstate || '',
-              claim_status: raw["cr991_claimstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimstatus || 'Open',
-              // Liability fields
-              responsible_party: raw["cr991_responsibleparty@OData.Community.Display.V1.FormattedValue"] || '',
-              risk_level: raw["cr991_risklevel@OData.Community.Display.V1.FormattedValue"] || '',
-            });
+            }, raw);
           });
         }
 
@@ -196,7 +221,7 @@ export function useIncidents(pollingInterval = 2000) {
               notes: raw.cr991_notes || '',
               incident_summary: raw.cr991_incidentsummary || '',
               root_cause: raw.cr991_rootcause || '',
-            });
+            }, raw);
           });
         }
 
@@ -234,7 +259,7 @@ export function useIncidents(pollingInterval = 2000) {
               corrective_action_due_date: raw.cr991_correctiveactionduedate || '',
               chro_cro_notified: raw["cr991_chro_cronotified@OData.Community.Display.V1.FormattedValue"] || '',
               workers_comp_claim: raw["cr991_workerscompclaim@OData.Community.Display.V1.FormattedValue"] || '',
-            });
+            }, raw);
           });
         }
 
@@ -268,7 +293,7 @@ export function useIncidents(pollingInterval = 2000) {
               it_support_ticket_ref: raw.cr991_itsupportticketref || '',
               root_cause: raw.cr991_rootcause || '',
               system_restored: raw["cr991_systemrestored@OData.Community.Display.V1.FormattedValue"] || '',
-            });
+            }, raw);
           });
         }
 
@@ -301,7 +326,7 @@ export function useIncidents(pollingInterval = 2000) {
               date_regulator_notified: raw.cr991_dateregulatornotified || '',
               remediation_plan: raw.cr991_remediationplan || '',
               board_notified: raw["cr991_boardnotified@OData.Community.Display.V1.FormattedValue"] || '',
-            });
+            }, raw);
           });
         }
 
@@ -334,7 +359,7 @@ export function useIncidents(pollingInterval = 2000) {
               bank_notified: raw["cr991_banknotified@OData.Community.Display.V1.FormattedValue"] || '',
               recovery_possible: raw["cr991_recoverypossible@OData.Community.Display.V1.FormattedValue"] || '',
               control_failure_identified: raw.cr991_controlfailureidentified || '',
-            });
+            }, raw);
           });
         }
 
@@ -360,7 +385,7 @@ export function useIncidents(pollingInterval = 2000) {
               nc_type: raw["cr991_nctype@OData.Community.Display.V1.FormattedValue"] || '',
               root_cause: raw.cr991_rootcause || '',
               preventative_action: raw.cr991_preventativeaction || '',
-            });
+            }, raw);
           });
         }
 
@@ -385,7 +410,7 @@ export function useIncidents(pollingInterval = 2000) {
               cor_required: 'No',
               management_escalation: 'No',
               created_at: raw.createdon,
-            });
+            }, raw);
           });
         }
         // ── NCR RECORDS (Enhanced Mapping) ───────────────────
@@ -411,7 +436,7 @@ export function useIncidents(pollingInterval = 2000) {
               ncr_containment: raw.cr991_immediatecontainmentaction || 'N/A',
               ncr_reference: raw.cr991_relatedrecordreference || 'N/A',
               created_at: raw.createdon,
-            });
+            }, raw);
           }
         });
 
@@ -434,7 +459,7 @@ export function useIncidents(pollingInterval = 2000) {
               cor_corrective_action: raw.cr991_correctiveaction || '',
               cor_action_implemented: raw["cr991_actionimplemented@OData.Community.Display.V1.FormattedValue"] || 'No',
               created_at: raw.createdon,
-            });
+            }, raw);
           }
         });
 
@@ -467,7 +492,7 @@ export function useIncidents(pollingInterval = 2000) {
               claim_state: raw.cr991_claimstate || '',
               claim_status: raw["cr991_claimstatus@OData.Community.Display.V1.FormattedValue"] || raw.cr991_claimstatus || 'Open',
               created_at: raw.createdon,
-            });
+            }, raw);
           }
         });
       });
