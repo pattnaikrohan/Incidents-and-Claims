@@ -587,7 +587,15 @@ export default function Incidents() {
                                     String(incident.type).toLowerCase().includes('chain of responsibility') ||
                                     String(incident.incident_types).toLowerCase().includes('chain of responsibility') ||
                                     (incident.type && /\bCOR\b/i.test(incident.type))
-                                  )
+                                  );
+
+                                  const isClaim = (
+                                    String(incident.formal_claim_issued).toLowerCase() === 'yes' ||
+                                    incident.formal_claim_issued === true ||
+                                    incident.formal_claim_issued === 1 ||
+                                    String(incident.formal_claim_issued).toLowerCase() === 'true' ||
+                                    (incident.claim_reference && String(incident.claim_reference).trim() !== '')
+                                  );
 
                                   return (
                                     <tr 
@@ -609,7 +617,7 @@ export default function Incidents() {
                                         background: 'var(--bg-surface)', 
                                         boxShadow: 'var(--shadow-sm)',
                                         transition: 'all 0.2s ease',
-                                        borderLeft: isCoR ? `4px solid #f97316` : '4px solid transparent',
+                                        borderLeft: isCoR ? `4px solid #f97316` : isClaim ? `4px solid #10b981` : '4px solid transparent',
                                       }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.transform = 'translateY(-1px)';
@@ -622,7 +630,7 @@ export default function Incidents() {
                                   e.currentTarget.style.background = 'var(--bg-surface)';
                                 }}
                               >
-                                <td style={{ fontWeight: 700, color: 'var(--fg-base)', padding: isCoR ? '0.4rem 0 0.4rem 0.5rem' : '0.4rem 0 0.4rem 1.5rem', whiteSpace: 'nowrap', borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', border: '1px solid transparent', borderRight: 'none', transition: 'padding 0.2s ease' }}>
+                                <td style={{ fontWeight: 700, color: 'var(--fg-base)', padding: (isCoR || isClaim) ? '0.4rem 0 0.4rem 0.5rem' : '0.4rem 0 0.4rem 1.5rem', whiteSpace: 'nowrap', borderTopLeftRadius: '10px', borderBottomLeftRadius: '10px', border: '1px solid transparent', borderRight: 'none', transition: 'padding 0.2s ease' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                                     {isCoR && (
                                       <div style={{ 
@@ -643,6 +651,27 @@ export default function Incidents() {
                                         <span>C</span>
                                         <span>O</span>
                                         <span>R</span>
+                                      </div>
+                                    )}
+                                    {isClaim && (
+                                      <div style={{ 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        alignItems: 'center', 
+                                        lineHeight: 1.1,
+                                        padding: '4px 3px', 
+                                        background: '#ecfdf5', 
+                                        color: '#047857', 
+                                        borderRadius: '4px',
+                                        fontSize: '0.55rem',
+                                        fontWeight: 900,
+                                        boxShadow: '0 2px 4px rgba(16,185,129,0.1)',
+                                        marginRight: '2px',
+                                        border: '1px solid #a7f3d0'
+                                      }}>
+                                        <span>C</span>
+                                        <span>L</span>
+                                        <span>M</span>
                                       </div>
                                     )}
                                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: category.color, boxShadow: `0 0 8px ${category.color}60` }}></div>

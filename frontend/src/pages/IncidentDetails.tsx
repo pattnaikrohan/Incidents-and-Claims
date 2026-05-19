@@ -142,6 +142,7 @@ export default function IncidentDetails() {
     cor_corrective_action: '',
     cor_action_implemented: 'No'
   });
+  const isInsuranceInvolved = liability.insurer_notified === 'Yes';
   const [isEditingForm, setIsEditingForm] = useState(false);
   const location = useLocation();
   const source = location.state?.source;
@@ -708,7 +709,7 @@ export default function IncidentDetails() {
           {/* Risk & Compliance Team Liability Form */}
           {canSeeRCSection(role) && (
           <div className="card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Risk & Compliance Team Liability</h3>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Management</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div>
                 <label className="overline">Responsible Party</label>
@@ -810,8 +811,24 @@ export default function IncidentDetails() {
                 
                 <div><label className="overline">Claim Amount (AUD)</label><input type="number" className="input-field" /></div>
                 <div><label className="overline">Paid Amount (AUD)</label><input type="number" className="input-field" /></div>
-                <div><label className="overline">Insurance Paid Amount (AUD)</label><input type="number" className="input-field" /></div>
-                <div><label className="overline">Deductible (AUD)</label><input type="number" className="input-field" /></div>
+                <div style={{ position: 'relative' }}>
+                  <label className="overline">Insurance Paid Amount (AUD)</label>
+                  <input type="number" className="input-field" disabled={!isInsuranceInvolved} defaultValue="0.00" />
+                  {!isInsuranceInvolved && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--fg-muted)', display: 'block', marginTop: '0.25rem' }}>
+                      ⚠️ Disabled (Insurance Involved is No on Incident)
+                    </span>
+                  )}
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <label className="overline">Deductible (AUD)</label>
+                  <input type="number" className="input-field" disabled={!isInsuranceInvolved} defaultValue="0.00" />
+                  {!isInsuranceInvolved && (
+                    <span style={{ fontSize: '0.65rem', color: 'var(--fg-muted)', display: 'block', marginTop: '0.25rem' }}>
+                      ⚠️ Disabled (Insurance Involved is No on Incident)
+                    </span>
+                  )}
+                </div>
                 <div><label className="overline">Recovery Amount (AUD)</label><input type="number" className="input-field" /></div>
                 <div><label className="overline">Outstanding Balance (AUD)</label><input type="number" className="input-field" disabled value="0" style={{opacity:0.7}} /></div>
                 
