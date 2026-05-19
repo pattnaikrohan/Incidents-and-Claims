@@ -51,7 +51,17 @@ export function useIncidents(pollingInterval = 2000) {
       console.log('Standard Payload Categories:', Object.keys(payloads[0]));
       console.log('NCR Records Count:', getCount(payloads[1], 'ncr_incidents'));
       console.log('CoR Records Count:', getCount(payloads[2], 'cor_incidents'));
-      console.log('Claims Records Count:', getCount(payloads[3], 'claims_incidents'), '| Raw Keys:', Object.keys(payloads[3] || {}));
+      const getClaimsCount = (p: any) => {
+        if (!p) return 0;
+        let count = 0;
+        const keys = ['cargo_equipment_incidents', 'human_resources_incidents', 'workplace_health_safety_incidents', 'it_security_incidents', 'risk_compliance_incidents', 'finance_incidents'];
+        keys.forEach(k => {
+          if (Array.isArray(p[k])) count += p[k].length;
+        });
+        return count;
+      };
+
+      console.log('Claims Records Count:', getClaimsCount(payloads[3]), '| Raw Keys:', Object.keys(payloads[3] || {}));
 
       const mergedMap = new Map<string, any>();
 
@@ -113,6 +123,26 @@ export function useIncidents(pollingInterval = 2000) {
           if (cleanKey === 'chro') cleanKey = 'chro_notified';
           if (cleanKey === 'workerscompclaim') cleanKey = 'workers_comp_claim';
 
+          // Claims fields mappings
+          if (cleanKey === 'claimreferencenumber') cleanKey = 'claim_reference';
+          if (cleanKey === 'dateofclaim') cleanKey = 'claim_date';
+          if (cleanKey === 'claimant') cleanKey = 'claimant';
+          if (cleanKey === 'timebar') cleanKey = 'claim_time_bar';
+          if (cleanKey === 'claimtype') cleanKey = 'claim_type';
+          if (cleanKey === 'claimdirection') cleanKey = 'claim_direction';
+          if (cleanKey === 'claimamount') cleanKey = 'claim_amount';
+          if (cleanKey === 'paidamount') cleanKey = 'paid_amount';
+          if (cleanKey === 'insurancepaidamount') cleanKey = 'insurance_paid';
+          if (cleanKey === 'deductible') cleanKey = 'deductible';
+          if (cleanKey === 'recoveryamount') cleanKey = 'recovery_amount';
+          if (cleanKey === 'outstandingbalance') cleanKey = 'outstanding_balance';
+          if (cleanKey === 'writeoffrequired') cleanKey = 'writeoff_required';
+          if (cleanKey === 'writeoffamount') cleanKey = 'writeoff_amount';
+          if (cleanKey === 'writeoffapprovedby') cleanKey = 'writeoff_approved_by';
+          if (cleanKey === 'writeoffdate') cleanKey = 'writeoff_date';
+          if (cleanKey === 'claimstate') cleanKey = 'claim_state';
+          if (cleanKey === 'claimstatus') cleanKey = 'claim_status';
+
           // Catch FormattedValue labels and prioritize them
           const isFormatted = lowerKey.includes('@odata.community.display.v1.formattedvalue');
           const targetKey = isFormatted ? cleanKey.split('@')[0] : cleanKey;
@@ -140,6 +170,10 @@ export function useIncidents(pollingInterval = 2000) {
             if (baseKey === 'branchdepartment') clean.branch_department = raw[key];
             if (baseKey === 'incidentstatus') clean.status = raw[key];
             if (baseKey === 'incidenttype') clean.incident_type = raw[key];
+            if (baseKey === 'claimstatus') clean.claim_status = raw[key];
+            if (baseKey === 'claimtype') clean.claim_type = raw[key];
+            if (baseKey === 'claimdirection') clean.claim_direction = raw[key];
+            if (baseKey === 'writeoffrequired') clean.writeoff_required = raw[key];
           }
         });
         return clean;
@@ -156,7 +190,8 @@ export function useIncidents(pollingInterval = 2000) {
           const merged = { ...existing };
           Object.keys(finalObj).forEach(key => {
             const newVal = finalObj[key];
-            if (newVal && newVal !== 'N/A' && newVal !== 'No description' && newVal !== '' && newVal !== 'No') {
+            const isClaimOrCompliance = key.startsWith('claim_') || key.startsWith('writeoff_') || key === 'insurer_notified' || key === 'cor_required';
+            if (newVal && newVal !== 'N/A' && newVal !== 'No description' && newVal !== '' && (newVal !== 'No' || isClaimOrCompliance)) {
               merged[key] = newVal;
             }
           });
@@ -186,10 +221,10 @@ export function useIncidents(pollingInterval = 2000) {
               description: raw.cr991_shortdescription || raw.cr991_cargodescription || 'No description',
               job_number: raw.cr991_systemjobnumber || 'N/A',
               customer_name: raw.cr991_customer || 'N/A',
-              formal_claim_issued: raw["cr991_formalclaimissued@OData.Community.Display.V1.FormattedValue"] || 'No',
+              formal_claim_issued: raw.cr991_formalclaimissued || raw["cr991_formalclaimissued@OData.Community.Display.V1.FormattedValue"] || 'No',
               cor_required: (raw["cr991_cor@OData.Community.Display.V1.FormattedValue"] === 'Yes' || raw.cr991_cor === true || raw.cr991_cor === 1 || raw.cr991_cor === 'Yes') ? 'Yes' : 'No',
-              insurer_notified: raw["cr991_insurernotified@OData.Community.Display.V1.FormattedValue"] === 'Yes' ? 'Yes' : 'No',
-              management_escalation: raw["cr991_managementescalation@OData.Community.Display.V1.FormattedValue"] || 'No',
+              insurer_notified: (raw.cr991_insurernotified === 'Yes' || raw.cr991_insurernotified === true || raw.cr991_insurernotified === 1 || raw["cr991_insurernotified@OData.Community.Display.V1.FormattedValue"] === 'Yes') ? 'Yes' : 'No',
+              management_escalation: (raw.cr991_managementescalation === 'Yes' || raw.cr991_managementescalation === '1' || raw.cr991_managementescalation === 1 || raw.cr991_managementescalation === true || raw["cr991_managementescalation@OData.Community.Display.V1.FormattedValue"] === 'Yes') ? 'Yes' : 'No',
               created_at: raw.createdon,
               short_description: raw.cr991_shortdescription || '',
               date_of_incident: raw.cr991_dateofincident || '',

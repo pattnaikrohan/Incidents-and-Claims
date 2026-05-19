@@ -1,9 +1,10 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Clock, MapPin, Briefcase, ChevronDown, Shield, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileText, Clock, MapPin, Briefcase, ChevronDown, Shield, AlertTriangle, Paperclip, UploadCloud, RefreshCw, Trash2, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useIncidents } from '../hooks/useIncidents';
 import { getIncidentCategory, CATEGORY_META } from '../utils/incidentRoles';
+import { api } from '../services/api';
 
 export default function CoRDetails() {
   const { id } = useParams();
@@ -13,6 +14,13 @@ export default function CoRDetails() {
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Attachment states
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [cor, setCor] = useState({
     cor_type: '',
@@ -58,6 +66,93 @@ export default function CoRDetails() {
     }
   }, [incidents, id]);
 
+  // Azure Document folder mapping and upload/delete handlers
+  const getAzureFolderType = (inc: any): string => {
+    if (!inc?.category) return 'General Incident';
+    const map: Record<string, string> = {
+      cargo: 'Cargo & Equipment Incident',
+      hr: 'Human Resources Incident',
+      whs: 'WH&S Incident',
+      it: 'IT & Security Incident',
+      risk: 'Risk & Compliance Incident',
+      finance: 'Finance Incident',
+      ncr: 'Non-Conformance Report (NCR)',
+    };
+    return map[inc.category] || 'General Incident';
+  };
+
+  const fetchAttachments = async () => {
+    if (!incident) return;
+    setIsRefreshing(true);
+    try {
+      const searchId = incident.incident_number_str || id;
+      const folderType = getAzureFolderType(incident);
+      const typeQuery = `?incident_type=${encodeURIComponent(folderType)}`;
+      const response = await api.get(`/documents/incident/${searchId}/list${typeQuery}`);
+      setAttachments(response.data.documents || response.data || []);
+    } catch (err) {
+      console.warn('Failed to refresh attachments:', err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  const handleDeleteAttachment = async (filename: string) => {
+    if (!incident) return;
+    if (!window.confirm(`Are you sure you want to delete ${filename}?`)) return;
+    setIsDeleting(filename);
+    try {
+      const searchId = incident.incident_number_str || id;
+      const folderType = getAzureFolderType(incident);
+      await api.delete(`/documents/incident/${searchId}/document?filename=${encodeURIComponent(filename)}&incident_type=${encodeURIComponent(folderType)}`);
+      await fetchAttachments();
+      showNotification('Attachment deleted successfully.');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete attachment.');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!incident) return;
+    if (!event.target.files || event.target.files.length === 0) return;
+    
+    setIsUploading(true);
+    const files = Array.from(event.target.files);
+    
+    try {
+      const searchId = incident.incident_number_str || id;
+      const folderType = getAzureFolderType(incident);
+      const typeQuery = `?incident_type=${encodeURIComponent(folderType)}`;
+      
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        await api.post(`/documents/incident/${searchId}/upload${typeQuery}`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+      
+      await fetchAttachments();
+      showNotification('Attachments uploaded successfully.');
+    } catch (err) {
+      console.error('Failed to upload files:', err);
+      alert('Failed to upload files.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Fetch attachments once incident is resolved
+  useEffect(() => {
+    if (incident) {
+      fetchAttachments();
+    }
+  }, [incident]);
+
 
   const PA_COR_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1cb43ed7dac84fcca1fe51f0c9b654cb/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=FW9jJLWiwW1fymo7QX7kw3XyqZicA95uwH3Adu4eNGg';
 
@@ -98,7 +193,7 @@ export default function CoRDetails() {
         allIncidents[idx] = { ...allIncidents[idx], ...cor };
         localStorage.setItem('pa_incidents_cache', JSON.stringify(allIncidents));
       }
-      showNotification('CoR details saved locally (flow sync pending).');
+      showNotification('✓ CoR details saved! Your updates are safely queued for background synchronization.');
     } finally {
       setIsSaving(false);
     }
@@ -407,6 +502,79 @@ export default function CoRDetails() {
                 <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)' }}>View full incident record →</div>
               </div>
             </Link>
+          </div>
+
+          {/* Supporting Evidence Vault */}
+          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-base)', paddingBottom: '0.75rem' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--fg-base)' }}>
+                <Paperclip size={16} color="#f59e0b" /> Supporting Evidence
+              </h4>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={fetchAttachments}
+                  disabled={isRefreshing}
+                  title="Refresh Attachments"
+                  style={{ padding: '0.4rem', height: 'auto', background: 'var(--bg-subtle)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <RefreshCw size={14} color={isRefreshing ? "#f59e0b" : "var(--fg-muted)"} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'linear-gradient(135deg,#f59e0b,#d97706)', border: 'none', color: '#fff' }}
+                >
+                  <UploadCloud size={14} /> {isUploading ? '...' : 'Add'}
+                </button>
+              </div>
+            </div>
+            
+            <input 
+              type="file" 
+              multiple 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={handleFileUpload} 
+            />
+
+            {attachments.length === 0 ? (
+              <div style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', textAlign: 'center', padding: '1rem 0' }}>
+                No attachments uploaded yet.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+                {attachments.map((file: any, index: number) => (
+                  <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--bg-subtle)', borderRadius: '8px', border: '1px solid var(--border-base)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', maxWidth: '75%' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={file.filename || file.name}>
+                        {file.filename || file.name}
+                      </span>
+                      {file.size && (
+                        <span style={{ fontSize: '0.65rem', color: 'var(--fg-muted)' }}>
+                          {(file.size / 1024).toFixed(1)} KB
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" style={{ padding: '0.25rem', borderRadius: '4px', background: 'var(--bg-elevated)', color: 'var(--fg-muted)', border: '1px solid var(--border-base)', display: 'inline-flex', alignItems: 'center' }}>
+                        <ExternalLink size={12} />
+                      </a>
+                      {['full_access', 'risk_compliance'].includes(role || '') && (
+                        <button 
+                          onClick={() => handleDeleteAttachment(file.filename || file.name)}
+                          disabled={isDeleting === (file.filename || file.name)}
+                          style={{ padding: '0.25rem', borderRadius: '4px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
