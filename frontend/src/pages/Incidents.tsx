@@ -268,8 +268,10 @@ export default function Incidents() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {INCIDENT_TYPES
           .filter(cat => {
-            // NCR: only for management/admin
-            if (cat.id === 'ncr' && !['branch_access', 'bu_access', 'risk_compliance', 'full_access'].includes(role || '')) return false;
+            // NCR: only show when specifically in NCRs section, not in general incident register
+            if (cat.id === 'ncr') return pageSource === 'ncrs';
+            // If in NCRs section, ONLY show ncr
+            if (pageSource === 'ncrs') return cat.id === 'ncr';
             // Dept-specific roles only see their relevant sections
             if (role === 'hr_access') return cat.id === 'hr' || cat.id === 'whs';
             if (role === 'whs_access') return cat.id === 'whs';
