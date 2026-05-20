@@ -2,8 +2,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_STATUSES } from '../utils/incidentConstants';
 
 export function useIncidents(pollingInterval = 2000) {
-  const [incidents, setIncidents] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [incidents, setIncidents] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('pa_incidents_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      return !localStorage.getItem('pa_incidents_cache');
+    } catch {
+      return true;
+    }
+  });
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchLatestFromPA = useCallback(async () => {
@@ -602,7 +615,13 @@ export function useIncidents(pollingInterval = 2000) {
         });
       });
 
-      setIncidents(Array.from(mergedMap.values()));
+      const updatedIncidents = Array.from(mergedMap.values());
+      setIncidents(updatedIncidents);
+      try {
+        localStorage.setItem('pa_incidents_cache', JSON.stringify(updatedIncidents));
+      } catch (e) {
+        console.warn('Failed to save incidents to cache:', e);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch from Power Automate:', error);

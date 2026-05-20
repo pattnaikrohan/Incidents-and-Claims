@@ -135,6 +135,7 @@ export default function IncidentDetails() {
     management_escalation: '',
     cor: '',
     status: 'Open - Incident Logged',
+    comments: '',
     // CoR specialized fields
     cor_risk_level: 'Low',
     cor_status: 'Open',
@@ -198,6 +199,7 @@ export default function IncidentDetails() {
           management_escalation: finalIncident.management_escalation || 'No',
           cor: finalIncident.cor || finalIncident.cor_required || 'No',
           status: finalIncident.status || 'Open - Incident Logged',
+          comments: finalIncident.comments || '',
           cor_risk_level: finalIncident.cor_risk_level || 'Low',
           cor_status: finalIncident.cor_status || finalIncident.status || 'Open',
           cor_assessment: finalIncident.cor_assessment || '',
@@ -263,6 +265,7 @@ export default function IncidentDetails() {
         management_escalation: liability.management_escalation,
         cor: liability.cor,
         status: liability.status,
+        comments: liability.comments,
         updated_by: email || role,
         updated_at: new Date().toISOString()
       };
@@ -484,7 +487,7 @@ export default function IncidentDetails() {
              </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
              <button 
                className="btn" 
                style={{ background: 'var(--bg-subtle)', color: 'var(--fg-base)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.2s ease', height: '36px' }}
@@ -498,39 +501,6 @@ export default function IncidentDetails() {
              >
                <UserPlus size={16} /> Assign Handler
              </button>
-
-            {['full_access', 'risk_compliance'].includes(role || '') && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <div style={{ position: 'relative' }}>
-                  <select 
-                    className="input-field" 
-                    value={liability.status} 
-                    onChange={(e) => setLiability({...liability, status: e.target.value})}
-                    style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', paddingRight: '2rem', height: '36px', minWidth: '220px', appearance: 'none', background: 'var(--bg-surface)', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border-base)', boxShadow: 'var(--shadow-sm)' }}
-                  >
-                    {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)', pointerEvents: 'none' }} />
-                </div>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={async () => {
-                    try {
-                      await api.put(`/incidents/${searchId}/status`, { status: liability.status });
-                      await fetchIncident();
-                      showNotification('Status updated successfully.');
-                    } catch (err) {
-                      alert('Failed to update status.');
-                    }
-                  }}
-                  style={{ fontSize: '0.8rem', padding: '0 1rem', height: '36px', borderRadius: '8px', fontWeight: 600, background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)', border: 'none', color: '#fff' }}
-                >
-                  Save
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -774,6 +744,10 @@ export default function IncidentDetails() {
                   ))}
                 </select>
               </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label className="overline">Comments</label>
+                <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Add comments here..." value={liability.comments} onChange={(e) => setLiability({...liability, comments: e.target.value})} />
+              </div>
             </div>
             <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
               <button 
@@ -781,7 +755,7 @@ export default function IncidentDetails() {
                 onClick={handleLiabilityUpdate}
                 disabled={isUpdatingLiability}
               >
-                {isUpdatingLiability ? 'Updating...' : 'Update Liability'}
+                {isUpdatingLiability ? 'Updating...' : 'Update'}
               </button>
             </div>
           </div>

@@ -365,13 +365,26 @@ export default function CoRDetails() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div>
                 <label className="overline">CoR Type</label>
-                <input type="text" className="input-field" placeholder="e.g. Mass, Dimension, Load Restraint"
-                  value={cor.cor_type} onChange={(e) => setCor({ ...cor, cor_type: e.target.value })} />
+                <select className="input-field" value={cor.cor_type} onChange={(e) => setCor({ ...cor, cor_type: e.target.value })}>
+                  <option value="">— Select —</option>
+                  <option value="Fatigue Management">Fatigue Management</option>
+                  <option value="Speed">Speed</option>
+                  <option value="Mass">Mass</option>
+                  <option value="Dimension">Dimension</option>
+                  <option value="Load Restraint">Load Restraint</option>
+                  <option value="Vehicle Standards">Vehicle Standards</option>
+                  <option value="Driver Licensing">Driver Licensing</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div>
                 <label className="overline">Company's Role</label>
-                <input type="text" className="input-field" placeholder="e.g. Consignor, Packer, Loader"
-                  value={cor.company_role} onChange={(e) => setCor({ ...cor, company_role: e.target.value })} />
+                <select className="input-field" value={cor.company_role} onChange={(e) => setCor({ ...cor, company_role: e.target.value })}>
+                  <option value="">— Select —</option>
+                  <option value="Consignor">Consignor</option>
+                  <option value="Consignee">Consignee</option>
+                  <option value="Prime Contractor">Prime Contractor</option>
+                </select>
               </div>
               <div>
                 <label className="overline">CoR Risk Level</label>
@@ -379,7 +392,7 @@ export default function CoRDetails() {
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
                   <option value="High">High</option>
-                  <option value="Severe">Severe</option>
+                  <option value="Critical">Critical</option>
                 </select>
               </div>
               <div>
@@ -406,6 +419,7 @@ export default function CoRDetails() {
                 <select className="input-field" value={cor.cor_action_implemented} onChange={(e) => setCor({ ...cor, cor_action_implemented: e.target.value })}>
                   <option value="No">No</option>
                   <option value="Yes">Yes</option>
+                  <option value="In Progress">In Progress</option>
                 </select>
               </div>
             </div>
@@ -416,7 +430,7 @@ export default function CoRDetails() {
                 onClick={handleSave}
                 disabled={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save CoR Details'}
+                {isSaving ? 'Updating...' : 'Update'}
               </button>
             </div>
           </div>

@@ -28,7 +28,7 @@ export default function ClaimDetails() {
     claim_amount: '', paid_amount: '', insurance_paid: '', deductible: '',
     recovery_amount: '', outstanding_balance: '',
     writeoff_required: 'No', writeoff_amount: '', writeoff_approved_by: '', writeoff_date: '',
-    claim_state: 'Pending / Under Review', claim_status: 'Open - New',
+    claim_state: 'Pending / Under Review', claim_status: 'Open - New', settlement_status: '', comments: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -65,6 +65,8 @@ export default function ClaimDetails() {
           writeoff_date: cached.writeoff_date || prev.writeoff_date,
           claim_state: cached.claim_state || prev.claim_state,
           claim_status: cached.claim_status || prev.claim_status,
+          settlement_status: cached.settlement_status || prev.settlement_status,
+          comments: cached.comments || prev.comments,
         }));
         setLoading(false);
       }
@@ -184,11 +186,6 @@ export default function ClaimDetails() {
 
   const validateForm = (): boolean => {
     const tempErrors: Record<string, string> = {};
-
-    // 1. Claim Reference Number: Mandatory
-    if (!claim.claim_reference.trim()) {
-      tempErrors.claim_reference = 'Claim Reference Number is required';
-    }
 
     // 2. Date of Claim: Mandatory
     if (!claim.claim_date) {
@@ -440,31 +437,6 @@ export default function ClaimDetails() {
                 <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{claim.claim_status}</span>
               </div>
             </div>
-            {['full_access', 'risk_compliance'].includes(role || '') && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <div style={{ position: 'relative' }}>
-                  <select className="input-field" value={claim.claim_status} 
-                    onChange={e => {
-                      setClaim({ ...claim, claim_status: e.target.value });
-                      if (errors.writeoff_required) {
-                        setErrors(prev => {
-                          const next = { ...prev };
-                          delete next.writeoff_required;
-                          return next;
-                        });
-                      }
-                    }}
-                    style={{ fontSize: '0.8rem', padding: '0.5rem 2rem 0.5rem 1rem', height: 36, minWidth: 160, appearance: 'none', borderRadius: 8, cursor: 'pointer', border: '1px solid rgba(239,68,68,0.3)' }}>
-                    <option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Closed">Closed</option>
-                  </select>
-                  <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#ef4444', pointerEvents: 'none' }} />
-                </div>
-                <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}
-                  style={{ fontSize: '0.8rem', padding: '0 1rem', height: 36, borderRadius: 8, fontWeight: 600, background: 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: '#fff' }}>
-                  {isSaving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -496,9 +468,9 @@ export default function ClaimDetails() {
               <h3 style={{ fontSize: '1.25rem', color: '#ef4444', margin: 0, fontWeight: 800 }}>Claims Log Details</h3>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              {inp('claim_reference', 'Claim Reference Number', 'text', 'e.g. CLM-2024-001', false, true)}
+              {inp('claim_reference', 'Insurance Reference Number (if applicable)', 'text', 'e.g. CLM-2024-001', false, false)}
               {inp('claim_date', 'Date of Claim', 'date', '', false, true)}
-              {inp('claimant', 'Claimant (Snowflake Pull / Manual)', 'text', 'Search or type claimant...', false, true, 'snowflake-claimants')}
+              {inp('claimant', 'Claimant', 'text', 'Type claimant...', false, true)}
               {inp('claim_time_bar', 'Time Bar', 'date', '', false, true)}
               
               <div>
@@ -638,6 +610,31 @@ export default function ClaimDetails() {
                   </select>
                   <ChevronDown size={14} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)', pointerEvents: 'none' }} />
                 </div>
+              </div>
+              
+              {(claim.claim_state === 'Settled' || claim.claim_state === 'Partially Settled') && (
+                <div>
+                  <label className="overline" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                    Settlement Status
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <select className="input-field" value={claim.settlement_status} 
+                      onChange={e => setClaim({ ...claim, settlement_status: e.target.value })}
+                      style={{ appearance: 'none', paddingRight: '2.5rem' }}
+                    >
+                      <option value="">— Select —</option>
+                      <option value="Documents issued">Documents issued</option>
+                      <option value="Documents signed">Documents signed</option>
+                      <option value="Settlement paid">Settlement paid</option>
+                    </select>
+                    <ChevronDown size={14} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)', pointerEvents: 'none' }} />
+                  </div>
+                </div>
+              )}
+              
+              <div style={{ gridColumn: 'span 2' }}>
+                <label className="overline">Comments</label>
+                <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Add comments here..." value={claim.comments} onChange={(e) => setClaim({...claim, comments: e.target.value})} />
               </div>
             </div>
             

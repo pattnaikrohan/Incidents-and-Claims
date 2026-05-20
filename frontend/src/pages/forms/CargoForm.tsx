@@ -52,6 +52,7 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
         date_logged: initialData.date_logged || initialData.date || today(),
         logged_by: initialData.logged_by || 'System User',
         scope_of_work: initialData.scope_of_work || '',
+        scope_of_work_other: '',
         role_performed: initialData.role_performed || '',
         root_cause: initialData.root_cause || '',
         claim_estimate: initialData.claim_estimate || '',
@@ -68,7 +69,7 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
       mode: 'Sea', cargo_description: '', cargo_value: '',
       location_of_incident: '', origin_agent: '', destination_agent: '',
       shipping_line: '', coloader: '', transport_company: '',
-      scope_of_work: '', role_performed: '',
+      scope_of_work: '', scope_of_work_other: '', role_performed: '',
       incident_summary: '', root_cause: '', claim_estimate: '',
     };
   });
@@ -143,7 +144,7 @@ Destination Agent: ${f.destination_agent || 'N/A'}
 Shipping Line / Airline: ${f.shipping_line || 'N/A'}
 Coloader: ${f.coloader || 'N/A'}
 Transport Company: ${f.transport_company || 'N/A'}
-Scope of Work: ${f.scope_of_work || 'N/A'}
+Scope of Work: ${f.scope_of_work === 'Other' ? f.scope_of_work_other : f.scope_of_work || 'N/A'}
 Role Performed: ${f.role_performed || 'N/A'}
 
 --- CLAIMS & ESTIMATES ---
@@ -154,6 +155,7 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
       onSubmit({ 
         ...f, 
         incident_summary: enrichedSummary,
+        scope_of_work: f.scope_of_work === 'Other' ? f.scope_of_work_other : f.scope_of_work,
         incident_types: incidentTypes, 
         corrective_actions: correctiveActions, 
         claim_types: claimTypes, 
@@ -207,7 +209,7 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
             <div style={{ display:'flex', alignItems:'flex-end', paddingBottom:10 }}>
               {(f.mbl_mawb_issued === 'Yes' || f.hbl_hawb_issued === 'Yes') && (
                 <span style={{ fontSize:'0.7rem', color:'var(--accent-fg)', fontWeight:700, background:'rgba(59,130,246,0.1)', padding:'4px 8px', borderRadius:4 }}>
-                  ℹ️ Pull copy required below
+                  ℹ️ Please attach copy below
                 </span>
               )}
             </div>
@@ -218,7 +220,7 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
             {inp('customer','Customer name','text',true)}
-            {inp('container_numbers','Container numbers (optional)')}
+            {inp('container_numbers','Container numbers (if applicable)')}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
             {inp('origin','Port / City of origin','text',true)}
@@ -235,24 +237,27 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
           </div>
           {inp('location_of_incident','Specific location of incident','text',true)}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
-            {inp('origin_agent','Origin agent (optional)')}
-            {inp('destination_agent','Destination agent (optional)')}
+            {inp('origin_agent','Origin agent (if applicable)')}
+            {inp('destination_agent','Destination agent (if applicable)')}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
-            {inp('shipping_line','Shipping line / Airline (optional)')}
-            {inp('coloader','Coloader (optional)')}
+            {inp('shipping_line','Shipping line / Airline (if applicable)')}
+            {inp('coloader','Coloader (if applicable)')}
           </div>
-          {inp('transport_company','Transport company (optional)')}
+          {inp('transport_company','Transport company (if applicable)')}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
-            {inp('scope_of_work','Scope of work performed','text',true)}
-            {inp('role_performed','Role performed','text',true)}
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+              {sel('scope_of_work',['Door to Door', 'Door to Port', 'Port to Port', 'Port to Door', 'Transport only', 'Clearance & delivery', 'Other'],true)}
+              {f.scope_of_work === 'Other' && inp('scope_of_work_other','Please specify other scope of work','text',true)}
+            </div>
+            {sel('role_performed',['Principal', 'Agent'],true)}
           </div>
         </div>
       </div>
 
       {/* Incident Type multi-select */}
       <div className="card">
-        <h3 className="overline" style={{ marginBottom:'1rem' }}>Incident Type <span style={{ color:'#ef4444' }}>*</span></h3>
+        <h3 className="overline" style={{ marginBottom:'1rem' }}>Incident Type <span style={{ textTransform: 'none', fontWeight: 'normal', color: 'var(--fg-muted)' }}>(tick all applicable)</span> <span style={{ color:'#ef4444' }}>*</span></h3>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'0.5rem' }}>
           {INCIDENT_TYPES.map(t => (
             <label key={t} style={{ display:'flex', alignItems:'center', gap:10, padding:'0.6rem 0.875rem', borderRadius:8, cursor:'pointer',
@@ -284,7 +289,7 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
 
       {/* Corrective Actions */}
       <div className="card">
-        <h3 className="overline" style={{ marginBottom:'1rem' }}>Immediate Corrective Action</h3>
+        <h3 className="overline" style={{ marginBottom:'1rem' }}>Immediate Corrective Action <span style={{ textTransform: 'none', fontWeight: 'normal', color: 'var(--fg-muted)' }}>(tick all applicable)</span></h3>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'0.5rem' }}>
           {CORRECTIVE_ACTIONS.map(t => (
             <label key={t} style={{ display:'flex', alignItems:'center', gap:10, padding:'0.6rem 0.875rem', borderRadius:8, cursor:'pointer',
@@ -304,7 +309,7 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
 
       {/* Claims */}
       <div className="card">
-        <h3 className="overline" style={{ marginBottom:'1rem' }}>Intent to Claim</h3>
+        <h3 className="overline" style={{ marginBottom:'1rem' }}>Intent to Claim <span style={{ textTransform: 'none', fontWeight: 'normal', color: 'var(--fg-muted)' }}>(tick all applicable)</span></h3>
         <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', marginBottom:'1.25rem' }}>
           {CLAIM_TYPES.map(t => (
             <label key={t} style={{ display:'flex', alignItems:'center', gap:10, padding:'0.75rem 1rem', borderRadius:8, cursor:'pointer',
