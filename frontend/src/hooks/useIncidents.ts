@@ -22,7 +22,7 @@ export function useIncidents(pollingInterval = 2000) {
   const fetchLatestFromPA = useCallback(async () => {
     try {
       console.log('--- Polling Parallel Digital Twin Flows (v2.1) ---');
-      
+
       const STANDARD_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/c0d6a89ac13e49fb9e84b993721d6b4e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Y2-4H9wder7Ea3MoWPW_gMSWPWyL4a9uHsiTbJ1TDFw';
       const NCR_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0045b29424d14bec952421cf0ef7b051/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=n-bzHfDvrFFtQmiKjB0c9xngFKJqJU7sRqtU5DoM4Pg';
       const COR_POLLING_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9024d22093174eb39dac78207b4cda85/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=heqXTA7X3BXTrv1hL29NB6_UOLzek3DMeWeNpsofToQ';
@@ -34,7 +34,7 @@ export function useIncidents(pollingInterval = 2000) {
         fetch(COR_POLLING_URL),
         fetch(CLAIMS_POLLING_URL)
       ]);
-      
+
       const safeParse = async (res: Response) => {
         if (!res.ok) return {};
         const text = await res.text();
@@ -83,16 +83,16 @@ export function useIncidents(pollingInterval = 2000) {
         Object.keys(raw).forEach(key => {
           const lowerKey = key.toLowerCase();
           let cleanKey = lowerKey;
-          
+
           if (lowerKey.startsWith('cr991_')) {
             cleanKey = lowerKey.replace('cr991_', '');
           }
 
           if (
-            cleanKey === 'incidentid' || cleanKey === 'incident_id' || 
-            cleanKey === 'incidentnumber' || cleanKey === 'incident_number' || 
-            cleanKey === 'incidentref' || cleanKey === 'incident_ref' || 
-            cleanKey === 'referencenumber' || cleanKey === 'reference_number' || 
+            cleanKey === 'incidentid' || cleanKey === 'incident_id' ||
+            cleanKey === 'incidentnumber' || cleanKey === 'incident_number' ||
+            cleanKey === 'incidentref' || cleanKey === 'incident_ref' ||
+            cleanKey === 'referencenumber' || cleanKey === 'reference_number' ||
             cleanKey === 'name' || cleanKey === 'ref' || cleanKey === 'number' ||
             cleanKey === 'hrid' || cleanKey === 'hr_id' ||
             cleanKey === 'whsid' || cleanKey === 'whs_id' ||
@@ -100,7 +100,7 @@ export function useIncidents(pollingInterval = 2000) {
             cleanKey === 'ncr_ref' || cleanKey === 'ncrref' ||
             cleanKey === 'ncr_number' || cleanKey === 'ncrnumber'
           ) cleanKey = 'incident_number_str';
-          
+
           if (cleanKey === 'shortdescription') cleanKey = 'short_description';
           if (cleanKey === 'dateofincident') cleanKey = 'date_of_incident';
           if (cleanKey === 'datelogged') cleanKey = 'date_logged';
@@ -118,13 +118,13 @@ export function useIncidents(pollingInterval = 2000) {
           if (cleanKey === 'containernumbers') cleanKey = 'container_numbers';
           if (cleanKey === 'originagent') cleanKey = 'origin_agent';
           if (cleanKey === 'destinationagent') cleanKey = 'destination_agent';
-          if (cleanKey === 'shippinglineairline') cleanKey = 'shipping_line';
+          if (cleanKey === 'shippinglineairline') cleanKey = 'carrier';
           if (cleanKey === 'scopeofwork') cleanKey = 'scope_of_work';
           if (cleanKey === 'roleperformed') cleanKey = 'role_performed';
           if (cleanKey === 'claimestimate') cleanKey = 'claim_estimate';
           if (cleanKey === 'intenttoclaim') cleanKey = 'intent_to_claim';
           if (cleanKey === 'attachments' || cleanKey === 'files' || cleanKey === 'evidence') cleanKey = 'attachments';
-          
+
           // Liability & Risk fields
           if (cleanKey.includes('responsible') || cleanKey.includes('atfaultparty')) cleanKey = 'responsible_party';
           if (cleanKey.includes('claimissued') || cleanKey.includes('formalclaim')) cleanKey = 'formal_claim_issued';
@@ -159,9 +159,9 @@ export function useIncidents(pollingInterval = 2000) {
           // Catch FormattedValue labels and prioritize them
           const isFormatted = lowerKey.includes('@odata.community.display.v1.formattedvalue');
           const targetKey = isFormatted ? cleanKey.split('@')[0] : cleanKey;
-          
+
           let val = raw[key];
-          
+
           // Status Standardisation: Map 'Open - New' or 'Open' to 'Open - Incident Logged'
           if (targetKey === 'status' && val) {
             const s = String(val).toLowerCase();
@@ -197,7 +197,7 @@ export function useIncidents(pollingInterval = 2000) {
         const id = String(obj.id);
         const autoMapped = raw ? mapRawToClean(raw) : {};
         const finalObj = { ...autoMapped, ...obj };
-        
+
         if (mergedMap.has(id)) {
           const existing = mergedMap.get(id);
           const merged = { ...existing };
@@ -258,7 +258,7 @@ export function useIncidents(pollingInterval = 2000) {
               location_of_incident: raw.cr991_locationofincident || '',
               origin_agent: raw.cr991_originagent || '',
               destination_agent: raw.cr991_destinationagent || '',
-              shipping_line: raw.cr991_shippinglineairline || '',
+              carrier: raw.cr991_shippinglineairline || '',
               coloader: raw.cr991_coloader || '',
               transport_company: raw.cr991_transportcompany || '',
               scope_of_work: raw.cr991_scopeofwork || '',
@@ -287,7 +287,7 @@ export function useIncidents(pollingInterval = 2000) {
           payload.human_resources_incidents.forEach((raw: any) => {
             const clean = mapRawToClean(raw);
             const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('HR-')) as string;
-            
+
             addOrMerge({
               id: clean.humanresourcesincidentid || raw.id,
               category: 'hr',

@@ -52,7 +52,7 @@ export default function IncidentDetails() {
     };
     return map[inc.category] || 'General Incident';
   };
-  
+
   const showNotification = (msg: string) => {
     setSuccessMessage(msg);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -99,14 +99,14 @@ export default function IncidentDetails() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0) return;
-    
+
     setIsUploading(true);
     const files = Array.from(event.target.files);
-    
+
     try {
       const folderType = getAzureFolderType(incident);
       const typeQuery = `?incident_type=${encodeURIComponent(folderType)}`;
-      
+
       for (const file of files) {
         const fd = new FormData();
         fd.append('file', file);
@@ -114,7 +114,7 @@ export default function IncidentDetails() {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
-      
+
       // Refresh attachments list
       const response = await api.get(`/documents/incident/${searchId}/list${typeQuery}`);
       setAttachments(response.data.documents || response.data || []);
@@ -169,7 +169,7 @@ export default function IncidentDetails() {
         try {
           const response = await api.get(`/incidents/${targetId}`);
           const backendData = response.data;
-          
+
           if (backendData) {
             if (finalIncident) {
               // Enrich Dataverse record with backend metadata, ignoring nulls or empty strings from the backend
@@ -206,7 +206,7 @@ export default function IncidentDetails() {
           cor_corrective_action: finalIncident.cor_corrective_action || '',
           cor_action_implemented: finalIncident.cor_action_implemented || 'No'
         }));
-        
+
         // Fetch attachments using the internal system ID (e.g., CEI-...) instead of the Dataverse GUID
         const searchId = finalIncident.incident_number_str || id;
         const catMap: Record<string, string> = {
@@ -237,7 +237,7 @@ export default function IncidentDetails() {
     try {
       setIsUpdatingLiability(true);
       const category = getIncidentCategory(incident);
-      
+
       // Power Automate Flows for updating liability status
       const CARGO_LIABILITY_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/f82e0a4f816842bbbbf1a15479d93e7e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GkmKVFteQE4OTTT1CfVQEVW56Pvwq6DYYB32LCQi18o';
       const HR_LIABILITY_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a25b71ec6a184abdb6ee4754f74dfe42/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=uOPlpQvalzoKpKL5dTYB_tE2ZcT38xvA243jlq_jiOA';
@@ -246,7 +246,7 @@ export default function IncidentDetails() {
       const RISK_LIABILITY_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/cd9d5fab08af41569033914493120e8b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=MMWo1wJqW9QQyERWdgsuWFGIECgdsYVGNKIcyTU-kp0';
       const FINANCE_LIABILITY_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/15462239604044f49c85668a73631459/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=htjLOUF48E765vQ8qVrvZd2XjOxPqmyxCFNGZGzV4tc';
       const DEFAULT_FLOW_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/465821937cf347c9b5eec4737d068fdd/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=ZUR4iYLZmuytbGXp0uaTvqXkvT927AsbYf9_RtJF2lE';
-      
+
       let FLOW_URL = DEFAULT_FLOW_URL;
       if (category === 'cargo') FLOW_URL = CARGO_LIABILITY_FLOW;
       else if (category === 'hr') FLOW_URL = HR_LIABILITY_FLOW;
@@ -254,7 +254,7 @@ export default function IncidentDetails() {
       else if (category === 'it') FLOW_URL = IT_LIABILITY_FLOW;
       else if (category === 'risk') FLOW_URL = RISK_LIABILITY_FLOW;
       else if (category === 'finance') FLOW_URL = FINANCE_LIABILITY_FLOW;
-      
+
       const payload = {
         incident_id: id,
         incident_number: incident.incident_number_str,
@@ -277,7 +277,7 @@ export default function IncidentDetails() {
       });
 
       showNotification('Liability update triggered successfully. Changes will reflect shortly.');
-      
+
       // Update local state temporarily
       setIncident((prev: any) => ({ ...prev, ...payload }));
     } catch (error) {
@@ -326,7 +326,7 @@ export default function IncidentDetails() {
 
       // Mark as updated so the "Awaiting" badge disappears
       const payload = { ...updatedIncident, dept_section_updated: true };
-      
+
       // 1. Sync with Power Automate (Department Specific)
       const category = getIncidentCategory(incident);
       const DEPT_FLOWS: Record<string, string> = {
@@ -364,7 +364,7 @@ export default function IncidentDetails() {
 
   const renderOriginalForm = () => {
     const category = getIncidentCategory(incident);
-    
+
     switch (category) {
       case 'cargo': return <CargoForm initialData={incident} readOnly={!isEditingForm} />;
       case 'hr': return <HRForm initialData={incident} readOnly={!isEditingForm} />;
@@ -374,20 +374,20 @@ export default function IncidentDetails() {
       case 'finance': return <FinanceForm initialData={incident} readOnly={!isEditingForm} />;
       case 'ncr': return <NCRForm initialData={incident} readOnly={!isEditingForm} />;
     }
-    
+
     // Fallback to generic JSON mapping if form not matched
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
         {Object.entries(incident)
           .filter(([k, v]) => v !== null && v !== '' && !['id', 'description', 'status', 'location', 'type', 'date', 'assigned_to_id', 'branch_id', 'creator_id'].includes(k))
           .map(([k, v]) => (
-          <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
-            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
-              {String(v)}
+            <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--fg-faint)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{k.replace(/_/g, ' ')}</span>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid var(--border-base)' }}>
+                {String(v)}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     );
   };
@@ -397,7 +397,7 @@ export default function IncidentDetails() {
     setIsUpdatingDept(true);
     try {
       const COR_SUBMIT_URL = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/1cb43ed7dac84fcca1fe51f0c9b654cb/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=FW9jJLWiwW1fymo7QX7kw3XyqZicA95uwH3Adu4eNGg';
-      
+
       const payload = {
         incident_id: incident.id,
         incident_number: incident.incident_number_str,
@@ -437,15 +437,15 @@ export default function IncidentDetails() {
       </Link>
 
       {successMessage && (
-        <div className="fade-in" style={{ 
-          background: 'rgba(16, 185, 129, 0.1)', 
-          border: '1px solid #10b981', 
-          color: '#10b981', 
-          padding: '1rem 1.5rem', 
-          borderRadius: '12px', 
-          marginBottom: '2rem', 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div className="fade-in" style={{
+          background: 'rgba(16, 185, 129, 0.1)',
+          border: '1px solid #10b981',
+          color: '#10b981',
+          padding: '1rem 1.5rem',
+          borderRadius: '12px',
+          marginBottom: '2rem',
+          display: 'flex',
+          alignItems: 'center',
           gap: '1rem',
           backdropFilter: 'blur(10px)',
           fontWeight: 600,
@@ -455,8 +455,8 @@ export default function IncidentDetails() {
           {successMessage}
         </div>
       )}
-      
-      <div className="card fade-in" style={{ 
+
+      <div className="card fade-in" style={{
         position: 'relative', overflow: 'hidden', padding: '2.5rem', marginBottom: '2.5rem',
         background: 'linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-elevated) 100%)',
         border: '1px solid var(--border-base)',
@@ -465,7 +465,7 @@ export default function IncidentDetails() {
       }}>
         {/* Glow effect */}
         <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
-        
+
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '0.75rem' }}>
             <h2 className="page-title" style={{ marginBottom: 0, fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--fg-base)', background: 'linear-gradient(to right, var(--fg-base), var(--fg-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -478,29 +478,29 @@ export default function IncidentDetails() {
         </div>
 
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end', minWidth: '350px' }}>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(10px)' }}>
-             <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Workflow Status</span>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: (liability.status || incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 10px ${(liability.status || incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
-               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--fg-base)' }}>{liability.status || incident?.status || 'Open - Incident Logged'}</span>
-             </div>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Workflow Status</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: (liability.status || incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 10px ${(liability.status || incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--fg-base)' }}>{liability.status || incident?.status || 'Open - Incident Logged'}</span>
+            </div>
           </div>
 
-           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-             <button 
-               className="btn" 
-               style={{ background: 'var(--bg-subtle)', color: 'var(--fg-base)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.2s ease', height: '36px' }}
-               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
-               onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-base)'; }}
-               onClick={() => {
-                 const userId = prompt("Enter User ID to assign to (e.g., 2):");
-                 if (userId) handleAssign(parseInt(userId), "Selected User");
-               }}
-               disabled={isAssigning}
-             >
-               <UserPlus size={16} /> Assign Handler
-             </button>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <button
+              className="btn"
+              style={{ background: 'var(--bg-subtle)', color: 'var(--fg-base)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.2s ease', height: '36px' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-base)'; }}
+              onClick={() => {
+                const userId = prompt("Enter User ID to assign to (e.g., 2):");
+                if (userId) handleAssign(parseInt(userId), "Selected User");
+              }}
+              disabled={isAssigning}
+            >
+              <UserPlus size={16} /> Assign Handler
+            </button>
           </div>
         </div>
       </div>
@@ -508,93 +508,93 @@ export default function IncidentDetails() {
       <div className="bento-grid">
         {/* Left Column (Main Details + Liability) */}
         <div style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+
           {/* Main Details Panel */}
           <div className="card" style={{ padding: '2rem' }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Details</h3>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                <Clock size={16} style={{ color: 'var(--fg-muted)' }} />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                  <Clock size={16} style={{ color: 'var(--fg-muted)' }} />
+                </div>
+                <div>
+                  <label className="overline">Reported Date</label>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>
+                    {incident.date ? new Date(incident.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="overline">Reported Date</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>
-                  {incident.date ? new Date(incident.date).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ padding: '0.5rem', background: 'var(--accent-light)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                  <Briefcase size={16} style={{ color: 'var(--accent-fg)' }} />
+                </div>
+                <div>
+                  <label className="overline">{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? 'CargoWise Ref' : cat === 'hr' ? 'Employee' : cat === 'whs' ? 'Person(s) Involved' : cat === 'it' ? 'Systems Affected' : cat === 'risk' ? 'Regulation Breached' : cat === 'finance' ? 'Incident Type' : 'Reference'; })()}</label>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? (incident.job_number || 'N/A') : cat === 'hr' ? (incident.employee_name || incident.employee_involved || 'N/A') : cat === 'whs' ? (incident.persons_involved || 'N/A') : cat === 'it' ? (incident.systems_affected || 'N/A') : cat === 'risk' ? (incident.regulation_breached || 'N/A') : cat === 'finance' ? (incident.incident_type || incident.type || 'N/A') : 'N/A'; })()}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                  <MapPin size={16} style={{ color: 'var(--fg-muted)' }} />
+                </div>
+                <div>
+                  <label className="overline">{getIncidentCategory(incident) === 'whs' ? 'Location (Site)' : 'Branch / Department'}</label>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location || incident.branch_department || 'N/A'}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ padding: '0.5rem', background: `${CATEGORY_META[getIncidentCategory(incident)].color}15`, borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
+                  <FileText size={16} style={{ color: CATEGORY_META[getIncidentCategory(incident)].color }} />
+                </div>
+                <div>
+                  <label className="overline">Classification</label>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.type || incident.incident_type || CATEGORY_META[getIncidentCategory(incident)].label}</div>
                 </div>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'var(--accent-light)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                <Briefcase size={16} style={{ color: 'var(--accent-fg)' }} />
-              </div>
-              <div>
-                <label className="overline">{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? 'CargoWise Ref' : cat === 'hr' ? 'Employee' : cat === 'whs' ? 'Person(s) Involved' : cat === 'it' ? 'Systems Affected' : cat === 'risk' ? 'Regulation Breached' : cat === 'finance' ? 'Incident Type' : 'Reference'; })()}</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? (incident.job_number || 'N/A') : cat === 'hr' ? (incident.employee_name || incident.employee_involved || 'N/A') : cat === 'whs' ? (incident.persons_involved || 'N/A') : cat === 'it' ? (incident.systems_affected || 'N/A') : cat === 'risk' ? (incident.regulation_breached || 'N/A') : cat === 'finance' ? (incident.incident_type || incident.type || 'N/A') : 'N/A'; })()}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                <MapPin size={16} style={{ color: 'var(--fg-muted)' }} />
-              </div>
-              <div>
-                <label className="overline">{getIncidentCategory(incident) === 'whs' ? 'Location (Site)' : 'Branch / Department'}</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location || incident.branch_department || 'N/A'}</div>
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ padding: '0.5rem', background: `${CATEGORY_META[getIncidentCategory(incident)].color}15`, borderRadius: 'var(--radius-sm)', height: 'fit-content' }}>
-                <FileText size={16} style={{ color: CATEGORY_META[getIncidentCategory(incident)].color }} />
-              </div>
-              <div>
-                <label className="overline">Classification</label>
-                <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.type || incident.incident_type || CATEGORY_META[getIncidentCategory(incident)].label}</div>
-              </div>
-            </div>
-          </div>
-          
-          <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 2rem 0' }} />
 
-          <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', fontWeight: 600 }}>Description</h3>
-          
-          <div style={{ fontSize: '0.9375rem', lineHeight: 1.6, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', marginBottom: '1.5rem' }}>
-            {incident.description || 'No description provided'}
-          </div>
+            <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 2rem 0' }} />
 
-          <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 1.5rem 0' }} />
+            <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', fontWeight: 600 }}>Description</h3>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button 
-              onClick={() => setShowOriginal(!showOriginal)} 
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: '#3b82f6', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', padding: 0 }}
-            >
-              {showOriginal ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-              {showOriginal ? 'Hide Original Submission Data' : 'View Original Submission Data'}
-            </button>
-            
-            {showOriginal && (
-              <button 
-                className="btn" 
-                style={{ 
-                  padding: '0.4rem 0.8rem', fontSize: '0.7rem', fontWeight: 700, 
-                  background: isEditingForm ? '#ef4444' : 'var(--bg-subtle)', 
-                  color: isEditingForm ? 'white' : 'var(--fg-muted)', border: '1px solid var(--border-base)',
-                  borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
-                }}
-                onClick={() => setIsEditingForm(!isEditingForm)}
+            <div style={{ fontSize: '0.9375rem', lineHeight: 1.6, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', marginBottom: '1.5rem' }}>
+              {incident.description || 'No description provided'}
+            </div>
+
+            <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 1.5rem 0' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowOriginal(!showOriginal)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: '#3b82f6', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', padding: 0 }}
               >
-                <Edit2 size={12} /> {isEditingForm ? 'Cancel Edit' : 'Edit Submission'}
+                {showOriginal ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                {showOriginal ? 'Hide Original Submission Data' : 'View Original Submission Data'}
               </button>
+
+              {showOriginal && (
+                <button
+                  className="btn"
+                  style={{
+                    padding: '0.4rem 0.8rem', fontSize: '0.7rem', fontWeight: 700,
+                    background: isEditingForm ? '#ef4444' : 'var(--bg-subtle)',
+                    color: isEditingForm ? 'white' : 'var(--fg-muted)', border: '1px solid var(--border-base)',
+                    borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                  }}
+                  onClick={() => setIsEditingForm(!isEditingForm)}
+                >
+                  <Edit2 size={12} /> {isEditingForm ? 'Cancel Edit' : 'Edit Submission'}
+                </button>
+              )}
+            </div>
+
+            {showOriginal && (
+              <div className="fade-in" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
+                {renderOriginalForm()}
+              </div>
             )}
           </div>
-
-          {showOriginal && (
-            <div className="fade-in" style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)' }}>
-              {renderOriginalForm()}
-            </div>
-          )}
-        </div>
 
           {/* ═══ DEPARTMENT-SPECIFIC SECTIONS (Role-Aware) ═══ */}
           {(() => {
@@ -608,9 +608,9 @@ export default function IncidentDetails() {
 
             const deptSectionIcon = category === 'hr' ? <Users size={16} /> :
               category === 'whs' ? <HeartPulse size={16} /> :
-              category === 'it' ? <LockIcon size={16} /> :
-              category === 'risk' ? <Shield size={16} /> :
-              category === 'finance' ? <DollarSign size={16} /> : <FileText size={16} />;
+                category === 'it' ? <LockIcon size={16} /> :
+                  category === 'risk' ? <Shield size={16} /> :
+                    category === 'finance' ? <DollarSign size={16} /> : <FileText size={16} />;
 
             const handleFieldChange = (key: string, value: any) => {
               setIncident((prev: any) => ({ ...prev, [key]: value }));
@@ -633,11 +633,11 @@ export default function IncidentDetails() {
                     {category === 'it' && <ITDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
                     {category === 'risk' && <RiskDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
                     {category === 'finance' && <FinanceDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
-                    
+
                     {canEdit && (
                       <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button 
-                          className="btn btn-primary" 
+                        <button
+                          className="btn btn-primary"
                           style={{ background: meta.color, color: '#fff', border: 'none' }}
                           onClick={handleDeptUpdate}
                           disabled={isUpdatingDept}
@@ -660,8 +660,8 @@ export default function IncidentDetails() {
                     <HRConfidentialNotes incident={incident} editable={canEdit} onChange={handleFieldChange} />
                     {canEdit && (
                       <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button 
-                          className="btn btn-primary" 
+                        <button
+                          className="btn btn-primary"
                           style={{ background: '#8b5cf6', color: '#fff', border: 'none' }}
                           onClick={handleDeptUpdate}
                           disabled={isUpdatingDept}
@@ -678,102 +678,102 @@ export default function IncidentDetails() {
 
           {/* Risk & Compliance Team Liability Form */}
           {canSeeRCSection(role) && (
-          <div className="card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Management</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div>
-                <label className="overline">Responsible Party</label>
-                <select className="input-field" value={liability.responsible_party} onChange={(e) => setLiability({...liability, responsible_party: e.target.value})}>
-                  <option value="">— Select —</option>
-                  <option value="Origin Agent">Origin Agent</option>
-                  <option value="Destination Agent">Destination Agent</option>
-                  <option value="Shipping Line / Airline">Shipping Line / Airline</option>
-                  <option value="Coloader">Coloader</option>
-                  <option value="Customer">Customer</option>
-                  <option value="Company">Company</option>
-                  <option value="Transport Company">Transport Company</option>
-                </select>
+            <div className="card" style={{ padding: '2rem' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Management</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label className="overline">Responsible Party</label>
+                  <select className="input-field" value={liability.responsible_party} onChange={(e) => setLiability({ ...liability, responsible_party: e.target.value })}>
+                    <option value="">— Select —</option>
+                    <option value="Origin Agent">Origin Agent</option>
+                    <option value="Destination Agent">Destination Agent</option>
+                    <option value="Carrier">Carrier</option>
+                    <option value="Coloader">Coloader</option>
+                    <option value="Customer">Customer</option>
+                    <option value="Company">Company</option>
+                    <option value="Transport Company">Transport Company</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Formal Claim Issued</label>
+                  <select className="input-field" value={liability.formal_claim_issued} onChange={(e) => setLiability({ ...liability, formal_claim_issued: e.target.value })}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes (* creates Claims Log)</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Insurer Notified</label>
+                  <select className="input-field" value={liability.insurer_notified} onChange={(e) => setLiability({ ...liability, insurer_notified: e.target.value })}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes (* creates Insurers Notification Template)</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Risk Level</label>
+                  <select className="input-field" value={liability.risk_level} onChange={(e) => setLiability({ ...liability, risk_level: e.target.value })}>
+                    <option value="">— Select —</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Management Escalation</label>
+                  <select className="input-field" value={liability.management_escalation} onChange={(e) => setLiability({ ...liability, management_escalation: e.target.value })}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes (* creates Management Notification Template)</option>
+                    <option value="No">No</option>
+                    <option value="Not Applicable">Not Applicable</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">COR</label>
+                  <select className="input-field" value={liability.cor} onChange={(e) => setLiability({ ...liability, cor: e.target.value })}>
+                    <option value="">— Select —</option>
+                    <option value="Yes">Yes (* creates CoR Log)</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Incident Status</label>
+                  <select className="input-field" value={liability.status} onChange={(e) => setLiability({ ...liability, status: e.target.value })}>
+                    {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Comments</label>
+                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Add comments here..." value={liability.comments} onChange={(e) => setLiability({ ...liability, comments: e.target.value })} />
+                </div>
               </div>
-              <div>
-                <label className="overline">Formal Claim Issued</label>
-                <select className="input-field" value={liability.formal_claim_issued} onChange={(e) => setLiability({...liability, formal_claim_issued: e.target.value})}>
-                  <option value="">— Select —</option>
-                  <option value="Yes">Yes (* creates Claims Log)</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div>
-                <label className="overline">Insurer Notified</label>
-                <select className="input-field" value={liability.insurer_notified} onChange={(e) => setLiability({...liability, insurer_notified: e.target.value})}>
-                  <option value="">— Select —</option>
-                  <option value="Yes">Yes (* creates Insurers Notification Template)</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div>
-                <label className="overline">Risk Level</label>
-                <select className="input-field" value={liability.risk_level} onChange={(e) => setLiability({...liability, risk_level: e.target.value})}>
-                  <option value="">— Select —</option>
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </div>
-              <div>
-                <label className="overline">Management Escalation</label>
-                <select className="input-field" value={liability.management_escalation} onChange={(e) => setLiability({...liability, management_escalation: e.target.value})}>
-                  <option value="">— Select —</option>
-                  <option value="Yes">Yes (* creates Management Notification Template)</option>
-                  <option value="No">No</option>
-                  <option value="Not Applicable">Not Applicable</option>
-                </select>
-              </div>
-              <div>
-                <label className="overline">COR</label>
-                <select className="input-field" value={liability.cor} onChange={(e) => setLiability({...liability, cor: e.target.value})}>
-                  <option value="">— Select —</option>
-                  <option value="Yes">Yes (* creates CoR Log)</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label className="overline">Incident Status</label>
-                <select className="input-field" value={liability.status} onChange={(e) => setLiability({...liability, status: e.target.value})}>
-                  {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label className="overline">Comments</label>
-                <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Add comments here..." value={liability.comments} onChange={(e) => setLiability({...liability, comments: e.target.value})} />
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleLiabilityUpdate}
+                  disabled={isUpdatingLiability}
+                >
+                  {isUpdatingLiability ? 'Updating...' : 'Update'}
+                </button>
               </div>
             </div>
-            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleLiabilityUpdate}
-                disabled={isUpdatingLiability}
-              >
-                {isUpdatingLiability ? 'Updating...' : 'Update'}
-              </button>
-            </div>
-          </div>
           )}
 
           {/* Dynamic Claims Log Form */}
           {incident.formal_claim_issued === 'Yes' && source === 'claims' && (
             <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: '#ef4444' }}><FileText size={20}/></div>
+                <div style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: '#ef4444' }}><FileText size={20} /></div>
                 <h3 style={{ fontSize: '1.25rem', color: '#ef4444', margin: 0 }}>Claims Log Details</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div><label className="overline">Claim Reference Number</label><input type="text" className="input-field" placeholder="e.g. CLM-2024-001" /></div>
                 <div><label className="overline">Date of Claim</label><input type="date" className="input-field" /></div>
                 <div><label className="overline">Claimant</label><input type="text" className="input-field" placeholder="Search claimant..." /></div>
-                <div><label className="overline">Time Bar</label><input type="date" className="input-field" disabled value="2025-05-14" style={{opacity:0.7}} /></div>
-                
+                <div><label className="overline">Time Bar</label><input type="date" className="input-field" disabled value="2025-05-14" style={{ opacity: 0.7 }} /></div>
+
                 <div>
                   <label className="overline">Claim Type</label>
                   <select className="input-field"><option>Cargo Damage</option><option>Theft</option><option>Other</option></select>
@@ -782,7 +782,7 @@ export default function IncidentDetails() {
                   <label className="overline">Claim Direction</label>
                   <select className="input-field"><option>Inbound (Against Us)</option><option>Outbound (By Us)</option></select>
                 </div>
-                
+
                 <div><label className="overline">Claim Amount (AUD)</label><input type="number" className="input-field" /></div>
                 <div><label className="overline">Paid Amount (AUD)</label><input type="number" className="input-field" /></div>
                 <div style={{ position: 'relative' }}>
@@ -804,8 +804,8 @@ export default function IncidentDetails() {
                   )}
                 </div>
                 <div><label className="overline">Recovery Amount (AUD)</label><input type="number" className="input-field" /></div>
-                <div><label className="overline">Outstanding Balance (AUD)</label><input type="number" className="input-field" disabled value="0" style={{opacity:0.7}} /></div>
-                
+                <div><label className="overline">Outstanding Balance (AUD)</label><input type="number" className="input-field" disabled value="0" style={{ opacity: 0.7 }} /></div>
+
                 <div>
                   <label className="overline">Write-Off Required</label>
                   <select className="input-field"><option>No</option><option>Yes</option></select>
@@ -813,7 +813,7 @@ export default function IncidentDetails() {
                 <div><label className="overline">Write-Off Amount (AUD)</label><input type="number" className="input-field" /></div>
                 <div><label className="overline">Write-Off Approved By</label><input type="text" className="input-field" placeholder="User / Role" /></div>
                 <div><label className="overline">Write-Off Date</label><input type="date" className="input-field" /></div>
-                
+
                 <div><label className="overline">Claim State</label><input type="text" className="input-field" placeholder="Outcome or decision" /></div>
                 <div>
                   <label className="overline">Claim Status</label>
@@ -821,9 +821,9 @@ export default function IncidentDetails() {
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ background: '#ef4444' }} 
+                <button
+                  className="btn btn-primary"
+                  style={{ background: '#ef4444' }}
                   onClick={handleDeptUpdate}
                   disabled={isUpdatingDept}
                 >
@@ -837,7 +837,7 @@ export default function IncidentDetails() {
           {(incident.cor === 'Yes' || incident.cor_required === 'Yes') && source === 'cors' && (
             <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.02)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', color: '#f59e0b' }}><FileText size={20}/></div>
+                <div style={{ padding: '0.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', color: '#f59e0b' }}><FileText size={20} /></div>
                 <h3 style={{ fontSize: '1.25rem', color: '#f59e0b', margin: 0 }}>Chain of Responsibility (CoR) Log</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -845,10 +845,10 @@ export default function IncidentDetails() {
                 <div><label className="overline">Company's Role</label><input type="text" className="input-field" placeholder="e.g. Consignor, Packer, Loader" /></div>
                 <div>
                   <label className="overline">CoR Risk Level</label>
-                  <select 
+                  <select
                     className="input-field"
                     value={liability.cor_risk_level}
-                    onChange={(e) => setLiability({...liability, cor_risk_level: e.target.value})}
+                    onChange={(e) => setLiability({ ...liability, cor_risk_level: e.target.value })}
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -858,10 +858,10 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">CoR Incident Status</label>
-                  <select 
+                  <select
                     className="input-field"
                     value={liability.cor_status}
-                    onChange={(e) => setLiability({...liability, cor_status: e.target.value})}
+                    onChange={(e) => setLiability({ ...liability, cor_status: e.target.value })}
                   >
                     {['Open', 'Close'].map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -870,30 +870,30 @@ export default function IncidentDetails() {
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label className="overline">CoR Assessment</label>
-                  <textarea 
-                    className="input-field" 
-                    style={{ minHeight: '80px' }} 
+                  <textarea
+                    className="input-field"
+                    style={{ minHeight: '80px' }}
                     placeholder="Detailed assessment of CoR breach..."
                     value={liability.cor_assessment}
-                    onChange={(e) => setLiability({...liability, cor_assessment: e.target.value})}
+                    onChange={(e) => setLiability({ ...liability, cor_assessment: e.target.value })}
                   />
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label className="overline">CoR Corrective Action</label>
-                  <textarea 
-                    className="input-field" 
-                    style={{ minHeight: '80px' }} 
+                  <textarea
+                    className="input-field"
+                    style={{ minHeight: '80px' }}
                     placeholder="Actions taken to rectify the CoR breach..."
                     value={liability.cor_corrective_action}
-                    onChange={(e) => setLiability({...liability, cor_corrective_action: e.target.value})}
+                    onChange={(e) => setLiability({ ...liability, cor_corrective_action: e.target.value })}
                   />
                 </div>
                 <div>
                   <label className="overline">CoR Corrective Action Implemented?</label>
-                  <select 
+                  <select
                     className="input-field"
                     value={liability.cor_action_implemented}
-                    onChange={(e) => setLiability({...liability, cor_action_implemented: e.target.value})}
+                    onChange={(e) => setLiability({ ...liability, cor_action_implemented: e.target.value })}
                   >
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
@@ -901,9 +901,9 @@ export default function IncidentDetails() {
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ background: '#f59e0b', color: '#fff' }} 
+                <button
+                  className="btn btn-primary"
+                  style={{ background: '#f59e0b', color: '#fff' }}
                   onClick={handleCoRUpdate}
                   disabled={isUpdatingDept}
                 >
@@ -917,16 +917,16 @@ export default function IncidentDetails() {
           {incident.insurer_notified === 'Yes' && source === 'insurers' && (
             <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.02)', marginTop: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6' }}><Shield size={20}/></div>
+                <div style={{ padding: '0.5rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', color: '#3b82f6' }}><Shield size={20} /></div>
                 <h3 style={{ fontSize: '1.25rem', color: '#3b82f6', margin: 0 }}>Insurer Notification Template</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
                 <div style={{ padding: '1rem', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', borderRadius: 'var(--radius-md)' }}>
-                   <p style={{ fontSize: '0.875rem', color: 'var(--fg-muted)', marginBottom: '1rem' }}>
-                     <strong>To:</strong> claims@insurer.com<br/>
-                     <strong>Subject:</strong> Initial Notification of Loss - {incident.type} - {incident.location}
-                   </p>
-                   <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`Dear Insurer,
+                  <p style={{ fontSize: '0.875rem', color: 'var(--fg-muted)', marginBottom: '1rem' }}>
+                    <strong>To:</strong> claims@insurer.com<br />
+                    <strong>Subject:</strong> Initial Notification of Loss - {incident.type} - {incident.location}
+                  </p>
+                  <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`Dear Insurer,
 
 Please be advised of an incident that may give rise to a claim under our policy.
 
@@ -952,16 +952,16 @@ We will provide further documentation as our investigation progresses.`} />
           {incident.management_escalation === 'Yes' && source === 'escalations' && (
             <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.02)', marginTop: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><AlertTriangle size={20}/></div>
+                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><AlertTriangle size={20} /></div>
                 <h3 style={{ fontSize: '1.25rem', color: '#8b5cf6', margin: 0 }}>Management Escalation Template</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
                 <div style={{ padding: '1rem', background: 'var(--bg-surface)', border: '1px solid var(--border-base)', borderRadius: 'var(--radius-md)' }}>
-                   <p style={{ fontSize: '0.875rem', color: 'var(--fg-muted)', marginBottom: '1rem' }}>
-                     <strong>To:</strong> executive.team@aaw.com<br/>
-                     <strong>Subject:</strong> HIGH PRIORITY ESCALATION - INC-${incident.id}
-                   </p>
-                   <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`URGENT MANAGEMENT ESCALATION
+                  <p style={{ fontSize: '0.875rem', color: 'var(--fg-muted)', marginBottom: '1rem' }}>
+                    <strong>To:</strong> executive.team@aaw.com<br />
+                    <strong>Subject:</strong> HIGH PRIORITY ESCALATION - INC-${incident.id}
+                  </p>
+                  <textarea className="input-field" style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem' }} defaultValue={`URGENT MANAGEMENT ESCALATION
 
 Risk Level: ${liability.risk_level || 'Pending'}
 Incident Type: ${incident.type}
@@ -985,7 +985,7 @@ Please review the attached incident file in the Command Center. Legal and operat
           {incident.type === 'Non-Conformance Report (NCR)' && ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '') && (
             <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.02)', marginTop: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}><FileWarning size={20}/></div>
+                <div style={{ padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}><FileWarning size={20} /></div>
                 <h3 style={{ fontSize: '1.25rem', color: '#10b981', margin: 0 }}>R&C / MANAGER (NCR Follow-up)</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -1018,9 +1018,9 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ background: '#10b981', color: '#fff' }} 
+                <button
+                  className="btn btn-primary"
+                  style={{ background: '#10b981', color: '#fff' }}
                   onClick={handleDeptUpdate}
                   disabled={isUpdatingDept}
                 >
@@ -1034,7 +1034,7 @@ Please review the attached incident file in the Command Center. Legal and operat
           {incident.type === 'Non-Conformance Report (NCR)' && ['full_access', 'risk_compliance'].includes(role || '') && (
             <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.02)', marginTop: '2rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><Shield size={20}/></div>
+                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><Shield size={20} /></div>
                 <h3 style={{ fontSize: '1.25rem', color: '#8b5cf6', margin: 0 }}>CLOSE-OUT (R&C)</h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -1083,9 +1083,9 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </div>
                 <div>
                   <label className="overline">Status</label>
-                  <select 
+                  <select
                     className="input-field"
-                    onChange={(e) => setLiability({...liability, status: e.target.value})}
+                    onChange={(e) => setLiability({ ...liability, status: e.target.value })}
                   >
                     {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -1102,7 +1102,97 @@ Please review the attached incident file in the Command Center. Legal and operat
 
         {/* Sidebar Panel */}
         <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
+
+          {/* Related Records Card */}
+          {(() => {
+            const hasCoR = incident?.cor === 'Yes' || incident?.cor_required === 'Yes' || liability?.cor === 'Yes';
+            const hasClaims = incident?.formal_claim_issued === 'Yes' || liability?.formal_claim_issued === 'Yes';
+            const showRelatedRecords = hasCoR || hasClaims;
+
+            if (!showRelatedRecords) return null;
+
+            return (
+              <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--fg-base)' }}>
+                  <Shield size={16} color="var(--accent-fg)" /> Related Records
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {hasCoR && (
+                    <Link
+                      to={`/cors/${incident.id || id}`}
+                      state={{ source: 'cors' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        background: 'rgba(245, 158, 11, 0.05)',
+                        border: '1px solid rgba(245, 158, 11, 0.2)',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(245, 158, 11, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.2)';
+                      }}
+                    >
+                      <div style={{ padding: '0.4rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', color: '#f59e0b', display: 'flex', alignItems: 'center' }}>
+                        <AlertTriangle size={16} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--fg-base)' }}>CoR Compliance Log</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          View/Edit Chain of Responsibility details →
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+
+                  {hasClaims && (
+                    <Link
+                      to={`/claims/${incident.id || id}`}
+                      state={{ source: 'claims' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        background: 'rgba(239, 68, 68, 0.05)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        textDecoration: 'none',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)';
+                      }}
+                    >
+                      <div style={{ padding: '0.4rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                        <DollarSign size={16} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--fg-base)' }}>Claims Log Details</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          View/Edit Claim settlement details →
+                        </div>
+                      </div>
+                    </Link>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="card" style={{ padding: '1.25rem', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-base)', paddingBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
@@ -1110,8 +1200,8 @@ Please review the attached incident file in the Command Center. Legal and operat
                   <Paperclip size={16} color="var(--accent-fg)" /> Evidence Vault
                 </h3>
                 <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-                  <button 
-                    className="btn btn-secondary" 
+                  <button
+                    className="btn btn-secondary"
                     onClick={fetchAttachments}
                     disabled={isRefreshing}
                     title="Refresh Attachments"
@@ -1119,8 +1209,8 @@ Please review the attached incident file in the Command Center. Legal and operat
                   >
                     <RefreshCw size={14} color={isRefreshing ? "var(--accent-fg)" : "var(--fg-muted)"} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
                   </button>
-                  <button 
-                    className="btn btn-primary" 
+                  <button
+                    className="btn btn-primary"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}
@@ -1130,8 +1220,8 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </div>
               </div>
               {attachments && attachments.length > 0 && (
-                <button 
-                  className="btn btn-secondary" 
+                <button
+                  className="btn btn-secondary"
                   onClick={handleDownloadAll}
                   style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-base)' }}
                 >
@@ -1139,13 +1229,13 @@ Please review the attached incident file in the Command Center. Legal and operat
                 </button>
               )}
             </div>
-              <input 
-                type="file" 
-                multiple 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                onChange={handleFileUpload} 
-              />
+            <input
+              type="file"
+              multiple
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileUpload}
+            />
             {(!attachments || attachments.length === 0) ? (
               <div style={{ fontSize: '0.875rem', color: 'var(--fg-muted)', textAlign: 'center', padding: '1rem 0' }}>
                 No attachments uploaded.
@@ -1154,71 +1244,72 @@ Please review the attached incident file in the Command Center. Legal and operat
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {attachments.map((file: any) => {
                   const isImage = file.filename.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) != null;
-                  
+
                   return (
-                  <div key={file.id} className="attachment-item" style={{ 
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-                    padding: '0.75rem', background: 'var(--bg-surface)', borderRadius: '10px',
-                    border: '1px solid var(--border-base)',
-                    transition: 'all 0.2s ease',
-                    boxShadow: 'var(--shadow-sm)'
-                  }}>
-                    <div 
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, cursor: 'pointer', flex: 1 }} 
-                      onClick={() => {
-                        if (isImage) {
-                          setPreviewFile(file);
-                        } else {
-                          window.open(file.url, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
-                    >
-                      {isImage ? (
-                        <div style={{ width: '32px', height: '32px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
-                           <img src={file.url} alt={file.filename} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div key={file.id} className="attachment-item" style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '0.75rem', background: 'var(--bg-surface)', borderRadius: '10px',
+                      border: '1px solid var(--border-base)',
+                      transition: 'all 0.2s ease',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, cursor: 'pointer', flex: 1 }}
+                        onClick={() => {
+                          if (isImage) {
+                            setPreviewFile(file);
+                          } else {
+                            window.open(file.url, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                      >
+                        {isImage ? (
+                          <div style={{ width: '32px', height: '32px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--border-subtle)', background: 'var(--bg-subtle)' }}>
+                            <img src={file.url} alt={file.filename} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                        ) : (
+                          <div style={{ width: '32px', height: '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-subtle)', flexShrink: 0 }}>
+                            <FileText size={16} color="var(--accent-fg)" />
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--accent-fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', transition: 'color 0.2s ease' }} title={file.filename}>
+                            {file.filename}
+                          </span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--fg-faint)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            {isImage ? <><Maximize size={10} /> Preview Image</> : <><ExternalLink size={10} /> Open Document</>}
+                          </span>
                         </div>
-                      ) : (
-                        <div style={{ width: '32px', height: '32px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-subtle)', flexShrink: 0 }}>
-                           <FileText size={16} color="var(--accent-fg)" />
-                        </div>
-                      )}
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--accent-fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', transition: 'color 0.2s ease' }} title={file.filename}>
-                          {file.filename}
-                        </span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--fg-faint)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          {isImage ? <><Maximize size={10} /> Preview Image</> : <><ExternalLink size={10} /> Open Document</>}
-                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ color: 'var(--fg-muted)', background: 'transparent', padding: '0.4rem', borderRadius: '6px', display: 'flex', transition: 'all 0.2s ease' }}
+                          title="Download"
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-fg)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <Download size={14} />
+                        </a>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteAttachment(file.filename); }}
+                          disabled={isDeleting === file.filename}
+                          style={{ color: 'var(--danger-fg)', background: 'transparent', padding: '0.4rem', border: 'none', cursor: 'pointer', borderRadius: '6px', display: 'flex', transition: 'all 0.2s ease' }}
+                          title="Delete"
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
-                    
-                    <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-                      <a 
-                        href={file.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ color: 'var(--fg-muted)', background: 'transparent', padding: '0.4rem', borderRadius: '6px', display: 'flex', transition: 'all 0.2s ease' }}
-                        title="Download"
-                        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-fg)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--fg-muted)'; e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <Download size={14} />
-                      </a>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDeleteAttachment(file.filename); }}
-                        disabled={isDeleting === file.filename}
-                        style={{ color: 'var(--danger-fg)', background: 'transparent', padding: '0.4rem', border: 'none', cursor: 'pointer', borderRadius: '6px', display: 'flex', transition: 'all 0.2s ease' }}
-                        title="Delete"
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                )})}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -1232,7 +1323,7 @@ Please review the attached incident file in the Command Center. Legal and operat
 
       {/* Image Preview Modal */}
       {previewFile && previewFile.filename.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) && (
-        <div 
+        <div
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}
           onClick={() => setPreviewFile(null)}
         >
