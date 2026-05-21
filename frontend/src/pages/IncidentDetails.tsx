@@ -22,7 +22,7 @@ import { getIncidentCategory, CATEGORY_META, isDeptSectionFilled, canSeeDeptSect
 export default function IncidentDetails() {
   const { id } = useParams();
   const { role, email } = useAuth();
-  const { incidents, loading: hookLoading } = useIncidents(0);
+  const { incidents, loading: hookLoading } = useIncidents(2000);
   const [incident, setIncident] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);

@@ -125,6 +125,13 @@ export function useIncidents(pollingInterval = 2000) {
           if (cleanKey === 'intenttoclaim') cleanKey = 'intent_to_claim';
           if (cleanKey === 'attachments' || cleanKey === 'files' || cleanKey === 'evidence') cleanKey = 'attachments';
 
+          // HR Investigation Card & Confidential Notes Card Specific Mappings
+          if (cleanKey === 'investigationoutcome') cleanKey = 'investigation_outcome';
+          if (cleanKey === 'legalcounselengaged' || cleanKey === 'legalcounselengagedyn') cleanKey = 'legal_counsel_engaged';
+          if (cleanKey === 'closeoutdate') cleanKey = 'close_out_date';
+          if (cleanKey === 'correctivedisciplinaryaction' || cleanKey === 'correctiveaction') cleanKey = 'corrective_action';
+          if (cleanKey === 'notesconfidentialhreyesonly' || cleanKey === 'notes') cleanKey = 'notes';
+
           // Liability & Risk fields
           if (cleanKey.includes('responsible') || cleanKey.includes('atfaultparty')) cleanKey = 'responsible_party';
           if (cleanKey.includes('claimissued') || cleanKey.includes('formalclaim')) cleanKey = 'formal_claim_issued';
@@ -314,11 +321,11 @@ export function useIncidents(pollingInterval = 2000) {
               witnesses: raw.cr991_witnesses || '',
               immediate_action: raw.cr991_immediateaction || '',
               investigation_required: raw["cr991_investigationrequired@OData.Community.Display.V1.FormattedValue"] || '',
-              investigation_outcome: raw.cr991_investigationoutcome || '',
-              corrective_action: raw.cr991_correctiveaction || '',
-              legal_counsel_engaged: raw["cr991_legalcounselengaged@OData.Community.Display.V1.FormattedValue"] || '',
-              close_out_date: raw.cr991_closeoutdate || '',
-              notes: raw.cr991_notes || '',
+              investigation_outcome: raw.cr991_investigationoutcome || raw.investigationoutcome || raw.investigation_outcome || clean.investigation_outcome || clean.investigationoutcome || '',
+              corrective_action: raw.cr991_correctivedisciplinaryaction || raw.correctivedisciplinaryaction || raw.cr991_correctiveaction || raw.corrective_action || clean.corrective_action || clean.correctiveaction || clean.correctivedisciplinaryaction || '',
+              legal_counsel_engaged: raw["cr991_legalcounselengagedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_legalcounselengaged@OData.Community.Display.V1.FormattedValue"] || raw.cr991_legalcounselengagedyn || raw.legalcounselengagedyn || raw.legal_counsel_engaged || clean.legal_counsel_engaged || clean.legalcounselengaged || clean.legalcounselengagedyn || '',
+              close_out_date: raw.cr991_closeoutdate || raw.closeoutdate || raw.close_out_date || clean.close_out_date || clean.closeoutdate || '',
+              notes: raw.cr991_notesconfidentialhreyesonly || raw.notesconfidentialhreyesonly || raw.cr991_notes || raw.notes || clean.notes || clean.notesconfidentialhreyesonly || '',
               incident_summary: raw.cr991_incidentsummary || '',
               root_cause: raw.cr991_rootcause || '',
             }, raw);
