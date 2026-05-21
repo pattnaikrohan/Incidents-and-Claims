@@ -29,6 +29,7 @@ export default function IncidentDetails() {
   const [showOriginal, setShowOriginal] = useState(false);
   const [isUpdatingLiability, setIsUpdatingLiability] = useState(false);
   const [isUpdatingDept, setIsUpdatingDept] = useState(false);
+  const [isUpdatingConfidential, setIsUpdatingConfidential] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -339,10 +340,18 @@ export default function IncidentDetails() {
 
       const flowUrl = DEPT_FLOWS[category];
       if (flowUrl) {
+        const flowPayload = category === 'hr' ? {
+          incident_id: incident.id,
+          incident_number: incident.incident_number_str || id,
+          investigation_outcome: incident.investigation_outcome || '',
+          corrective_action: incident.corrective_action || '',
+          legal_counsel_engaged: incident.legal_counsel_engaged || ''
+        } : payload;
+
         fetch(flowUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(flowPayload)
         }).catch(err => console.error('Dept Flow Trigger failed:', err));
       }
 
@@ -356,6 +365,37 @@ export default function IncidentDetails() {
       alert('Failed to update investigation details.');
     } finally {
       setIsUpdatingDept(false);
+    }
+  };
+
+  const handleHRConfidentialNotesUpdate = async () => {
+    if (!incident) return;
+    setIsUpdatingConfidential(true);
+    try {
+      const HR_CONFIDENTIAL_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/cac1e44666654b3a975a28cbe83a3714/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GSL2qi2jt7sk-MPPN_y9_fkDr_1HsRsedDU0ALn32Js';
+
+      const payload = {
+        incident_id: incident.id,
+        incident_number: incident.incident_number_str || id,
+        notes: incident.notes || ''
+      };
+
+      // 1. Sync with Power Automate (Confidential Notes)
+      await fetch(HR_CONFIDENTIAL_FLOW, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // 2. Persist to backend database
+      await api.patch(`/incidents/${searchId}`, { notes: incident.notes });
+
+      showNotification('Confidential notes updated successfully.');
+    } catch (error) {
+      console.error('Confidential notes update failed:', error);
+      alert('Failed to update confidential notes.');
+    } finally {
+      setIsUpdatingConfidential(false);
     }
   };
 
@@ -663,10 +703,10 @@ export default function IncidentDetails() {
                         <button
                           className="btn btn-primary"
                           style={{ background: '#8b5cf6', color: '#fff', border: 'none' }}
-                          onClick={handleDeptUpdate}
-                          disabled={isUpdatingDept}
+                          onClick={handleHRConfidentialNotesUpdate}
+                          disabled={isUpdatingConfidential}
                         >
-                          {isUpdatingDept ? 'Saving...' : 'Save Confidential Notes'}
+                          {isUpdatingConfidential ? 'Saving...' : 'Save Confidential Notes'}
                         </button>
                       </div>
                     )}
