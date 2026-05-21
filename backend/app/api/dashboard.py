@@ -17,29 +17,34 @@ def get_dashboard_statistics(
     role = current_user.role
     all_incidents = db.incidents
     
+    def get_val(obj, key, default=None):
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+    
     if role in [RoleEnum.full_access, RoleEnum.risk_compliance]:
         incidents = all_incidents
     elif role == RoleEnum.bu_access:
         bu_name = getattr(current_user, "business_unit", None)
         bu_map = {b["id"]: b["business_unit"] for b in db.branches}
-        incidents = [i for i in all_incidents if bu_map.get(i.branch_id, "") == bu_name]
+        incidents = [i for i in all_incidents if bu_map.get(get_val(i, "branch_id"), "") == bu_name]
     elif role == RoleEnum.branch_access:
-        incidents = [i for i in all_incidents if i.branch_id == current_user.branch_id]
+        incidents = [i for i in all_incidents if get_val(i, "branch_id") == current_user.branch_id]
     elif role in [RoleEnum.it_access, RoleEnum.finance_access, RoleEnum.hr_access]:
         # These are also branch-specific in our store
-        incidents = [i for i in all_incidents if i.branch_id == current_user.branch_id]
+        incidents = [i for i in all_incidents if get_val(i, "branch_id") == current_user.branch_id]
     else:
-        incidents = [i for i in all_incidents if i.creator_id == current_user.id]
+        incidents = [i for i in all_incidents if get_val(i, "creator_id") == current_user.id]
 
     branches = db.branches
 
     # Total open
-    total_open = len([i for i in incidents if i.status not in ["Closed", "Claim Processing"]])
+    total_open = len([i for i in incidents if get_val(i, "status") not in ["Closed", "Claim Processing"]])
     
     # By Branch
     # Create a mapping of branch_id -> branch_name
     branch_map = {b["id"]: b["name"] for b in branches}
-    branch_counts = Counter([i.branch_id for i in incidents])
+    branch_counts = Counter([get_val(i, "branch_id") for i in incidents])
     
     by_branch = []
     for b_id, count in branch_counts.items():
@@ -47,7 +52,7 @@ def get_dashboard_statistics(
             by_branch.append({"branch": branch_map[b_id], "count": count})
             
     # By Type
-    type_counts = Counter([i.type for i in incidents])
+    type_counts = Counter([get_val(i, "type") for i in incidents])
     by_type = [{"type": t, "count": c} for t, c in type_counts.items()]
     
     # Add dummy data if empty so the dashboard charts aren't blank

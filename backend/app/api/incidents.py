@@ -70,6 +70,12 @@ def read_incidents(
     incidents = db.incidents
     role = current_user.role
     
+    # Helper to get value regardless of type
+    def get_val(obj, key, default=None):
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+    
     if role in [RoleEnum.full_access, RoleEnum.risk_compliance]:
         filtered = incidents
     elif role == RoleEnum.bu_access:
@@ -78,28 +84,28 @@ def read_incidents(
         bu_map = {b["id"]: b["business_unit"] for b in db.branches}
         # A bit hacky: infer the BU name from the user's email or assume they manage the AU BU for this demo
         # Actually, let's just show them all AU incidents for this demo if they are BU manager
-        filtered = [i for i in incidents if bu_map.get(i.branch_id, "") == "AAW Global Logistics - AU"]
+        filtered = [i for i in incidents if bu_map.get(get_val(i, "branch_id"), "") == "AAW Global Logistics - AU"]
     elif role == RoleEnum.it_access:
-        filtered = [i for i in incidents if i.type in ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']]
+        filtered = [i for i in incidents if get_val(i, "type") in ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']]
     elif role == RoleEnum.finance_access:
-        filtered = [i for i in incidents if i.type == 'Travel Disruption']
+        filtered = [i for i in incidents if get_val(i, "type") == 'Travel Disruption']
     elif role == RoleEnum.hr_access:
-        filtered = [i for i in incidents if i.type in ['Near Miss','First Aid Injury','Lost Time Injury']]
+        filtered = [i for i in incidents if get_val(i, "type") in ['Near Miss','First Aid Injury','Lost Time Injury']]
     elif role == RoleEnum.branch_access:
-        filtered = [i for i in incidents if i.branch_id == current_user.branch_id]
+        filtered = [i for i in incidents if get_val(i, "branch_id") == current_user.branch_id]
     else:
-        filtered = [i for i in incidents if i.creator_id == current_user.id]
+        filtered = [i for i in incidents if get_val(i, "creator_id") == current_user.id]
         
     branch_map = {b["id"]: b["name"] for b in db.branches}
     bu_map = {b["id"]: b["business_unit"] for b in db.branches}
     return [{
-        "id": i.id, 
-        "type": i.type, 
-        "status": i.status, 
-        "date": i.date, 
-        "location": i.location,
-        "branch_department": branch_map.get(getattr(i, "branch_id", None), "N/A"),
-        "business_unit": bu_map.get(getattr(i, "branch_id", None), "N/A")
+        "id": get_val(i, "id"), 
+        "type": get_val(i, "type"), 
+        "status": get_val(i, "status"), 
+        "date": get_val(i, "date"), 
+        "location": get_val(i, "location"),
+        "branch_department": branch_map.get(get_val(i, "branch_id"), "N/A"),
+        "business_unit": bu_map.get(get_val(i, "branch_id"), "N/A")
     } for i in filtered]
 
 @router.get("/{incident_id}", response_model=dict)
@@ -119,17 +125,23 @@ def get_incident(
     
     branch_map = {b["id"]: b["name"] for b in db.branches}
     
+    # Helper to get value regardless of type
+    def get_val(obj, key, default=None):
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+    
     # Return all attributes dynamically
     res = {
-        "id": incident.id,
-        "type": incident.type,
-        "status": incident.status,
-        "date": incident.date,
-        "location": incident.location,
-        "description": incident.description,
-        "job_number": incident.job_number,
-        "customer_name": getattr(incident, 'customer_name', 'N/A'),
-        "branch_department": branch_map.get(getattr(incident, "branch_id", None), "N/A")
+        "id": get_val(incident, "id"),
+        "type": get_val(incident, "type"),
+        "status": get_val(incident, "status"),
+        "date": get_val(incident, "date"),
+        "location": get_val(incident, "location"),
+        "description": get_val(incident, "description"),
+        "job_number": get_val(incident, "job_number"),
+        "customer_name": get_val(incident, 'customer_name', 'N/A'),
+        "branch_department": branch_map.get(get_val(incident, "branch_id"), "N/A")
     }
     
     # Add investigation fields present on the object
@@ -147,7 +159,7 @@ def get_incident(
     ]
     
     for field in investigation_fields:
-        val = getattr(incident, field, None)
+        val = get_val(incident, field)
         if val is not None and val != "":
             res[field] = val
             
@@ -160,7 +172,11 @@ def patch_incident(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    incident = next((i for i in db.incidents if str(i.id) == str(incident_id)), None)
+    search_id = str(incident_id).strip().lower()
+    incident = next(
+        (i for i in db.incidents if str(i.get("id") if isinstance(i, dict) else i.id).strip().lower() == search_id), 
+        None
+    )
     
     if not incident:
         # Create a side-store record for Dataverse/PA IDs
@@ -172,14 +188,26 @@ def patch_incident(
             branch_id=update_data.get("branch_id")
         )
         db.add(new_incident)
-        incident = new_incident
+        # Re-fetch from the store to ensure we modify the persistent dict representation
+        incident = next(
+            (i for i in db.incidents if str(i.get("id") if isinstance(i, dict) else i.id).strip().lower() == search_id),
+            new_incident
+        )
     
-    for key, value in update_data.items():
-        # Avoid overwriting id
-        if key == 'id': continue
-        setattr(incident, key, value)
+    if isinstance(incident, dict):
+        for key, value in update_data.items():
+            if key == 'id': continue
+            incident[key] = value
+        db._save()
+        res_id = incident.get("id")
+    else:
+        for key, value in update_data.items():
+            if key == 'id': continue
+            setattr(incident, key, value)
+        db._save()
+        res_id = incident.id
             
-    return {"message": "Incident updated", "incident_id": incident.id}
+    return {"message": "Incident updated", "incident_id": res_id}
 
 @router.put("/{incident_id}/status", response_model=dict)
 def update_incident_status(

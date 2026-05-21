@@ -355,10 +355,33 @@ export default function IncidentDetails() {
         }).catch(err => console.error('Dept Flow Trigger failed:', err));
       }
 
-      // 2. Persist to backend database
-      await api.patch(`/incidents/${searchId}`, payload);
+      // 2. Persist to backend database - sanitize payload
+      const VALID_DB_KEYS = [
+        'id', 'type', 'location', 'description', 'status', 'assigned_to_id', 'branch_id',
+        'responsible_party', 'cor_risk_level', 'cor_assessment', 'corrective_action',
+        'formal_claim_issued', 'insurer_notified', 'management_escalation', 'cor_required',
+        'investigation_outcome', 'legal_counsel_engaged', 'medical_treatment_required',
+        'lost_time_injury', 'notifiable_safework', 'root_cause', 'corrective_action_owner',
+        'corrective_action_due_date', 'chro_cro_notified', 'workers_comp_claim',
+        'containment_actions', 'personal_data_involved', 'notifiable_privacy_breach',
+        'cio_notified', 'regulator_involved', 'notified_regulator', 'penalty_imposed',
+        'financial_value', 'actual_loss', 'recovery_possible', 'recovery_amount',
+        'write_off_required', 'cfo_notified', 'cro_notified', 'police_reported',
+        'dept_section_updated', 'notes', 'witnesses', 'immediate_action',
+        'investigation_required', 'close_out_date', 'incident_summary', 'date_of_incident',
+        'date_logged', 'logged_by', 'employee_name', 'incident_type', 'incident_number_str'
+      ];
 
-      setIncident(payload);
+      const cleanPayload = Object.keys(payload)
+        .filter(key => VALID_DB_KEYS.includes(key))
+        .reduce((obj: any, key) => {
+          obj[key] = payload[key];
+          return obj;
+        }, {});
+
+      await api.patch(`/incidents/${searchId}`, cleanPayload);
+
+      setIncident(updatedIncident);
       showNotification('Investigation details updated successfully.');
     } catch (error) {
       console.error('Update failed:', error);
@@ -1145,8 +1168,14 @@ Please review the attached incident file in the Command Center. Legal and operat
 
           {/* Related Records Card */}
           {(() => {
-            const hasCoR = incident?.cor === 'Yes' || incident?.cor_required === 'Yes' || liability?.cor === 'Yes';
-            const hasClaims = incident?.formal_claim_issued === 'Yes' || liability?.formal_claim_issued === 'Yes';
+            const checkYes = (val: any) => {
+              if (typeof val === 'boolean') return val;
+              if (typeof val === 'string') return val.toLowerCase() === 'yes';
+              return false;
+            };
+
+            const hasCoR = checkYes(incident?.cor) || checkYes(incident?.cor_required) || checkYes(liability?.cor);
+            const hasClaims = checkYes(incident?.formal_claim_issued) || checkYes(liability?.formal_claim_issued);
             const showRelatedRecords = hasCoR || hasClaims;
 
             if (!showRelatedRecords) return null;
