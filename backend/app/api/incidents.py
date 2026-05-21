@@ -220,8 +220,19 @@ def list_incident_notes(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    notes = [n for n in db.notes if str(n.incident_id) == str(incident_id)]
-    return [{"id": n.id, "message": n.message, "author": "System User", "date": n.created_at} for n in notes]
+    notes = [
+        n for n in db.notes 
+        if str(n.get("incident_id") if isinstance(n, dict) else getattr(n, "incident_id", "")).lower() == str(incident_id).lower()
+    ]
+    return [
+        {
+            "id": n.get("id") if isinstance(n, dict) else getattr(n, "id", None),
+            "message": n.get("message") if isinstance(n, dict) else getattr(n, "message", ""),
+            "author": "System User",
+            "date": n.get("created_at") if isinstance(n, dict) else getattr(n, "created_at", getattr(n, "timestamp", None))
+        }
+        for n in notes
+    ]
 
 @router.post("/{incident_id}/notes", response_model=dict)
 def add_incident_note(
