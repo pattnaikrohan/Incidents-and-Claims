@@ -692,35 +692,35 @@ export default function Incidents() {
                                 {category.id === 'hr' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.employee_involved || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.employee_involved || incident.employee_name || incident.employee || 'N/A'}</td>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}
                                 {category.id === 'whs' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || incident.injury_type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.location || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.location || incident.location_of_incident || 'N/A'}</td>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}
                                 {category.id === 'it' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.system_affected || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.system_affected || incident.systems_affected || 'N/A'}</td>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}
                                 {category.id === 'risk' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.regulatory_body || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.regulatory_body || incident.regulator_authority_involved || incident.legislation_policy_breached || 'N/A'}</td>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}
                                 {category.id === 'finance' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.transaction_ref || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.transaction_ref || incident.vendor_customer_name || 'N/A'}</td>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}

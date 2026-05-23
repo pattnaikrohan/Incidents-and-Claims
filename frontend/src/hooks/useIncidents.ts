@@ -170,6 +170,7 @@ export function useIncidents(pollingInterval = 2000) {
           if (cleanKey === 'datereported') cleanKey = 'date_reported';
 
           // IT & Security Investigation Card Specific Mappings
+          if (cleanKey === 'systemsdataaffected' || cleanKey === 'systemaffected' || cleanKey === 'systemsaffected' || cleanKey === 'system') cleanKey = 'system_affected';
           if (cleanKey === 'containmentactions' || cleanKey === 'containmentactionstaken') cleanKey = 'containment_actions';
           if (cleanKey === 'personaldatainvolved' || cleanKey === 'personaldatainvolvedyn') cleanKey = 'personal_data_involved';
           if (cleanKey === 'recordsofaffected' || cleanKey === 'recordsaffected' || cleanKey === 'numberofrecordsaffectedifapplicable') cleanKey = 'records_affected';
@@ -389,7 +390,7 @@ export function useIncidents(pollingInterval = 2000) {
               date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
               status: clean.status || 'Open - Incident Logged',
               description: clean.short_description || clean.incident_summary || 'No description',
-              employee_involved: clean.employee || clean.employeeinvolved || 'N/A',
+              employee_involved: raw.cr991_employee || raw.cr991_employeeinvolved || raw.cr991_employeename || clean.employee || clean.employeeinvolved || clean.employee_name || clean.employeename || 'N/A',
               formal_claim_issued: clean.formal_claim_issued || 'No',
               cor_required: clean.cor_required || 'No',
               management_escalation: clean.management_escalation || 'No',
@@ -426,7 +427,7 @@ export function useIncidents(pollingInterval = 2000) {
               category: 'whs',
               incident_number_str: clean.incident_number_str || foundFriendlyId || `WHS-${(clean.workplacehealthsafetyincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
               type: clean.incident_type || 'WH&S Incident',
-              location: clean.location_of_incident || 'N/A',
+              location: raw.cr991_locationofincident || raw.cr991_location || clean.location_of_incident || clean.location || 'N/A',
               branch_department: clean.branch_department || 'N/A',
               business_unit: clean.business_unit || 'N/A',
               date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
@@ -469,13 +470,15 @@ export function useIncidents(pollingInterval = 2000) {
               category: 'it',
               incident_number_str: clean.incident_number_str || foundFriendlyId || `IT-${(clean.itsecurityincidentid || raw.id || '').substring(0, 8).toUpperCase()}`,
               type: clean.incident_type || 'IT & Security',
-              location: clean.location_of_incident || 'N/A',
+              location: raw.cr991_locationofincident || raw.cr991_location || clean.location_of_incident || clean.location || 'N/A',
               branch_department: clean.branch_department || 'N/A',
               business_unit: clean.business_unit || 'N/A',
               date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
               status: clean.status || 'Open - Incident Logged',
               description: clean.short_description || clean.incident_summary || 'No description',
-              system_affected: clean.system || clean.systemaffected || 'N/A',
+              system_affected: raw.cr991_systemsdataaffected || raw.cr991_systemaffected || raw.cr991_systemsaffected || raw.cr991_system || clean.system || clean.systemaffected || clean.systemsdataaffected || clean.systemsaffected || clean.system_affected || 'N/A',
+              systems_affected: raw.cr991_systemsdataaffected || raw.cr991_systemaffected || raw.cr991_systemsaffected || raw.cr991_system || clean.system || clean.systemaffected || clean.systemsdataaffected || clean.systemsaffected || clean.system_affected || 'N/A',
+              systems_data_affected: raw.cr991_systemsdataaffected || raw.cr991_systemaffected || raw.cr991_systemsaffected || raw.cr991_system || clean.system || clean.systemaffected || clean.systemsdataaffected || clean.systemsaffected || clean.system_affected || '',
               formal_claim_issued: clean.formal_claim_issued || 'No',
               cor_required: clean.cor_required || 'No',
               management_escalation: clean.management_escalation || 'No',
@@ -522,7 +525,7 @@ export function useIncidents(pollingInterval = 2000) {
               date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
               status: clean.status || 'Open - Incident Logged',
               description: clean.short_description || clean.incident_summary || 'No description',
-              regulatory_body: clean.regulatorybody || 'N/A',
+              regulatory_body: raw.cr991_regulatorybody || raw.cr991_regulatoryauthority || raw.cr991_regulatorbody || clean.regulatorybody || clean.regulatory_body || clean.regulatoryauthority || 'N/A',
               formal_claim_issued: clean.formal_claim_issued || 'No',
               cor_required: clean.cor_required || 'No',
               management_escalation: clean.management_escalation || 'No',
@@ -569,7 +572,7 @@ export function useIncidents(pollingInterval = 2000) {
               date: (clean.datelogged_formatted || clean.date_logged || '').split(' ')[0],
               status: clean.status || 'Open - Incident Logged',
               description: clean.short_description || clean.incident_summary || 'No description',
-              transaction_ref: clean.transactionref || 'N/A',
+              transaction_ref: raw.cr991_transactionref || raw.cr991_transactionreference || raw.cr991_transactionnumber || clean.transactionref || clean.transaction_ref || clean.transactionreference || 'N/A',
               formal_claim_issued: clean.formal_claim_issued || 'No',
               cor_required: clean.cor_required || 'No',
               management_escalation: clean.management_escalation || 'No',
