@@ -720,7 +720,7 @@ export default function Incidents() {
                                 {category.id === 'finance' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.transaction_ref || incident.vendor_customer_name || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.transaction_ref || incident.vendor_customer_name || incident.incident_number_str || 'N/A'}</td>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}
