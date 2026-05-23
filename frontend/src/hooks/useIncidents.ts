@@ -131,9 +131,80 @@ export function useIncidents(pollingInterval = 2000) {
           if (cleanKey === 'closeoutdate') cleanKey = 'close_out_date';
           if (cleanKey === 'correctivedisciplinaryaction' || cleanKey === 'correctiveaction') cleanKey = 'corrective_action';
           if (cleanKey === 'notesconfidentialhreyesonly' || cleanKey === 'notes') cleanKey = 'notes';
+          if (cleanKey === 'investigationrequired' || cleanKey === 'investigationrequiredyn') cleanKey = 'investigation_required';
+          if (cleanKey === 'witnesses' || cleanKey === 'witnessesifany') cleanKey = 'witnesses';
+          if (cleanKey === 'immediateaction' || cleanKey === 'immediateactiontaken') cleanKey = 'immediate_action';
+          if (cleanKey === 'employeename' || cleanKey === 'employeeinvolved') cleanKey = 'employee_name';
 
-          // Liability & Risk fields
-          if (cleanKey.includes('responsible') || cleanKey.includes('atfaultparty')) cleanKey = 'responsible_party';
+          // WH&S Investigation Card Specific Mappings
+          if (cleanKey === 'medicaltreatmentrequired') cleanKey = 'medical_treatment_required';
+          if (cleanKey === 'losttimeinjury') cleanKey = 'lost_time_injury';
+          if (cleanKey === 'notifiablesafework') cleanKey = 'notifiable_safework';
+          if (cleanKey === 'datenotifiedregulator' || cleanKey === 'datenotifiedtoregulator') cleanKey = 'date_notified_regulator';
+          if (cleanKey === 'correctiveactionowner') cleanKey = 'corrective_action_owner';
+          if (cleanKey === 'correctiveactionduedate') cleanKey = 'corrective_action_due_date';
+          if (cleanKey === 'chro_cronotified' || cleanKey === 'chroncronotified' || cleanKey === 'chrocronotified') cleanKey = 'chro_cro_notified';
+          if (cleanKey === 'personsinvolved' || cleanKey === 'person_involved') cleanKey = 'persons_involved';
+          if (cleanKey === 'injurydetails' || cleanKey === 'injurydetailsnatureandbodypart') cleanKey = 'injury_details';
+          if (cleanKey === 'workerscompclaim' || cleanKey === 'workerscompensationclaim' || cleanKey === 'workerscompclaims') cleanKey = 'workers_comp_claim';
+
+          // Risk & Compliance Specific Mappings
+          if (cleanKey === 'regulationpolicybreached' || cleanKey === 'legislationpolicybreached') cleanKey = 'regulation_policy_breached';
+          if (cleanKey === 'regulatorauthorityinvolved' || cleanKey === 'regulatorinvolved') cleanKey = 'regulator_authority_involved';
+          if (cleanKey === 'notifiedtoregulator' || cleanKey === 'notifiedregulator' || cleanKey === 'regulatornotified') cleanKey = 'notified_to_regulator';
+          if (cleanKey === 'datenotified') cleanKey = 'date_notified';
+          if (cleanKey === 'financialpenaltyimposed' || cleanKey === 'penaltyimposed') cleanKey = 'financial_penalty_imposed';
+          if (cleanKey === 'penaltyamount' || cleanKey === 'penaltyamountaud') cleanKey = 'penalty_amount';
+          if (cleanKey === 'boardnotified') cleanKey = 'board_notified';
+
+          // Finance Specific Additional Mappings
+          if (cleanKey === 'vendorcustomername') cleanKey = 'vendor_customer_name';
+          if (cleanKey === 'controlfailureidentified') cleanKey = 'control_failure_identified';
+
+          // Cargo Specific Additional Mappings
+          if (cleanKey === 'mblmawbissued') cleanKey = 'mbl_mawb_issued';
+          if (cleanKey === 'mblmawbnumber') cleanKey = 'mbl_mawb_number';
+          if (cleanKey === 'hblhawbissued') cleanKey = 'hbl_hawb_issued';
+          if (cleanKey === 'hblhawbnumber') cleanKey = 'hbl_hawb_number';
+          if (cleanKey === 'transportcompany') cleanKey = 'transport_company';
+          if (cleanKey === 'datereported') cleanKey = 'date_reported';
+
+          // IT & Security Investigation Card Specific Mappings
+          if (cleanKey === 'containmentactions' || cleanKey === 'containmentactionstaken') cleanKey = 'containment_actions';
+          if (cleanKey === 'personaldatainvolved' || cleanKey === 'personaldatainvolvedyn') cleanKey = 'personal_data_involved';
+          if (cleanKey === 'recordsofaffected' || cleanKey === 'recordsaffected' || cleanKey === 'numberofrecordsaffectedifapplicable') cleanKey = 'records_affected';
+          if (cleanKey === 'notifiableprivacybreach' || cleanKey === 'notifiableprivacybreachyn') cleanKey = 'notifiable_privacy_breach';
+          if (cleanKey === 'datenotifiedoaic' || cleanKey === 'datenotifiedtooaicifapplicable') cleanKey = 'date_notified_oaic';
+          if (cleanKey === 'cionotified' || cleanKey === 'cionotifiedyn') cleanKey = 'cio_notified';
+          if (cleanKey === 'cronotified' || cleanKey === 'cronotifiedyn') cleanKey = 'cro_notified';
+          if (cleanKey === 'cyberspecialistengaged' || cleanKey === 'externalcyberspecialistengagedyn') cleanKey = 'cyber_specialist_engaged';
+          if (cleanKey === 'insurernotifieddept' || cleanKey === 'insurernotifiedyn') cleanKey = 'insurer_notified_dept';
+
+          // Finance Investigation Card Specific Mappings
+          if (cleanKey === 'financialvalueinvolvedaud' || cleanKey === 'financialvalueinvolved') cleanKey = 'financial_value';
+          if (cleanKey === 'actualfinanciallossaud' || cleanKey === 'actualfinancialloss' || cleanKey === 'actualloss') cleanKey = 'actual_loss';
+          if (cleanKey === 'recoverypossibleyn' || cleanKey === 'recoverypossible') cleanKey = 'recovery_possible';
+          if (cleanKey === 'recoveryamountaud' || cleanKey === 'recoveryamount') cleanKey = 'recovery_amount';
+          if (cleanKey === 'cfonotifiedyn' || cleanKey === 'cfonotified') cleanKey = 'cfo_notified';
+          if (cleanKey === 'policereportedyn' || cleanKey === 'policereported' || cleanKey === 'policenotified') cleanKey = 'police_reported';
+          if (cleanKey === 'writeoffrequiredyn' || cleanKey === 'writeoffrequired' || cleanKey === 'write_off_required') cleanKey = 'write_off_required';
+
+          // NCR fields mapping (MUST be before Liability block to avoid 'responsibleperson' being caught by 'responsible' includes)
+          if (cleanKey === 'causeofnc') cleanKey = 'cause_of_nc';
+          if (cleanKey === 'correctiveactionimplemented' || cleanKey === 'correctiveactionimplementedyn') cleanKey = 'corrective_action_implemented';
+          if (cleanKey === 'preventiveaction' || cleanKey === 'preventativeaction') cleanKey = 'preventive_action';
+          if (cleanKey === 'responsibleperson') cleanKey = 'responsible_person';
+          if (cleanKey === 'targetcompletiondate') cleanKey = 'target_completion_date';
+          if (cleanKey === 'actualcompletiondate') cleanKey = 'actual_completion_date';
+          if (cleanKey === 'similarncchecked') cleanKey = 'similar_nc_checked';
+          if (cleanKey === 'effectivenessverificationdate') cleanKey = 'effectiveness_verification_date';
+          if (cleanKey === 'effectivenessevidenceresults' || cleanKey === 'effectivenessevidence') cleanKey = 'effectiveness_evidence_results';
+          if (cleanKey === 'riskregisterupdated') cleanKey = 'risk_register_updated';
+          if (cleanKey === 'qmsprocedurechanged' || cleanKey === 'qmsorprocedurechanged') cleanKey = 'qms_procedure_changed';
+          if (cleanKey === 'capaadequate') cleanKey = 'capa_adequate';
+
+          // Liability & Risk fields (narrowed 'responsible' to 'responsibleparty' to avoid catching 'responsible_person')
+          if (cleanKey.includes('responsibleparty') || cleanKey.includes('atfaultparty')) cleanKey = 'responsible_party';
           if (cleanKey.includes('claimissued') || cleanKey.includes('formalclaim')) cleanKey = 'formal_claim_issued';
           if (cleanKey.includes('insurernotified')) cleanKey = 'insurer_notified';
           if (cleanKey.includes('risklevel')) cleanKey = 'risk_level';
@@ -250,7 +321,7 @@ export function useIncidents(pollingInterval = 2000) {
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
               logged_by: raw.cr991_loggedby || '',
-              mode: raw.cr991_mode || '',
+              mode: raw["cr991_mode@OData.Community.Display.V1.FormattedValue"] || raw.cr991_mode || '',
               system_job_number: raw.cr991_systemjobnumber || '',
               mbl_mawb_issued: raw["cr991_mblmawbissued@OData.Community.Display.V1.FormattedValue"] || 'N/A',
               mbl_mawb_number: raw.cr991_mblmawbnumber || '',
@@ -268,11 +339,11 @@ export function useIncidents(pollingInterval = 2000) {
               carrier: raw.cr991_shippinglineairline || '',
               coloader: raw.cr991_coloader || '',
               transport_company: raw.cr991_transportcompany || '',
-              scope_of_work: raw.cr991_scopeofwork || '',
-              role_performed: raw.cr991_roleperformed || '',
+              scope_of_work: raw["cr991_scopeofwork@OData.Community.Display.V1.FormattedValue"] || raw.cr991_scopeofwork || '',
+              role_performed: raw["cr991_roleperformed@OData.Community.Display.V1.FormattedValue"] || raw.cr991_roleperformed || '',
               incident_types: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] ? [raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"].trim()] : [],
-              claim_types: raw["cr991_intenttoclaim@OData.Community.Display.V1.FormattedValue"] ? raw["cr991_intenttoclaim@OData.Community.Display.V1.FormattedValue"] : '',
-              corrective_actions: raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"] ? [raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"].trim()] : [],
+              claim_types: raw["cr991_intenttoclaim@OData.Community.Display.V1.FormattedValue"] || raw.cr991_intenttoclaim || '',
+              corrective_actions: raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"] || '',
               claim_estimate: raw.cr991_incidentclaimestimate || '',
               incident_summary: raw.cr991_incidentsummary || raw.cr991_cargodescription || '',
               root_cause: raw.cr991_rootcause || '',
@@ -361,16 +432,16 @@ export function useIncidents(pollingInterval = 2000) {
               persons_involved: raw.cr991_personsinvolved || '',
               incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
               injury_details: raw.cr991_injurydetails || '',
-              medical_treatment_required: raw["cr991_medicaltreatmentrequired@OData.Community.Display.V1.FormattedValue"] || '',
-              lost_time_injury: raw["cr991_losttimeinjury@OData.Community.Display.V1.FormattedValue"] || '',
-              notifiable_safework: raw["cr991_notifiablesafework@OData.Community.Display.V1.FormattedValue"] || '',
-              date_notified_regulator: raw.cr991_datenotifiedregulator || '',
-              root_cause: raw.cr991_rootcause || '',
-              corrective_action: raw.cr991_correctiveaction || '',
-              corrective_action_owner: raw.cr991_correctiveactionowner || '',
-              corrective_action_due_date: raw.cr991_correctiveactionduedate || '',
-              chro_cro_notified: raw["cr991_chro_cronotified@OData.Community.Display.V1.FormattedValue"] || '',
-              workers_comp_claim: raw["cr991_workerscompclaim@OData.Community.Display.V1.FormattedValue"] || '',
+              medical_treatment_required: raw["cr991_medicaltreatmentrequired@OData.Community.Display.V1.FormattedValue"] || raw.medical_treatment_required || clean.medical_treatment_required || '',
+              lost_time_injury: raw["cr991_losttimeinjury@OData.Community.Display.V1.FormattedValue"] || raw.lost_time_injury || clean.lost_time_injury || '',
+              notifiable_safework: raw["cr991_notifiablesafework@OData.Community.Display.V1.FormattedValue"] || raw.notifiable_safework || clean.notifiable_safework || '',
+              date_notified_regulator: raw.cr991_datenotifiedregulator || raw.date_notified_regulator || clean.date_notified_regulator || '',
+              root_cause: raw.cr991_rootcause || raw.root_cause || clean.root_cause || '',
+              corrective_action: raw.cr991_correctiveaction || raw.corrective_action || clean.corrective_action || '',
+              corrective_action_owner: raw.cr991_correctiveactionowner || raw.corrective_action_owner || clean.corrective_action_owner || '',
+              corrective_action_due_date: raw.cr991_correctiveactionduedate || raw.corrective_action_due_date || clean.corrective_action_due_date || '',
+              chro_cro_notified: raw["cr991_chro_cronotified@OData.Community.Display.V1.FormattedValue"] || raw.chro_cro_notified || clean.chro_cro_notified || '',
+              workers_comp_claim: raw["cr991_workerscompclaim@OData.Community.Display.V1.FormattedValue"] || raw.workers_comp_claim || clean.workers_comp_claim || '',
             }, raw);
           });
         }
@@ -406,8 +477,18 @@ export function useIncidents(pollingInterval = 2000) {
               data_type_compromised: raw.cr991_datatypecompromised || '',
               notifiable_data_breach: raw["cr991_notifiabledatabreach@OData.Community.Display.V1.FormattedValue"] || '',
               it_support_ticket_ref: raw.cr991_itsupportticketref || '',
-              root_cause: raw.cr991_rootcause || '',
+              root_cause: raw.cr991_rootcause || raw.root_cause || clean.root_cause || '',
               system_restored: raw["cr991_systemrestored@OData.Community.Display.V1.FormattedValue"] || '',
+              containment_actions: raw.cr991_containmentactionstaken || raw.cr991_containmentactions || raw.containment_actions || clean.containment_actions || '',
+              personal_data_involved: raw["cr991_personaldatainvolvedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_personaldatainvolved@OData.Community.Display.V1.FormattedValue"] || raw.personal_data_involved || clean.personal_data_involved || '',
+              records_affected: raw.cr991_numberofrecordsaffectedifapplicable || raw.cr991_recordsofaffected || raw.records_affected || clean.records_affected || '',
+              notifiable_privacy_breach: raw["cr991_notifiableprivacybreachyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_notifiableprivacybreach@OData.Community.Display.V1.FormattedValue"] || raw.notifiable_privacy_breach || clean.notifiable_privacy_breach || '',
+              date_notified_oaic: raw.cr991_datenotifiedtooaicifapplicable || raw.cr991_datenotifiedoaic || raw.date_notified_oaic || clean.date_notified_oaic || '',
+              cio_notified: raw["cr991_cionotifiedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_cionotified@OData.Community.Display.V1.FormattedValue"] || raw.cio_notified || clean.cio_notified || '',
+              cro_notified: raw["cr991_cronotifiedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_cronotified@OData.Community.Display.V1.FormattedValue"] || raw.cro_notified || clean.cro_notified || '',
+              cyber_specialist_engaged: raw["cr991_externalcyberspecialistengagedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_cyberspecialistengaged@OData.Community.Display.V1.FormattedValue"] || raw.cyber_specialist_engaged || clean.cyber_specialist_engaged || '',
+              insurer_notified_dept: raw["cr991_insurernotifiedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_insurernotifieddept@OData.Community.Display.V1.FormattedValue"] || raw.insurer_notified_dept || clean.insurer_notified_dept || '',
+              corrective_action: raw.cr991_correctiveaction || raw.corrective_action || clean.corrective_action || '',
             }, raw);
           });
         }
@@ -444,6 +525,17 @@ export function useIncidents(pollingInterval = 2000) {
               date_regulator_notified: raw.cr991_dateregulatornotified || '',
               remediation_plan: raw.cr991_remediationplan || '',
               board_notified: raw["cr991_boardnotified@OData.Community.Display.V1.FormattedValue"] || '',
+              // Risk Investigation Card fields
+              regulator_involved: raw.cr991_regulatorauthorityinvolvedifapplicable || raw.regulator_involved || clean.regulator_involved || '',
+              notified_regulator: raw["cr991_notifiedtoregulatoryn@OData.Community.Display.V1.FormattedValue"] || raw.cr991_notifiedtoregulatoryn || raw.notified_regulator || clean.notified_regulator || '',
+              date_notified: raw.cr991_datenotified || raw.date_notified || clean.date_notified || clean.datenotified || '',
+              cro_notified: raw["cr991_cronotifiedyn@OData.Community.Display.V1.FormattedValue"] || raw.cr991_cronotifiedyn || raw.cro_notified || clean.cro_notified || '',
+              legal_counsel_engaged: raw["cr991_legalcounselengagedyn@OData.Community.Display.V1.FormattedValue"] || raw.cr991_legalcounselengagedyn || raw.legal_counsel_engaged || clean.legal_counsel_engaged || '',
+              penalty_imposed: raw["cr991_financialpenaltyimposedyn@OData.Community.Display.V1.FormattedValue"] || raw.cr991_financialpenaltyimposedyn || raw.penalty_imposed || clean.penalty_imposed || '',
+              penalty_amount: raw.cr991_penaltyamountifapplicable || raw.penalty_amount || clean.penalty_amount || clean.penaltyamountifapplicable || '',
+              root_cause: raw.cr991_rootcause || raw.root_cause || clean.root_cause || '',
+              corrective_action: raw.cr991_correctiveaction || raw.corrective_action || clean.corrective_action || '',
+              corrective_action_owner: raw.cr991_correctiveactionowner || raw.corrective_action_owner || clean.corrective_action_owner || '',
             }, raw);
           });
         }
@@ -478,8 +570,18 @@ export function useIncidents(pollingInterval = 2000) {
               vendor_customer_name: raw.cr991_vendorcustomername || '',
               police_notified: raw["cr991_policenotified@OData.Community.Display.V1.FormattedValue"] || '',
               bank_notified: raw["cr991_banknotified@OData.Community.Display.V1.FormattedValue"] || '',
-              recovery_possible: raw["cr991_recoverypossible@OData.Community.Display.V1.FormattedValue"] || '',
               control_failure_identified: raw.cr991_controlfailureidentified || '',
+              financial_value: raw.cr991_financialvalueinvolvedaud || '',
+              actual_loss: raw.cr991_actualfinanciallossaud || '',
+              recovery_possible: raw["cr991_recoverypossibleyn@OData.Community.Display.V1.FormattedValue"] || (raw.cr991_recoverypossibleyn === true ? 'Yes' : raw.cr991_recoverypossibleyn === false ? 'No' : ''),
+              recovery_amount: raw.cr991_recoveryamountaud || raw.cr991_recoveryamount || '',
+              cfo_notified: raw["cr991_cfonotifiedyn@OData.Community.Display.V1.FormattedValue"] || (raw.cr991_cfonotifiedyn === true ? 'Yes' : raw.cr991_cfonotifiedyn === false ? 'No' : ''),
+              cro_notified: raw["cr991_cronotifiedyn@OData.Community.Display.V1.FormattedValue"] || (raw.cr991_cronotifiedyn === true ? 'Yes' : raw.cr991_cronotifiedyn === false ? 'No' : ''),
+              police_reported: raw["cr991_policereportedyn@OData.Community.Display.V1.FormattedValue"] || (raw.cr991_policereportedyn === true ? 'Yes' : raw.cr991_policereportedyn === false ? 'No' : ''),
+              insurer_notified_dept: raw["cr991_insurernotifiedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_insurernotified@OData.Community.Display.V1.FormattedValue"] || (raw.cr991_insurernotifiedyn === true ? 'Yes' : raw.cr991_insurernotifiedyn === false ? 'No' : ''),
+              root_cause: raw.cr991_rootcause || '',
+              corrective_action: raw.cr991_correctiveaction || '',
+              write_off_required: raw["cr991_writeoffrequiredyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_writeoffrequired@OData.Community.Display.V1.FormattedValue"] || (raw.cr991_writeoffrequiredyn === true ? 'Yes' : raw.cr991_writeoffrequiredyn === false ? 'No' : ''),
             }, raw);
           });
         }
@@ -549,6 +651,10 @@ export function useIncidents(pollingInterval = 2000) {
               location: raw["cr991_branch@OData.Community.Display.V1.FormattedValue"] || 'N/A',
               branch_department: raw["cr991_branch@OData.Community.Display.V1.FormattedValue"] || 'N/A',
               business_unit: raw["cr991_businessunitbu@OData.Community.Display.V1.FormattedValue"] || 'N/A',
+              entity: raw["cr991_entity@OData.Community.Display.V1.FormattedValue"] || raw.cr991_entity || 'N/A',
+              ncr_entity: raw["cr991_entity@OData.Community.Display.V1.FormattedValue"] || raw.cr991_entity || 'N/A',
+              notify: raw.cr991_notify || 'N/A',
+              ncr_notify: raw.cr991_notify || 'N/A',
               date: raw.cr991_datecreated || (raw.createdon || '').split('T')[0],
               status: (raw["statuscode@OData.Community.Display.V1.FormattedValue"] === 'Active' || !raw["statuscode@OData.Community.Display.V1.FormattedValue"]) ? 'Open' : raw["statuscode@OData.Community.Display.V1.FormattedValue"],
               description: raw.cr991_descriptionofnc || 'No description',
@@ -558,6 +664,21 @@ export function useIncidents(pollingInterval = 2000) {
               ncr_level: raw.cr991_levelofnonconformity || 'N/A',
               ncr_containment: raw.cr991_immediatecontainmentaction || 'N/A',
               ncr_reference: raw.cr991_relatedrecordreference || 'N/A',
+              // R&C / Manager fields
+              cause_of_nc: raw.cr991_causeofnc || raw["cr991_causeofnc@OData.Community.Display.V1.FormattedValue"] || '',
+              corrective_action: raw.cr991_correctiveaction || raw["cr991_correctiveaction@OData.Community.Display.V1.FormattedValue"] || '',
+              corrective_action_implemented: raw["cr991_correctiveactionimplemented@OData.Community.Display.V1.FormattedValue"] || raw.cr991_correctiveactionimplemented || '',
+              preventive_action: raw.cr991_preventiveaction || raw.cr991_preventativeaction || raw["cr991_preventiveaction@OData.Community.Display.V1.FormattedValue"] || '',
+              responsible_person: raw.cr991_responsibleperson || raw["cr991_responsibleperson@OData.Community.Display.V1.FormattedValue"] || '',
+              target_completion_date: raw.cr991_targetcompletiondate || raw["cr991_targetcompletiondate@OData.Community.Display.V1.FormattedValue"] || '',
+              // Close-out fields
+              actual_completion_date: raw.cr991_actualcompletiondate || raw["cr991_actualcompletiondate@OData.Community.Display.V1.FormattedValue"] || '',
+              similar_nc_checked: raw["cr991_similarncchecked@OData.Community.Display.V1.FormattedValue"] || raw.cr991_similarncchecked || '',
+              effectiveness_verification_date: raw.cr991_effectivenessverificationdate || raw["cr991_effectivenessverificationdate@OData.Community.Display.V1.FormattedValue"] || '',
+              effectiveness_evidence_results: raw.cr991_effectivenessevidenceresults || raw.cr991_effectivenessevidence || raw["cr991_effectivenessevidenceresults@OData.Community.Display.V1.FormattedValue"] || '',
+              risk_register_updated: raw["cr991_riskregisterupdated@OData.Community.Display.V1.FormattedValue"] || raw.cr991_riskregisterupdated || '',
+              qms_procedure_changed: raw["cr991_qmsprocedurechanged@OData.Community.Display.V1.FormattedValue"] || raw.cr991_qmsprocedurechanged || '',
+              capa_adequate: raw["cr991_capaadequate@OData.Community.Display.V1.FormattedValue"] || raw.cr991_capaadequate || '',
               created_at: raw.createdon,
             }, raw);
           }

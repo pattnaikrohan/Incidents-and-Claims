@@ -21,25 +21,45 @@ export default function NCRForm({ onSubmit, onCancel, loading, initialData, read
         incident_id: stableId,
         ncr_ref: stableId,
         date_of_incident: initialData.date_of_incident || initialData.date || '',
-        date_reported: initialData.date_reported || initialData.date || today(),
+        date_reported: initialData.date_reported || initialData.date_logged || initialData.date || today(),
         date_logged: initialData.date_logged || initialData.date || today(),
         reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || 'System User',
         logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || 'System User',
         employee_name: initialData.employee_name || initialData.customer_name || '',
-        business_unit: initialData.business_unit || '',
-        branch_department: initialData.branch_department || '',
-        incident_type: initialData.incident_type || initialData.type || '',
-        description: initialData.description || initialData.short_description || '',
-        short_description: initialData.short_description || initialData.description || '',
+        entity: initialData.entity || initialData.ncr_entity || initialData.cr991_entity || initialData.business_unit || '',
+        business_unit: initialData.business_unit || initialData.cr991_businessunitbu || initialData.entity || '',
+        branch_department: initialData.branch_department || initialData.cr991_branch || '',
+        incident_type: initialData.incident_type || initialData.type || 'Non-Conformance Report',
+        description: initialData.description || initialData.short_description || initialData.incident_summary || '',
+        short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
         location_of_incident: initialData.location_of_incident || initialData.location || '',
+        location: initialData.location_of_incident || initialData.location || '',
         system_job_number: initialData.system_job_number || initialData.job_number || '',
+        
+        // NCR Specific Fields
+        level_of_nonconformity: initialData.level_of_nonconformity || initialData.ncr_level || initialData.cr991_levelofnonconformity || '',
+        identification: initialData.identification || initialData.ncr_identification || initialData.cr991_identificationofnc || '',
+        identified_by: initialData.identified_by || initialData.ncr_identified_by || initialData.cr991_identifiedby || '',
+        at_fault_party: initialData.at_fault_party || initialData.ncr_at_fault_party || initialData.cr991_atfaultparty || '',
+        notify: initialData.notify || initialData.ncr_notify || initialData.cr991_notify || '',
+        containment: initialData.containment || initialData.ncr_containment || initialData.cr991_immediatecontainmentaction || '',
+        related_record: initialData.related_record || initialData.ncr_reference || initialData.cr991_relatedrecordreference || '',
+        incident_summary: initialData.incident_summary || initialData.description || '',
+        
+        // NCR Follow-up fields (filled later by investigators)
+        cause_of_nc: initialData.cause_of_nc || '',
+        corrective_action: initialData.corrective_action || '',
+        corrective_action_implemented: initialData.corrective_action_implemented || '',
+        preventive_action: initialData.preventive_action || '',
+        responsible_person: initialData.responsible_person || '',
+        target_completion_date: initialData.target_completion_date || '',
       };
     }
     return {
       incident_id: stableId, date_reported: today(),
       reported_by: localStorage.getItem('role')||'Current User',
-      business_unit:'', branch_department:'',
-      incident_type:'Non-Conformance Report', description:'',
+      entity: '', business_unit: '', branch_department: '',
+      incident_type: 'Non-Conformance Report', description: '',
       
       // NCR Specific Fields
       level_of_nonconformity: '', identification: '', identified_by: '',
@@ -62,11 +82,15 @@ export default function NCRForm({ onSubmit, onCancel, loading, initialData, read
 ${f.description}
 
 --- NCR DETAILS ---
+Entity: ${f.entity || 'N/A'}
+Business Unit (BU): ${f.business_unit || 'N/A'}
+Branch: ${f.branch_department || 'N/A'}
 Level of Nonconformity: ${f.level_of_nonconformity || 'N/A'}
-Identification of Non-Conformance: ${f.identification || 'N/A'}
+Identification of NC: ${f.identification || 'N/A'}
 Identified By: ${f.identified_by || 'N/A'}
 At Fault Party: ${f.at_fault_party || 'N/A'}
 Notify: ${f.notify || 'N/A'}
+Description of NC: ${f.description || 'N/A'}
 Immediate Containment Action: ${f.containment || 'N/A'}
 Related Record Reference: ${f.related_record || 'N/A'}
     `.trim();
@@ -90,19 +114,22 @@ Related Record Reference: ${f.related_record || 'N/A'}
 
       <div className="card">
         <h3 className="overline" style={{marginBottom:'1.25rem',display:'flex',alignItems:'center',gap:6,color:'#8b5cf6'}}><FileWarning size={14}/> RECORD IDENTIFICATION</h3>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-          <Field label="Business Unit (BU)" req>
-            <select className="input-field" value={f.business_unit} onChange={e=>{ upd('business_unit', e.target.value); upd('branch_department', ''); }} required>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1rem'}}>
+          <Field label="Entity" req>
+            <select className="input-field" value={f.entity} onChange={e=>{ upd('entity', e.target.value); upd('branch_department', ''); }} required>
               <option value="">— Select —</option>
-              {f.business_unit && !BUSINESS_UNITS.includes(f.business_unit) && <option value={f.business_unit}>{f.business_unit}</option>}
+              {f.entity && !BUSINESS_UNITS.includes(f.entity) && <option value={f.entity}>{f.entity}</option>}
               {BUSINESS_UNITS.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
+          <Field label="Business Unit (BU)" req>
+            <input type="text" className="input-field" value={f.business_unit} onChange={e=>upd('business_unit', e.target.value)} required placeholder="e.g. Operations, Logistics" />
+          </Field>
           <Field label="Branch" req>
-            <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department',e.target.value)} required disabled={!f.business_unit && !f.branch_department}>
+            <select className="input-field" value={f.branch_department} onChange={e=>upd('branch_department', e.target.value)} required disabled={!f.entity}>
               <option value="">— Select —</option>
-              {f.branch_department && !(BRANCH_MAPPING[f.business_unit] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
-              {(BRANCH_MAPPING[f.business_unit] || []).map(t=><option key={t} value={t}>{t}</option>)}
+              {f.branch_department && !(BRANCH_MAPPING[f.entity] || []).includes(f.branch_department) && <option value={f.branch_department}>{f.branch_department}</option>}
+              {(BRANCH_MAPPING[f.entity] || []).map(t=><option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
         </div>

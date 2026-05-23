@@ -7,13 +7,45 @@ import { api } from '../services/api';
 import logo from '../assets/aaw_new.png';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithSSO } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('full.access@aaw.com');
   const [password, setPassword] = useState('Access2026!');
   const [error, setError] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
+  const [ssoLoading, setSsoLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  const handleSSO = async () => {
+    setSsoLoading(true);
+    setError('');
+    setAuthStatus('verifying');
+    try {
+      await loginWithSSO();
+      setAuthStatus('success');
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      navigate('/');
+    } catch (err: any) {
+      console.error('SSO login failed:', err);
+      // Handle MSAL-specific error codes
+      const errorCode = err?.errorCode || '';
+      const isCancelled = errorCode === 'user_cancelled' || 
+                          errorCode === 'interaction_in_progress' ||
+                          errorCode === 'popup_window_error' ||
+                          err?.message?.includes('user cancelled') ||
+                          err?.message?.includes('popup_window_error') ||
+                          err?.message?.includes('User cancelled');
+      
+      if (isCancelled) {
+        setError('Sign-in was cancelled. Please try again.');
+      } else {
+        setError(err.message || 'Azure AD authentication failed. Please try again or use the manual login below.');
+      }
+      setAuthStatus('error');
+    } finally {
+      setSsoLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -325,6 +357,51 @@ export default function Login() {
               boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.4) inset, 0 0 20px rgba(99, 102, 241, 0.05)',
               position: 'relative'
             }}>
+              {/* ═══ Azure AD SSO Button ═══ */}
+              <button
+                onClick={handleSSO}
+                disabled={ssoLoading || authStatus !== 'idle'}
+                style={{
+                  width: '100%',
+                  padding: '1rem 1.5rem',
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(135deg, #0078d4 0%, #106ebe 50%, #005a9e 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  cursor: ssoLoading ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 10px 25px rgba(0, 120, 212, 0.3), 0 0 0 1px rgba(0,120,212,0.1)',
+                  marginBottom: '1.5rem',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+                onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-3px) scale(1.01)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 15px 35px rgba(0, 120, 212, 0.4)'; }}
+                onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0) scale(1)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 10px 25px rgba(0, 120, 212, 0.3)'; }}
+              >
+                {/* Microsoft Logo */}
+                <svg width="20" height="20" viewBox="0 0 21 21" fill="none">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+                <span>Sign in with Microsoft</span>
+                <ArrowRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
+              </button>
+
+              {/* Divider */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, #e2e8f0)' }} />
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.15em', textTransform: 'uppercase' }}>or use development login</span>
+                <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
+              </div>
+
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                 <div className="input-group">

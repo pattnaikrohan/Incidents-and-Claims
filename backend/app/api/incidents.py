@@ -20,6 +20,35 @@ class IncidentCreate(BaseModel):
     customer: str | None = None
     business_unit: str | None = None
     branch_department: str | None = None
+    # Cargo & Equipment form fields
+    role_performed: str | None = None
+    claim_types: str | None = None
+    incident_types: str | None = None
+    incident_summary: str | None = None
+    scope_of_work: str | None = None
+    mode: str | None = None
+    cargo_description: str | None = None
+    cargo_value: str | None = None
+    claim_estimate: str | None = None
+    root_cause: str | None = None
+    origin: str | None = None
+    destination: str | None = None
+    origin_agent: str | None = None
+    destination_agent: str | None = None
+    carrier: str | None = None
+    coloader: str | None = None
+    transport_company: str | None = None
+    container_numbers: str | None = None
+    mbl_mawb_number: str | None = None
+    hbl_hawb_number: str | None = None
+    system_job_number: str | None = None
+    short_description: str | None = None
+    date_of_incident: str | None = None
+    logged_by: str | None = None
+    corrective_actions: str | None = None
+
+    class Config:
+        extra = "allow"  # Accept any additional fields silently
 
 class IncidentUpdateStatus(BaseModel):
     status: str
@@ -51,12 +80,42 @@ def create_incident(
         type=incident_in.type,
         location=incident_in.location,
         description=incident_in.description,
-        job_number=incident_in.job_number,
+        job_number=incident_in.job_number or incident_in.system_job_number,
         status="Open",
         creator_id=current_user.id,
         branch_id=assigned_branch_id,
         date=datetime.now(),
-        customer_name=incident_in.customer
+        customer_name=incident_in.customer,
+        # Cargo form fields
+        role_performed=incident_in.role_performed,
+        claim_types=incident_in.claim_types,
+        incident_types=incident_in.incident_types,
+        incident_summary=incident_in.incident_summary,
+        scope_of_work=incident_in.scope_of_work,
+        mode=incident_in.mode,
+        cargo_description=incident_in.cargo_description,
+        cargo_value=incident_in.cargo_value,
+        claim_estimate=incident_in.claim_estimate,
+        root_cause=incident_in.root_cause,
+        origin=incident_in.origin,
+        destination=incident_in.destination,
+        origin_agent=incident_in.origin_agent,
+        destination_agent=incident_in.destination_agent,
+        carrier=incident_in.carrier,
+        coloader=incident_in.coloader,
+        transport_company=incident_in.transport_company,
+        container_numbers=incident_in.container_numbers,
+        mbl_mawb_number=incident_in.mbl_mawb_number,
+        hbl_hawb_number=incident_in.hbl_hawb_number,
+        mbl_mawb_issued=incident_in.mbl_mawb_issued,
+        hbl_hawb_issued=incident_in.hbl_hawb_issued,
+        system_job_number=incident_in.system_job_number,
+        short_description=incident_in.short_description,
+        date_of_incident=incident_in.date_of_incident,
+        logged_by=incident_in.logged_by,
+        business_unit=incident_in.business_unit,
+        branch_department=incident_in.branch_department,
+        corrective_actions=incident_in.corrective_actions,
     )
     
     db.add(new_incident)
@@ -155,7 +214,17 @@ def get_incident(
         "recovery_possible", "recovery_amount", "write_off_required",
         "cfo_notified", "cro_notified", "police_reported", "dept_section_updated",
         "formal_claim_issued", "insurer_notified", "risk_level", "management_escalation",
-        "cor", "responsible_party"
+        "cor", "responsible_party", "notes", "notesconfidentialhreyesonly",
+        "records_affected", "date_notified_oaic", "cyber_specialist_engaged", "insurer_notified_dept",
+        "date_notified", "penalty_amount",
+        # Cargo & Equipment Original Submission Fields
+        "role_performed", "claim_types", "incident_types", "incident_summary",
+        "scope_of_work", "mode", "cargo_description", "cargo_value", "claim_estimate",
+        "origin", "destination", "origin_agent", "destination_agent", "carrier",
+        "coloader", "transport_company", "container_numbers", "mbl_mawb_number",
+        "hbl_hawb_number", "mbl_mawb_issued", "hbl_hawb_issued", "system_job_number",
+        "short_description", "date_of_incident", "logged_by", "business_unit",
+        "branch_department", "corrective_actions",
     ]
     
     for field in investigation_fields:
@@ -163,6 +232,12 @@ def get_incident(
         if val is not None and val != "":
             res[field] = val
             
+    # Mutual fallback for notes fields to cover both patched and seeded mock records
+    notes_val = res.get("notes") or res.get("notesconfidentialhreyesonly")
+    if notes_val:
+        res["notes"] = notes_val
+        res["notesconfidentialhreyesonly"] = notes_val
+        
     return res
 
 @router.patch("/{incident_id}", response_model=dict)

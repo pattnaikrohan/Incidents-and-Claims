@@ -22,7 +22,8 @@ import { getIncidentCategory, CATEGORY_META, isDeptSectionFilled, canSeeDeptSect
 export default function IncidentDetails() {
   const { id } = useParams();
   const { role, email } = useAuth();
-  const { incidents, loading: hookLoading } = useIncidents(2000);
+  const [pollingInterval, setPollingInterval] = useState(30 * 60 * 1000); // 30 minutes in ms
+  const { incidents, loading: hookLoading, handleManualRefresh } = useIncidents(pollingInterval);
   const [incident, setIncident] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -38,6 +39,19 @@ export default function IncidentDetails() {
   const [previewFile, setPreviewFile] = useState<any | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const searchId = incident?.incident_number_str || id;
+  const fastPollingTimeoutRef = useRef<any>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const postSaveShieldRef = useRef(false);
+  const postSaveTimeoutRef = useRef<any>(null);
+
+  const activatePostSaveShield = () => {
+    postSaveShieldRef.current = true;
+    setIsDirty(false);
+    if (postSaveTimeoutRef.current) clearTimeout(postSaveTimeoutRef.current);
+    postSaveTimeoutRef.current = setTimeout(() => {
+      postSaveShieldRef.current = false;
+    }, 8000);
+  };
 
   // Maps the reliable frontend category to the exact Azure Blob Storage folder name
   const getAzureFolderType = (inc: any): string => {
@@ -59,6 +73,29 @@ export default function IncidentDetails() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => setSuccessMessage(null), 3000);
   };
+
+  const triggerFastPolling = () => {
+    if (fastPollingTimeoutRef.current) {
+      clearTimeout(fastPollingTimeoutRef.current);
+    }
+    setPollingInterval(2000);
+    handleManualRefresh();
+    fastPollingTimeoutRef.current = setTimeout(() => {
+      setPollingInterval(30 * 60 * 1000);
+      fastPollingTimeoutRef.current = null;
+    }, 8000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (fastPollingTimeoutRef.current) {
+        clearTimeout(fastPollingTimeoutRef.current);
+      }
+      if (postSaveTimeoutRef.current) {
+        clearTimeout(postSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const fetchAttachments = async () => {
     setIsRefreshing(true);
@@ -151,22 +188,12 @@ export default function IncidentDetails() {
 
   const fetchIncident = async () => {
     try {
-      let finalIncident = incidents.find((i: any) => String(i.id) === String(id));
+      let finalIncident = incidents.find((i: any) => String(i.id) === String(id) || String(i.incident_number_str) === String(id));
       const targetId = finalIncident?.incident_number_str || id;
 
       // 2. Fetch latest metadata from backend (Investigation findings, Liability, etc.)
-      // Skip backend fetch for Digital Twin categories handled via direct polling
-      const isDigitalTwin = targetId && (
-        targetId.toString().startsWith('CEI-') ||
-        targetId.toString().startsWith('HR-') ||
-        targetId.toString().startsWith('WHS-') ||
-        targetId.toString().startsWith('IT-') ||
-        targetId.toString().startsWith('RC-') ||
-        targetId.toString().startsWith('FIN-') ||
-        targetId.toString().startsWith('NCR-')
-      );
-
-      if (targetId && !isDigitalTwin) {
+      // Fetch backend metadata for all incidents (including Digital Twins) to merge mock & locally patched records
+      if (targetId) {
         try {
           const response = await api.get(`/incidents/${targetId}`);
           const backendData = response.data;
@@ -190,23 +217,50 @@ export default function IncidentDetails() {
       }
 
       if (finalIncident) {
-        setIncident(finalIncident);
-        setLiability(prev => ({
-          ...prev,
-          responsible_party: finalIncident.responsible_party || '',
-          formal_claim_issued: finalIncident.formal_claim_issued || 'No',
-          insurer_notified: finalIncident.insurer_notified || 'No',
-          risk_level: finalIncident.risk_level || finalIncident.cor_risk_level || '',
-          management_escalation: finalIncident.management_escalation || 'No',
-          cor: finalIncident.cor || finalIncident.cor_required || 'No',
-          status: finalIncident.status || 'Open - Incident Logged',
-          comments: finalIncident.comments || '',
-          cor_risk_level: finalIncident.cor_risk_level || 'Low',
-          cor_status: finalIncident.cor_status || finalIncident.status || 'Open',
-          cor_assessment: finalIncident.cor_assessment || '',
-          cor_corrective_action: finalIncident.cor_corrective_action || '',
-          cor_action_implemented: finalIncident.cor_action_implemented || 'No'
-        }));
+        // Set up NCR default values if missing
+        if (getIncidentCategory(finalIncident) === 'ncr') {
+          if (finalIncident.cause_of_nc === undefined || finalIncident.cause_of_nc === null) finalIncident.cause_of_nc = '';
+          if (finalIncident.corrective_action === undefined || finalIncident.corrective_action === null) finalIncident.corrective_action = '';
+          if (finalIncident.corrective_action_implemented === undefined || finalIncident.corrective_action_implemented === null) finalIncident.corrective_action_implemented = 'No — implementation in progress';
+          if (finalIncident.preventive_action === undefined || finalIncident.preventive_action === null) finalIncident.preventive_action = '';
+          if (finalIncident.responsible_person === undefined || finalIncident.responsible_person === null) finalIncident.responsible_person = '';
+          if (finalIncident.target_completion_date === undefined || finalIncident.target_completion_date === null || finalIncident.target_completion_date === '') finalIncident.target_completion_date = '21/05/2026';
+          
+          if (finalIncident.actual_completion_date === undefined || finalIncident.actual_completion_date === null || finalIncident.actual_completion_date === '') finalIncident.actual_completion_date = '— (not yet complete)';
+          if (finalIncident.similar_nc_checked === undefined || finalIncident.similar_nc_checked === null || finalIncident.similar_nc_checked === '') finalIncident.similar_nc_checked = 'Yes — checked across all branches. No similar NC identified.';
+          if (finalIncident.effectiveness_verification_date === undefined || finalIncident.effectiveness_verification_date === null || finalIncident.effectiveness_verification_date === '') finalIncident.effectiveness_verification_date = '07/06/2026';
+          if (finalIncident.effectiveness_evidence_results === undefined || finalIncident.effectiveness_evidence_results === null) finalIncident.effectiveness_evidence_results = '';
+          if (finalIncident.risk_register_updated === undefined || finalIncident.risk_register_updated === null || finalIncident.risk_register_updated === '') finalIncident.risk_register_updated = 'No — to be updated at close-out';
+          if (finalIncident.qms_procedure_changed === undefined || finalIncident.qms_procedure_changed === null || finalIncident.qms_procedure_changed === '') finalIncident.qms_procedure_changed = 'No — SOP update in progress';
+          if (finalIncident.capa_adequate === undefined || finalIncident.capa_adequate === null || finalIncident.capa_adequate === '') finalIncident.capa_adequate = 'No — pending effectiveness verification';
+          if (finalIncident.status === undefined || finalIncident.status === null || finalIncident.status === '' || finalIncident.status === 'Open' || finalIncident.status === 'Open - Incident Logged') finalIncident.status = 'In Progress';
+        }
+
+        // Shield: do not overwrite local state if the user is actively editing or we're in a post-save window
+        const isSaving = isUpdatingDept || isUpdatingConfidential || isUpdatingLiability;
+        const isTyping = document.activeElement && 
+          ['input', 'textarea', 'select'].includes(document.activeElement.tagName.toLowerCase());
+        const shouldShield = isTyping || isDirty || isSaving || postSaveShieldRef.current;
+
+        if (!shouldShield || !incident) {
+          setIncident(finalIncident);
+          setLiability(prev => ({
+            ...prev,
+            responsible_party: finalIncident.responsible_party || '',
+            formal_claim_issued: finalIncident.formal_claim_issued || 'No',
+            insurer_notified: finalIncident.insurer_notified || 'No',
+            risk_level: finalIncident.risk_level || finalIncident.cor_risk_level || '',
+            management_escalation: finalIncident.management_escalation || 'No',
+            cor: finalIncident.cor || finalIncident.cor_required || 'No',
+            status: finalIncident.status || 'Open - Incident Logged',
+            comments: finalIncident.comments || '',
+            cor_risk_level: finalIncident.cor_risk_level || 'Low',
+            cor_status: finalIncident.cor_status || finalIncident.status || 'Open',
+            cor_assessment: finalIncident.cor_assessment || '',
+            cor_corrective_action: finalIncident.cor_corrective_action || '',
+            cor_action_implemented: finalIncident.cor_action_implemented || 'No'
+          }));
+        }
 
         // Fetch attachments using the internal system ID (e.g., CEI-...) instead of the Dataverse GUID
         const searchId = finalIncident.incident_number_str || id;
@@ -281,6 +335,8 @@ export default function IncidentDetails() {
 
       // Update local state temporarily
       setIncident((prev: any) => ({ ...prev, ...payload }));
+      activatePostSaveShield();
+      triggerFastPolling();
     } catch (error) {
       console.error('Failed to update liability via PA:', error);
       alert('Error triggering liability update.');
@@ -290,10 +346,10 @@ export default function IncidentDetails() {
   };
 
   useEffect(() => {
-    if (!hookLoading) {
+    if (!hookLoading && !isDirty && !postSaveShieldRef.current) {
       fetchIncident();
     }
-  }, [id, incidents, hookLoading]);
+  }, [id, incidents, hookLoading, isDirty]);
 
   const handleAssign = async (userId: number, name: string) => {
     try {
@@ -311,8 +367,13 @@ export default function IncidentDetails() {
     }
   };
 
+  const handleFieldChange = (key: string, value: any) => {
+    setIsDirty(true);
+    setIncident((prev: any) => ({ ...prev, [key]: value }));
+  };
 
-  const handleDeptUpdate = async () => {
+
+  const handleDeptUpdate = async (ncrSection?: 'followup' | 'closeout') => {
     if (!incident) return;
     setIsUpdatingDept(true);
     try {
@@ -338,15 +399,122 @@ export default function IncidentDetails() {
         risk: 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d61393c0f27b4e40a11de350c2a4986f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Ut8XEIZEl0H3In1qDf3y-qnIEy8k4pYtvuYMGsv0KEc'
       };
 
-      const flowUrl = DEPT_FLOWS[category];
+      let flowUrl = DEPT_FLOWS[category];
+      if (category === 'ncr') {
+        if (ncrSection === 'followup') {
+          flowUrl = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d75f953fc8234f9baec244346a4ac779/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Wo71VN5oZzSYf6a__VPmm_cY39tIKsq8Ho6y7YBPk3s';
+        } else if (ncrSection === 'closeout') {
+          flowUrl = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7e50725ad60a40c3a26e43d7b6cae3c1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=K5k3ARn_Iw9Nmvkqt0LV6HPZUdi48IG13qsDzMkSRdg';
+        }
+      }
+
       if (flowUrl) {
-        const flowPayload = category === 'hr' ? {
-          incident_id: incident.id,
-          incident_number: incident.incident_number_str || id,
-          investigation_outcome: incident.investigation_outcome || '',
-          corrective_action: incident.corrective_action || '',
-          legal_counsel_engaged: incident.legal_counsel_engaged || ''
-        } : payload;
+        let flowPayload;
+        if (category === 'hr') {
+          flowPayload = {
+            incident_id: incident.id,
+            incident_number: incident.incident_number_str || id,
+            investigation_outcome: incident.investigation_outcome || '',
+            corrective_action: incident.corrective_action || '',
+            legal_counsel_engaged: incident.legal_counsel_engaged || ''
+          };
+        } else if (category === 'whs') {
+          flowPayload = {
+            incident_id: incident.id,
+            incident_number: incident.incident_number_str || id,
+            medical_treatment_required: incident.medical_treatment_required || '',
+            lost_time_injury: incident.lost_time_injury || '',
+            notifiable_safework: incident.notifiable_safework || '',
+            date_notified_regulator: incident.date_notified_regulator || '',
+            root_cause: incident.root_cause || '',
+            corrective_action: incident.corrective_action || '',
+            corrective_action_owner: incident.corrective_action_owner || '',
+            corrective_action_due_date: incident.corrective_action_due_date || '',
+            chro_cro_notified: incident.chro_cro_notified || '',
+            workers_comp_claim: incident.workers_comp_claim || ''
+          };
+        } else if (category === 'it') {
+          flowPayload = {
+            incident_id: incident.id,
+            incident_number: incident.incident_number_str || id,
+            containment_actions: incident.containment_actions || '',
+            personal_data_involved: incident.personal_data_involved || '',
+            records_affected: incident.records_affected || '',
+            notifiable_privacy_breach: incident.notifiable_privacy_breach || '',
+            date_notified_oaic: incident.date_notified_oaic || '',
+            cio_notified: incident.cio_notified || '',
+            cro_notified: incident.cro_notified || '',
+            cyber_specialist_engaged: incident.cyber_specialist_engaged || '',
+            insurer_notified_dept: incident.insurer_notified_dept || '',
+            root_cause: incident.root_cause || '',
+            corrective_action: incident.corrective_action || ''
+          };
+        } else if (category === 'risk') {
+          flowPayload = {
+            incident_id: incident.id,
+            incident_number: incident.incident_number_str || id,
+            regulator_involved: incident.regulator_involved || '',
+            notified_regulator: incident.notified_regulator || '',
+            date_notified: incident.date_notified || '',
+            cro_notified: incident.cro_notified || '',
+            legal_counsel_engaged: incident.legal_counsel_engaged || '',
+            penalty_imposed: incident.penalty_imposed || '',
+            penalty_amount: incident.penalty_amount || '',
+            root_cause: incident.root_cause || '',
+            corrective_action: incident.corrective_action || '',
+            corrective_action_owner: incident.corrective_action_owner || ''
+          };
+        } else if (category === 'finance') {
+          flowPayload = {
+            incident_id: incident.id,
+            incident_number: incident.incident_number_str || id,
+            financial_value: incident.financial_value || '',
+            actual_loss: incident.actual_loss || '',
+            recovery_possible: incident.recovery_possible || '',
+            recovery_amount: incident.recovery_amount || '',
+            cfo_notified: incident.cfo_notified || '',
+            cro_notified: incident.cro_notified || '',
+            police_reported: incident.police_reported || '',
+            insurer_notified_dept: incident.insurer_notified_dept || '',
+            root_cause: incident.root_cause || '',
+            corrective_action: incident.corrective_action || '',
+            write_off_required: incident.write_off_required || ''
+          };
+        } else if (category === 'ncr') {
+          if (ncrSection === 'followup') {
+            flowPayload = {
+              incident_id: incident.id,
+              incident_number: incident.incident_number_str || id,
+              ncr_id: incident.id,
+              'NCR-id': incident.id,
+              cr991_nonconformancereportsid: incident.id,
+              cause_of_nc: incident.cause_of_nc || '',
+              corrective_action: incident.corrective_action || '',
+              corrective_action_implemented: incident.corrective_action_implemented || 'No — implementation in progress',
+              preventive_action: incident.preventive_action || '',
+              responsible_person: incident.responsible_person || '',
+              target_completion_date: incident.target_completion_date || '21/05/2026'
+            };
+          } else {
+            flowPayload = {
+              incident_id: incident.id,
+              incident_number: incident.incident_number_str || id,
+              ncr_id: incident.id,
+              'NCR-id': incident.id,
+              cr991_nonconformancereportsid: incident.id,
+              actual_completion_date: incident.actual_completion_date || '— (not yet complete)',
+              similar_nc_checked: incident.similar_nc_checked || 'Yes — checked across all branches. No similar NC identified.',
+              effectiveness_verification_date: incident.effectiveness_verification_date || '07/06/2026',
+              effectiveness_evidence_results: incident.effectiveness_evidence_results || '',
+              risk_register_updated: incident.risk_register_updated || 'No — to be updated at close-out',
+              qms_procedure_changed: incident.qms_procedure_changed || 'No — SOP update in progress',
+              capa_adequate: incident.capa_adequate || 'No — pending effectiveness verification',
+              status: incident.status || 'In Progress'
+            };
+          }
+        } else {
+          flowPayload = payload;
+        }
 
         fetch(flowUrl, {
           method: 'POST',
@@ -369,7 +537,19 @@ export default function IncidentDetails() {
         'write_off_required', 'cfo_notified', 'cro_notified', 'police_reported',
         'dept_section_updated', 'notes', 'witnesses', 'immediate_action',
         'investigation_required', 'close_out_date', 'incident_summary', 'date_of_incident',
-        'date_logged', 'logged_by', 'employee_name', 'incident_type', 'incident_number_str'
+        'date_logged', 'logged_by', 'employee_name', 'incident_type', 'incident_number_str',
+        'records_affected', 'date_notified_oaic', 'cyber_specialist_engaged', 'insurer_notified_dept',
+        'date_notified', 'penalty_amount',
+        // NCR specific fields
+        'entity', 'ncr_entity', 'notify', 'ncr_notify', 'business_unit', 'branch_department',
+        'level_of_nonconformity', 'ncr_level', 'identification', 'ncr_identification',
+        'identified_by', 'ncr_identified_by', 'at_fault_party', 'ncr_at_fault_party',
+        'containment', 'ncr_containment', 'related_record', 'ncr_reference',
+        // NCR follow-up and close-out fields
+        'cause_of_nc', 'corrective_action_implemented', 'preventive_action', 'responsible_person',
+        'target_completion_date', 'actual_completion_date', 'similar_nc_checked',
+        'effectiveness_verification_date', 'effectiveness_evidence_results', 'risk_register_updated',
+        'qms_procedure_changed', 'capa_adequate'
       ];
 
       const cleanPayload = Object.keys(payload)
@@ -383,6 +563,8 @@ export default function IncidentDetails() {
 
       setIncident(updatedIncident);
       showNotification('Investigation details updated successfully.');
+      activatePostSaveShield();
+      triggerFastPolling();
     } catch (error) {
       console.error('Update failed:', error);
       alert('Failed to update investigation details.');
@@ -414,6 +596,8 @@ export default function IncidentDetails() {
       await api.patch(`/incidents/${searchId}`, { notes: incident.notes });
 
       showNotification('Confidential notes updated successfully.');
+      activatePostSaveShield();
+      triggerFastPolling();
     } catch (error) {
       console.error('Confidential notes update failed:', error);
       alert('Failed to update confidential notes.');
@@ -482,6 +666,8 @@ export default function IncidentDetails() {
       if (!response.ok) throw new Error('Power Automate submission failed');
 
       showNotification('CoR details submitted successfully.');
+      activatePostSaveShield();
+      triggerFastPolling();
     } catch (error) {
       console.error('CoR Update failed:', error);
       alert('Failed to submit CoR details.');
@@ -593,8 +779,8 @@ export default function IncidentDetails() {
                   <Briefcase size={16} style={{ color: 'var(--accent-fg)' }} />
                 </div>
                 <div>
-                  <label className="overline">{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? 'CargoWise Ref' : cat === 'hr' ? 'Employee' : cat === 'whs' ? 'Person(s) Involved' : cat === 'it' ? 'Systems Affected' : cat === 'risk' ? 'Regulation Breached' : cat === 'finance' ? 'Incident Type' : 'Reference'; })()}</label>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? (incident.job_number || 'N/A') : cat === 'hr' ? (incident.employee_name || incident.employee_involved || 'N/A') : cat === 'whs' ? (incident.persons_involved || 'N/A') : cat === 'it' ? (incident.systems_affected || 'N/A') : cat === 'risk' ? (incident.regulation_breached || 'N/A') : cat === 'finance' ? (incident.incident_type || incident.type || 'N/A') : 'N/A'; })()}</div>
+                  <label className="overline">{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? 'CargoWise Ref' : cat === 'hr' ? 'Employee' : cat === 'whs' ? 'Person(s) Involved' : cat === 'it' ? 'Systems Affected' : cat === 'risk' ? 'Regulation Breached' : cat === 'finance' ? 'Incident Type' : cat === 'ncr' ? 'Related Record' : 'Reference'; })()}</label>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--accent-fg)', fontWeight: 500 }}>{(() => { const cat = getIncidentCategory(incident); return cat === 'cargo' ? (incident.job_number || 'N/A') : cat === 'hr' ? (incident.employee_name || incident.employee_involved || 'N/A') : cat === 'whs' ? (incident.persons_involved || 'N/A') : cat === 'it' ? (incident.systems_affected || 'N/A') : cat === 'risk' ? (incident.regulation_breached || 'N/A') : cat === 'finance' ? (incident.incident_type || incident.type || 'N/A') : cat === 'ncr' ? (incident.related_record || incident.ncr_reference || 'N/A') : 'N/A'; })()}</div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem' }}>
@@ -616,6 +802,70 @@ export default function IncidentDetails() {
                 </div>
               </div>
             </div>
+
+            {getIncidentCategory(incident) === 'ncr' && (
+              <div style={{
+                background: 'rgba(234, 179, 8, 0.03)',
+                border: '1px solid rgba(234, 179, 8, 0.15)',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                marginTop: '1rem',
+                marginBottom: '2rem',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '1.25rem'
+              }}>
+                <div style={{ gridColumn: 'span 3', borderBottom: '1px solid rgba(234, 179, 8, 0.1)', paddingBottom: '0.75rem', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileWarning size={16} color="#eab308" />
+                  <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#eab308', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Non-Conformance Report Details</span>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Entity</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.entity || incident.ncr_entity || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Business Unit (BU)</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.business_unit || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Branch</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.branch_department || incident.location || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Level of Nonconformity</label>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', fontWeight: 600, color: (incident.level_of_nonconformity || incident.ncr_level) === 'Critical' ? '#ef4444' : (incident.level_of_nonconformity || incident.ncr_level) === 'Major' ? '#f59e0b' : '#3b82f6' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: (incident.level_of_nonconformity || incident.ncr_level) === 'Critical' ? '#ef4444' : (incident.level_of_nonconformity || incident.ncr_level) === 'Major' ? '#f59e0b' : '#3b82f6' }} />
+                    {incident.level_of_nonconformity || incident.ncr_level || 'N/A'}
+                  </div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Identification of NC</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.identification || incident.ncr_identification || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Identified By</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.identified_by || incident.ncr_identified_by || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>At Fault Party</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.at_fault_party || incident.ncr_at_fault_party || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Notify</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.notify || incident.ncr_notify || 'N/A'}</div>
+                </div>
+                <div>
+                  <label className="overline" style={{ color: 'var(--fg-faint)' }}>Related Record Reference</label>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-fg)' }}>{incident.related_record || incident.ncr_reference || 'N/A'}</div>
+                </div>
+                {incident.containment || incident.ncr_containment ? (
+                  <div style={{ gridColumn: 'span 3', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+                    <label className="overline" style={{ color: 'var(--fg-faint)', display: 'block', marginBottom: '0.25rem' }}>Immediate Containment Action</label>
+                    <div style={{ fontSize: '0.875rem', color: 'var(--fg-muted)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{incident.containment || incident.ncr_containment}</div>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 2rem 0' }} />
 
@@ -673,21 +923,18 @@ export default function IncidentDetails() {
               category === 'whs' ? <HeartPulse size={16} /> :
                 category === 'it' ? <LockIcon size={16} /> :
                   category === 'risk' ? <Shield size={16} /> :
-                    category === 'finance' ? <DollarSign size={16} /> : <FileText size={16} />;
-
-            const handleFieldChange = (key: string, value: any) => {
-              setIncident((prev: any) => ({ ...prev, [key]: value }));
-            };
+                    category === 'finance' ? <DollarSign size={16} /> :
+                      category === 'ncr' ? <FileWarning size={16} /> : <FileText size={16} />;
 
             return (
               <>
                 {/* Department Investigation Section */}
                 {canSee && category !== 'cargo' && (
                   <IncidentSection
-                    title={`${meta.label} Investigation`}
+                    title={category === 'ncr' ? 'R&C / MANAGER' : `${meta.label} Investigation`}
                     icon={deptSectionIcon}
                     color={meta.color}
-                    ownerLabel={meta.deptLabel}
+                    ownerLabel={category === 'ncr' ? 'R&C / MANAGER' : meta.deptLabel}
                     isAwaitingUpdate={isAwaiting}
                     awaitingMessage={`Awaiting ${meta.deptLabel} Update`}
                   >
@@ -696,16 +943,87 @@ export default function IncidentDetails() {
                     {category === 'it' && <ITDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
                     {category === 'risk' && <RiskDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
                     {category === 'finance' && <FinanceDeptSection incident={incident} editable={canEdit} onChange={handleFieldChange} />}
+                    {category === 'ncr' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <label className="overline">Cause of NC</label>
+                          <textarea
+                            className="input-field"
+                            style={{ minHeight: '80px' }}
+                            placeholder="Identify the root cause of the non-conformance..."
+                            value={incident.cause_of_nc || ''}
+                            onChange={(e) => handleFieldChange('cause_of_nc', e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <label className="overline">Corrective Action</label>
+                          <textarea
+                            className="input-field"
+                            style={{ minHeight: '80px' }}
+                            placeholder="Action taken to correct the non-conformance..."
+                            value={incident.corrective_action || ''}
+                            onChange={(e) => handleFieldChange('corrective_action', e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div>
+                          <label className="overline">Corrective Action Implemented</label>
+                          <select
+                            className="input-field"
+                            value={incident.corrective_action_implemented || 'No — implementation in progress'}
+                            onChange={(e) => handleFieldChange('corrective_action_implemented', e.target.value)}
+                            disabled={!canEdit}
+                          >
+                            <option value="No — implementation in progress">No — implementation in progress</option>
+                            <option value="Yes">Yes</option>
+                          </select>
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <label className="overline">Preventive Action</label>
+                          <textarea
+                            className="input-field"
+                            style={{ minHeight: '80px' }}
+                            placeholder="Action taken to prevent recurrence..."
+                            value={incident.preventive_action || ''}
+                            onChange={(e) => handleFieldChange('preventive_action', e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div>
+                          <label className="overline">Responsible Person</label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="Name or Role"
+                            value={incident.responsible_person || ''}
+                            onChange={(e) => handleFieldChange('responsible_person', e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                        <div>
+                          <label className="overline">Target Completion Date</label>
+                          <input
+                            type="text"
+                            className="input-field"
+                            placeholder="DD/MM/YYYY"
+                            value={incident.target_completion_date || '21/05/2026'}
+                            onChange={(e) => handleFieldChange('target_completion_date', e.target.value)}
+                            disabled={!canEdit}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {canEdit && (
                       <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
                         <button
                           className="btn btn-primary"
                           style={{ background: meta.color, color: '#fff', border: 'none' }}
-                          onClick={handleDeptUpdate}
+                          onClick={() => handleDeptUpdate('followup')}
                           disabled={isUpdatingDept}
                         >
-                          {isUpdatingDept ? 'Saving...' : 'Save Investigation Updates'}
+                          {isUpdatingDept ? 'Saving...' : category === 'ncr' ? 'Save Follow-up Details' : 'Save Investigation Updates'}
                         </button>
                       </div>
                     )}
@@ -740,13 +1058,13 @@ export default function IncidentDetails() {
           })()}
 
           {/* Risk & Compliance Team Liability Form */}
-          {canSeeRCSection(role) && (
+          {canSeeRCSection(role) && getIncidentCategory(incident) !== 'ncr' && (
             <div className="card" style={{ padding: '2rem' }}>
               <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Management</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                 <div>
                   <label className="overline">Responsible Party</label>
-                  <select className="input-field" value={liability.responsible_party} onChange={(e) => setLiability({ ...liability, responsible_party: e.target.value })}>
+                  <select className="input-field" value={liability.responsible_party} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, responsible_party: e.target.value }); }}>
                     <option value="">— Select —</option>
                     <option value="Origin Agent">Origin Agent</option>
                     <option value="Destination Agent">Destination Agent</option>
@@ -759,7 +1077,7 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">Formal Claim Issued</label>
-                  <select className="input-field" value={liability.formal_claim_issued} onChange={(e) => setLiability({ ...liability, formal_claim_issued: e.target.value })}>
+                  <select className="input-field" value={liability.formal_claim_issued} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, formal_claim_issued: e.target.value }); }}>
                     <option value="">— Select —</option>
                     <option value="Yes">Yes (* creates Claims Log)</option>
                     <option value="No">No</option>
@@ -767,7 +1085,7 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">Insurer Notified</label>
-                  <select className="input-field" value={liability.insurer_notified} onChange={(e) => setLiability({ ...liability, insurer_notified: e.target.value })}>
+                  <select className="input-field" value={liability.insurer_notified} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, insurer_notified: e.target.value }); }}>
                     <option value="">— Select —</option>
                     <option value="Yes">Yes (* creates Insurers Notification Template)</option>
                     <option value="No">No</option>
@@ -775,7 +1093,7 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">Risk Level</label>
-                  <select className="input-field" value={liability.risk_level} onChange={(e) => setLiability({ ...liability, risk_level: e.target.value })}>
+                  <select className="input-field" value={liability.risk_level} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, risk_level: e.target.value }); }}>
                     <option value="">— Select —</option>
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -784,7 +1102,7 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">Management Escalation</label>
-                  <select className="input-field" value={liability.management_escalation} onChange={(e) => setLiability({ ...liability, management_escalation: e.target.value })}>
+                  <select className="input-field" value={liability.management_escalation} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, management_escalation: e.target.value }); }}>
                     <option value="">— Select —</option>
                     <option value="Yes">Yes (* creates Management Notification Template)</option>
                     <option value="No">No</option>
@@ -793,7 +1111,7 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">COR</label>
-                  <select className="input-field" value={liability.cor} onChange={(e) => setLiability({ ...liability, cor: e.target.value })}>
+                  <select className="input-field" value={liability.cor} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, cor: e.target.value }); }}>
                     <option value="">— Select —</option>
                     <option value="Yes">Yes (* creates CoR Log)</option>
                     <option value="No">No</option>
@@ -801,7 +1119,7 @@ export default function IncidentDetails() {
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label className="overline">Incident Status</label>
-                  <select className="input-field" value={liability.status} onChange={(e) => setLiability({ ...liability, status: e.target.value })}>
+                  <select className="input-field" value={liability.status} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, status: e.target.value }); }}>
                     {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
@@ -809,7 +1127,7 @@ export default function IncidentDetails() {
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
                   <label className="overline">Comments</label>
-                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Add comments here..." value={liability.comments} onChange={(e) => setLiability({ ...liability, comments: e.target.value })} />
+                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Add comments here..." value={liability.comments} onChange={(e) => { setIsDirty(true); setLiability({ ...liability, comments: e.target.value }); }} />
                 </div>
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
@@ -819,6 +1137,122 @@ export default function IncidentDetails() {
                   disabled={isUpdatingLiability}
                 >
                   {isUpdatingLiability ? 'Updating...' : 'Update'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Risk & Compliance Team CLOSE-OUT (R&C) Form for NCR */}
+          {canSeeRCSection(role) && getIncidentCategory(incident) === 'ncr' && (
+            <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><Shield size={20} /></div>
+                <h3 style={{ fontSize: '1.25rem', color: '#8b5cf6', margin: 0 }}>CLOSE-OUT (R&C)</h3>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label className="overline">Actual Completion Date</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="— (not yet complete)"
+                    value={incident.actual_completion_date || '— (not yet complete)'}
+                    onChange={(e) => handleFieldChange('actual_completion_date', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="overline">Similar NC Checked</label>
+                  <select
+                    className="input-field"
+                    value={incident.similar_nc_checked || 'Yes — checked across all branches. No similar NC identified.'}
+                    onChange={(e) => handleFieldChange('similar_nc_checked', e.target.value)}
+                  >
+                    <option value="Yes — checked across all branches. No similar NC identified.">Yes — checked across all branches. No similar NC identified.</option>
+                    <option value="Yes — similar NC identified. Updating risk register.">Yes — similar NC identified. Updating risk register.</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Effectiveness Verification Date</label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="07/06/2026"
+                    value={incident.effectiveness_verification_date || '07/06/2026'}
+                    onChange={(e) => handleFieldChange('effectiveness_verification_date', e.target.value)}
+                  />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="overline">Effectiveness Evidence / Results</label>
+                  <textarea
+                    className="input-field"
+                    style={{ minHeight: '80px' }}
+                    placeholder="Detail the evidence supporting the effectiveness of the PA/CA..."
+                    value={incident.effectiveness_evidence_results || ''}
+                    onChange={(e) => handleFieldChange('effectiveness_evidence_results', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="overline">Risk Register Updated</label>
+                  <select
+                    className="input-field"
+                    value={incident.risk_register_updated || 'No — to be updated at close-out'}
+                    onChange={(e) => handleFieldChange('risk_register_updated', e.target.value)}
+                  >
+                    <option value="No — to be updated at close-out">No — to be updated at close-out</option>
+                    <option value="Yes">Yes</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">QMS / Procedure Changed</label>
+                  <select
+                    className="input-field"
+                    value={incident.qms_procedure_changed || 'No — SOP update in progress'}
+                    onChange={(e) => handleFieldChange('qms_procedure_changed', e.target.value)}
+                  >
+                    <option value="No — SOP update in progress">No — SOP update in progress</option>
+                    <option value="Yes">Yes</option>
+                    <option value="N/A">N/A</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">CAPA Adequate</label>
+                  <select
+                    className="input-field"
+                    value={incident.capa_adequate || 'No — pending effectiveness verification'}
+                    onChange={(e) => handleFieldChange('capa_adequate', e.target.value)}
+                  >
+                    <option value="No — pending effectiveness verification">No — pending effectiveness verification</option>
+                    <option value="Yes">Yes</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="overline">Status</label>
+                  <select
+                    className="input-field"
+                    value={incident.status || 'In Progress'}
+                    onChange={(e) => {
+                      handleFieldChange('status', e.target.value);
+                      setLiability(prev => ({ ...prev, status: e.target.value }));
+                    }}
+                  >
+                    <option value="In Progress">In Progress</option>
+                    <option value="Open - New">Open - New</option>
+                    <option value="Open - Under Investigation">Open - Under Investigation</option>
+                    <option value="Open - Corrective Action Pending">Open - Corrective Action Pending</option>
+                    <option value="Closed - No Further Action">Closed - No Further Action</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-primary"
+                  style={{ background: '#8b5cf6', color: '#fff', border: 'none' }}
+                  onClick={() => handleDeptUpdate('closeout')}
+                  disabled={isUpdatingDept}
+                >
+                  {isUpdatingDept ? 'Saving...' : 'Save Close-Out Details'}
                 </button>
               </div>
             </div>
@@ -887,7 +1321,7 @@ export default function IncidentDetails() {
                 <button
                   className="btn btn-primary"
                   style={{ background: '#ef4444' }}
-                  onClick={handleDeptUpdate}
+                  onClick={() => handleDeptUpdate()}
                   disabled={isUpdatingDept}
                 >
                   {isUpdatingDept ? 'Saving...' : 'Save Claim Details'}
@@ -911,7 +1345,7 @@ export default function IncidentDetails() {
                   <select
                     className="input-field"
                     value={liability.cor_risk_level}
-                    onChange={(e) => setLiability({ ...liability, cor_risk_level: e.target.value })}
+                    onChange={(e) => { setIsDirty(true); setLiability({ ...liability, cor_risk_level: e.target.value }); }}
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
@@ -924,7 +1358,7 @@ export default function IncidentDetails() {
                   <select
                     className="input-field"
                     value={liability.cor_status}
-                    onChange={(e) => setLiability({ ...liability, cor_status: e.target.value })}
+                    onChange={(e) => { setIsDirty(true); setLiability({ ...liability, cor_status: e.target.value }); }}
                   >
                     {['Open', 'Close'].map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -938,7 +1372,7 @@ export default function IncidentDetails() {
                     style={{ minHeight: '80px' }}
                     placeholder="Detailed assessment of CoR breach..."
                     value={liability.cor_assessment}
-                    onChange={(e) => setLiability({ ...liability, cor_assessment: e.target.value })}
+                    onChange={(e) => { setIsDirty(true); setLiability({ ...liability, cor_assessment: e.target.value }); }}
                   />
                 </div>
                 <div style={{ gridColumn: 'span 2' }}>
@@ -948,7 +1382,7 @@ export default function IncidentDetails() {
                     style={{ minHeight: '80px' }}
                     placeholder="Actions taken to rectify the CoR breach..."
                     value={liability.cor_corrective_action}
-                    onChange={(e) => setLiability({ ...liability, cor_corrective_action: e.target.value })}
+                    onChange={(e) => { setIsDirty(true); setLiability({ ...liability, cor_corrective_action: e.target.value }); }}
                   />
                 </div>
                 <div>
@@ -956,7 +1390,7 @@ export default function IncidentDetails() {
                   <select
                     className="input-field"
                     value={liability.cor_action_implemented}
-                    onChange={(e) => setLiability({ ...liability, cor_action_implemented: e.target.value })}
+                    onChange={(e) => { setIsDirty(true); setLiability({ ...liability, cor_action_implemented: e.target.value }); }}
                   >
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
@@ -1044,123 +1478,7 @@ Please review the attached incident file in the Command Center. Legal and operat
             </div>
           )}
 
-          {/* Dynamic NCR Form for R&C/Manager/Admin */}
-          {incident.type === 'Non-Conformance Report (NCR)' && ['full_access', 'risk_compliance', 'bu_access', 'branch_access'].includes(role || '') && (
-            <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.02)', marginTop: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', color: '#10b981' }}><FileWarning size={20} /></div>
-                <h3 style={{ fontSize: '1.25rem', color: '#10b981', margin: 0 }}>R&C / MANAGER (NCR Follow-up)</h3>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="overline">Cause of NC</label>
-                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Identify the root cause of the non-conformance..." />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="overline">Corrective Action</label>
-                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Action taken to correct the non-conformance..." />
-                </div>
-                <div>
-                  <label className="overline">Corrective Action Implemented</label>
-                  <select className="input-field">
-                    <option>No — implementation in progress</option>
-                    <option>Yes</option>
-                  </select>
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="overline">Preventive Action</label>
-                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Action taken to prevent recurrence..." />
-                </div>
-                <div>
-                  <label className="overline">Responsible Person</label>
-                  <input type="text" className="input-field" placeholder="Name or Role" />
-                </div>
-                <div>
-                  <label className="overline">Target Completion Date</label>
-                  <input type="date" className="input-field" />
-                </div>
-              </div>
-              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  className="btn btn-primary"
-                  style={{ background: '#10b981', color: '#fff' }}
-                  onClick={handleDeptUpdate}
-                  disabled={isUpdatingDept}
-                >
-                  {isUpdatingDept ? 'Saving...' : 'Save Follow-up Details'}
-                </button>
-              </div>
-            </div>
-          )}
 
-          {/* Dynamic NCR Close-Out Form for R&C/Admin */}
-          {incident.type === 'Non-Conformance Report (NCR)' && ['full_access', 'risk_compliance'].includes(role || '') && (
-            <div className="card fade-in" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.02)', marginTop: '2rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                <div style={{ padding: '0.5rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '8px', color: '#8b5cf6' }}><Shield size={20} /></div>
-                <h3 style={{ fontSize: '1.25rem', color: '#8b5cf6', margin: 0 }}>CLOSE-OUT (R&C)</h3>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                <div>
-                  <label className="overline">Actual Completion Date</label>
-                  <input type="date" className="input-field" />
-                </div>
-                <div>
-                  <label className="overline">Similar NC Checked</label>
-                  <select className="input-field">
-                    <option>Yes — checked across all branches. No similar NC identified.</option>
-                    <option>Yes — similar NC identified. Updating risk register.</option>
-                    <option>No</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="overline">Effectiveness Verification Date</label>
-                  <input type="date" className="input-field" />
-                </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label className="overline">Effectiveness Evidence / Results</label>
-                  <textarea className="input-field" style={{ minHeight: '80px' }} placeholder="Detail the evidence supporting the effectiveness of the PA/CA..." />
-                </div>
-                <div>
-                  <label className="overline">Risk Register Updated</label>
-                  <select className="input-field">
-                    <option>No — to be updated at close-out</option>
-                    <option>Yes</option>
-                    <option>N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="overline">QMS / Procedure Changed</label>
-                  <select className="input-field">
-                    <option>No — SOP update in progress</option>
-                    <option>Yes</option>
-                    <option>N/A</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="overline">CAPA Adequate</label>
-                  <select className="input-field">
-                    <option>No — pending effectiveness verification</option>
-                    <option>Yes</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="overline">Status</label>
-                  <select
-                    className="input-field"
-                    onChange={(e) => setLiability({ ...liability, status: e.target.value })}
-                  >
-                    {(INCIDENT_STATUSES[getIncidentCategory(incident)] || INCIDENT_STATUSES.cargo).map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn btn-primary" style={{ background: '#8b5cf6', color: '#fff' }} onClick={() => { handleDeptUpdate(); showNotification('NCR close-out completed and status updated.'); }}>Save Close-Out Details</button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Sidebar Panel */}

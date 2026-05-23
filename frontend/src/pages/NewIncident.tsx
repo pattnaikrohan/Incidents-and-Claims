@@ -96,7 +96,9 @@ export default function NewIncident() {
         return val;
       };
 
-      const currentIncidentId = data.incident_id || stickyId;
+      const currentIncidentId = (data.incident_id && !data.incident_id.includes('PENDING')) 
+        ? data.incident_id 
+        : (stickyId || calculatedNextId || `${meta.prefix}-${Date.now()}`);
       const payload = {
         ...data,
         incident_id: currentIncidentId,
@@ -109,6 +111,20 @@ export default function NewIncident() {
         cr991_hrid: currentIncidentId,
         cr991_whsid: currentIncidentId,
         cr991_ncrref: currentIncidentId,
+        // Explicit NCR OData Mapping
+        ...(type === 'ncr' ? {
+          cr991_entity: data.entity || '',
+          cr991_businessunitbu: data.business_unit || '',
+          cr991_branch: data.branch_department || '',
+          cr991_levelofnonconformity: data.level_of_nonconformity || '',
+          cr991_identificationofnc: data.identification || '',
+          cr991_identifiedby: data.identified_by || '',
+          cr991_atfaultparty: data.at_fault_party || '',
+          cr991_notify: data.notify || '',
+          cr991_descriptionofnc: data.description || '',
+          cr991_immediatecontainmentaction: data.containment || '',
+          cr991_relatedrecordreference: data.related_record || '',
+        } : {}),
         category: type,
         type: meta.label,
         status: isDraft ? 'Draft' : (DEFAULT_STATUSES[type] || 'Open - New'),
@@ -160,11 +176,37 @@ export default function NewIncident() {
         
         const flowUrl = type === 'ncr' ? NCR_FLOW_URL : DEFAULT_FLOW_URL;
 
-        const flowRes = await fetch(flowUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        const SECOND_FLOW_URLS: Record<string, string> = {
+          cargo: "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/0c5f5f199a074052a016140e9e59e340/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=FqRLriIAD6uEA992WLcvUWpgSfTZQN9FP73fh8VPZzA",
+          hr: "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/af85b57e12a647229b719170294ca651/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Rd-ilbxg-nwxWtKNBn7tJsvG6I1dCYsrtpINMxPmPlg",
+          it: "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/21128bcf4700413a978abf59c3d9050e/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Xg0Z43MxgeZVJ0yfn-ww6WST8E2j4cKEAZmbo520dvM",
+          whs: "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/165d300d1b8747c3b1c342fef18c95d1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=R4T37PFyf2OBCC7I-gH0jfz_0or790d4MBhCnRp7J_A",
+          risk: "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/a79b0116d763426a9a187eed7ec49bed/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=wf8IFhj5cjvorr9kod89JtZy2qnD9rgACxl2Kkb2V4o",
+          finance: "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/9e46cb8be02e4e2e86395a60859b72a7/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=8AJzpSAb2mhwC3V9ZI3GRgD8rC_YgEI5J-ZkBp-2OGk"
+        };
+        const secondFlowUrl = SECOND_FLOW_URLS[type];
+
+        const flowPromises = [
+          fetch(flowUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+        ];
+
+        if (secondFlowUrl) {
+          flowPromises.push(
+            fetch(secondFlowUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            })
+          );
+        }
+
+        const responses = await Promise.all(flowPromises);
+        const flowRes = responses[0];
+        let secondFlowRes = responses.length > 1 ? responses[1] : null;
 
         if (!flowRes.ok) {
           if (flowRes.status === 502) {
@@ -177,7 +219,22 @@ export default function NewIncident() {
           }
         } else {
           console.log('Power Automate flow triggered successfully!');
-          setSuccessMessage(`${meta.label} ${isDraft ? 'Draft' : ''} registered and workflow triggered successfully.`);
+          let extraMsg = '';
+          
+          if (secondFlowRes && secondFlowRes.ok) {
+            try {
+              // Parse response which should contain incident_id and status
+              const responseData = await secondFlowRes.json();
+              console.log("Second flow response:", responseData);
+              if (responseData.incident_id || responseData.status) {
+                  extraMsg = ` (Incident ID: ${responseData.incident_id || payload.incident_id}, Status: ${responseData.status || 'Received'})`;
+              }
+            } catch (err) {
+              console.warn("Failed to parse second flow response as JSON", err);
+            }
+          }
+          
+          setSuccessMessage(`${meta.label} ${isDraft ? 'Draft' : ''} registered and workflow triggered successfully.${extraMsg}`);
         }
       } catch (flowErr: any) {
         console.error('Power Automate Flow error:', flowErr);
@@ -216,11 +273,15 @@ export default function NewIncident() {
       if (isDraft) {
         setError('Failed to save draft. Even drafts require basic system connectivity.');
       } else {
-        const detail = err.response?.data?.detail;
-        if (Array.isArray(detail)) {
-          setError(detail.map((e: any) => `${e.loc[e.loc.length - 1].replace(/_/g, ' ')}: ${e.msg}`).join(' | '));
+        if (err.code === 'ERR_NETWORK' || !err.response) {
+          setError('Network Error: Could not connect to the backend server. Please ensure the backend API is running.');
         } else {
-          setError(detail || 'Failed to submit incident record. Please check all mandatory fields.');
+          const detail = err.response?.data?.detail;
+          if (Array.isArray(detail)) {
+            setError(detail.map((e: any) => `${e.loc[e.loc.length - 1].replace(/_/g, ' ')}: ${e.msg}`).join(' | '));
+          } else {
+            setError(detail || 'Failed to submit incident record. Please check all mandatory fields.');
+          }
         }
       }
     } finally {
@@ -340,13 +401,13 @@ export default function NewIncident() {
       )}
 
       {/* Dynamic Form */}
-      {type === 'cargo' && <CargoForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
-      {type === 'hr' && <HRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
-      {type === 'whs' && <WHSForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
-      {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
-      {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
-      {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
-      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId} initialData={draftData} />}
+      {type === 'cargo' && <CargoForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
+      {type === 'hr' && <HRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
+      {type === 'whs' && <WHSForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
+      {type === 'it' && <ITForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
+      {type === 'risk' && <RiskForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
+      {type === 'finance' && <FinanceForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
+      {type === 'ncr' && <NCRForm onSubmit={handleSubmit} onCancel={() => navigate('/incidents')} loading={loading} incident_id={stickyId || calculatedNextId} initialData={draftData} />}
     </div>
   );
 }

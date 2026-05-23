@@ -1,0 +1,141 @@
+"""
+Azure AD Token Validation & Group-Based Role Resolution
+
+Validates Azure AD JWT tokens using Microsoft's JWKS endpoint and resolves
+application roles from AD group memberships embedded in token claims.
+"""
+import time
+import requests
+from jose import jwt, JWTError
+from functools import lru_cache
+
+# ── Azure AD Configuration ────────────────────────────────────
+AZURE_AD_CLIENT_ID = '51187ec7-4430-485a-bb6a-d3f70f83ff77'
+AZURE_AD_TENANT_ID = '9a3bb301-12fd-4106-a7f7-563f72cfdf69'
+AZURE_AD_AUTHORITY = f'https://login.microsoftonline.com/{AZURE_AD_TENANT_ID}'
+AZURE_AD_JWKS_URL = f'{AZURE_AD_AUTHORITY}/discovery/v2.0/keys'
+AZURE_AD_ISSUER = f'https://login.microsoftonline.com/{AZURE_AD_TENANT_ID}/v2.0'
+
+# ── JWKS Key Cache ────────────────────────────────────────────
+_jwks_cache = {"keys": None, "expires_at": 0}
+JWKS_CACHE_TTL = 86400  # 24 hours
+
+
+def _get_jwks_keys():
+    """Fetch and cache Microsoft's JWKS signing keys."""
+    now = time.time()
+    if _jwks_cache["keys"] and now < _jwks_cache["expires_at"]:
+        return _jwks_cache["keys"]
+    
+    try:
+        response = requests.get(AZURE_AD_JWKS_URL, timeout=10)
+        response.raise_for_status()
+        keys = response.json().get("keys", [])
+        _jwks_cache["keys"] = keys
+        _jwks_cache["expires_at"] = now + JWKS_CACHE_TTL
+        return keys
+    except Exception as e:
+        print(f"[AzureAuth] Failed to fetch JWKS keys: {e}")
+        # Return cached keys even if expired, as fallback
+        if _jwks_cache["keys"]:
+            return _jwks_cache["keys"]
+        raise
+
+
+def validate_azure_token(token: str) -> dict:
+    """
+    Validate an Azure AD JWT token.
+    
+    Returns the decoded token claims if valid.
+    Raises JWTError if the token is invalid.
+    """
+    keys = _get_jwks_keys()
+    
+    # Try each key until one works (handles key rotation)
+    for key in keys:
+        try:
+            claims = jwt.decode(
+                token,
+                key,
+                algorithms=["RS256"],
+                audience=AZURE_AD_CLIENT_ID,
+                issuer=AZURE_AD_ISSUER,
+                options={
+                    "verify_exp": True,
+                    "verify_aud": True,
+                    "verify_iss": True,
+                }
+            )
+            return claims
+        except JWTError:
+            continue
+    
+    raise JWTError("Token validation failed with all available keys")
+
+
+# ── AD Group → Role Mapping (mirrors frontend adGroupMapping.ts) ──
+
+# Functional/Department groups
+FUNCTIONAL_GROUPS = {
+    # 'full_access_admin_group_id': 'full_access',  # TODO: Add when group ID provided
+    'f29747c6-0fb4-4869-b681-0786d602ac29': 'risk_compliance',
+    'd8195075-cc4c-4e62-b857-f4cc9c76b380': 'hr_access',
+    'b355c48b-09fc-4d35-b7cc-a80e53d9f3b7': 'it_access',
+    '2dcbf776-a8ce-4316-8dc8-c5aef73409f7': 'finance_access',
+}
+
+# BU Manager groups → (role, business_unit)
+BU_MANAGER_GROUPS = {
+    '38e4b0e2-ba59-4b60-8c61-8650509b1a70': 'AAW Group Holdings',
+    '956cde96-2a25-4574-8e7b-fb0de9712c0d': 'AAW Global Logistics - AU',
+    '5ba26317-0cfe-461a-a8ac-ee35ed50a7dc': 'AAW Global Logistics - NZ',
+    '83c2912d-604a-4e3f-b79e-5500b040197d': 'AAW Bulk Liquid Logistics',
+    'e4fb09bd-ed76-4a1c-b964-396057c02de6': 'Hoyer Logistics Australia',
+    '18444ce2-793a-485c-99d1-7d0a1073945d': 'Coastalbridge',
+    '57b8fe69-df5e-441f-94ef-1adad5458d8e': 'Regional Shipping Services',
+}
+
+# Branch groups → branch_name
+BRANCH_GROUPS = {
+    '7e72b9d7-0977-4d9f-83d0-f2c0f38beafb': 'AAW Global Logistics - Melbourne',
+    '8e6d4f35-ec7f-4d9f-be44-f76bb4274d22': 'AAW Global Logistics - Sydney',
+    'c98d0827-3c29-49cf-b466-fd6b3b4cd16b': 'AAW Global Logistics - Brisbane',
+    '9f22fa97-0f1d-4136-89d8-8b9e4dc1ff2b': 'AAW Global Logistics - Adelaide',
+    'fe5aecea-91c4-48ac-9038-f16edfd3cba6': 'AAW Global Logistics - Fremantle',
+    'fa404616-cce0-4c8a-9e5d-a86919e4eac1': 'AAW Customs Brokerage',
+    '99937019-ff28-4c3c-8de2-e5492638a233': 'AAW Project Logistics',
+    'c14255e2-c4f0-459d-b889-f44938b0fd83': 'AAW Global Logistics - Auckland',
+    'a960927f-14db-4632-ade6-56e9bc19213f': 'AAW Bulk Liquid Logistics Team',
+    '6796ccfb-9ed2-484e-93b4-92c5d289c3a1': 'Coastalbridge',
+    'c65d09a2-1b50-4adc-903b-4dc5da9dfa92': 'PIL Logistics Australia',
+}
+
+
+def resolve_role_from_groups(group_ids: list) -> dict:
+    """
+    Resolve application role from Azure AD group memberships.
+    Returns dict with: role, business_unit, branch_name
+    """
+    group_set = {g.lower() for g in group_ids}
+    
+    # Priority 1: Full Access (TODO: uncomment when group ID provided)
+    # if 'full_access_group_id' in group_set:
+    #     return {'role': 'full_access', 'business_unit': None, 'branch_name': None}
+
+    # Priority 2: Functional department groups
+    for gid, role in FUNCTIONAL_GROUPS.items():
+        if gid.lower() in group_set:
+            return {'role': role, 'business_unit': None, 'branch_name': None}
+    
+    # Priority 3: BU Manager groups
+    for gid, bu_name in BU_MANAGER_GROUPS.items():
+        if gid.lower() in group_set:
+            return {'role': 'bu_access', 'business_unit': bu_name, 'branch_name': None}
+    
+    # Priority 4: Branch groups
+    for gid, branch_name in BRANCH_GROUPS.items():
+        if gid.lower() in group_set:
+            return {'role': 'branch_access', 'business_unit': None, 'branch_name': branch_name}
+    
+    # Default: submit_only
+    return {'role': 'submit_only', 'business_unit': None, 'branch_name': None}

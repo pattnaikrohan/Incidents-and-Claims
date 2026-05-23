@@ -16,17 +16,24 @@ api.interceptors.request.use((config) => {
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Signal to backend whether this is an SSO token or local JWT
+  const isSSOUser = localStorage.getItem('isSSOUser') === 'true';
+  if (isSSOUser && config.headers) {
+    config.headers['X-Auth-Source'] = 'azure-ad';
+  }
   return config;
 });
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Basic auto-logout on 401
+    // Auto-logout on 401 Unauthorized
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('role');
       localStorage.removeItem('branchId');
+      localStorage.removeItem('isSSOUser');
+      localStorage.removeItem('displayName');
       window.location.href = '/login';
     }
     return Promise.reject(error);

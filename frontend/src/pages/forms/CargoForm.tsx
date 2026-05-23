@@ -43,19 +43,38 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
       return {
         ...initialData,
         incident_id: stableId,
-        short_description: initialData.short_description || initialData.description || '',
+        short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
+        description: initialData.description || initialData.short_description || initialData.incident_summary || '',
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         system_job_number: initialData.system_job_number || initialData.job_number || '',
         cargo_value: initialData.cargo_value || initialData.value || '',
         location_of_incident: initialData.location_of_incident || initialData.location || '',
         customer: initialData.customer || initialData.customer_name || '',
         date_logged: initialData.date_logged || initialData.date || today(),
+        date_reported: initialData.date_reported || initialData.date_logged || initialData.date || today(),
         logged_by: initialData.logged_by || 'System User',
         scope_of_work: initialData.scope_of_work || '',
         scope_of_work_other: '',
         role_performed: initialData.role_performed || '',
         root_cause: initialData.root_cause || '',
-        claim_estimate: initialData.claim_estimate || '',
+        claim_estimate: initialData.claim_estimate || initialData.value || '',
+        business_unit: initialData.business_unit || '',
+        branch_department: initialData.branch_department || '',
+        mode: initialData.mode || '',
+        cargo_description: initialData.cargo_description || '',
+        container_numbers: initialData.container_numbers || '',
+        origin: initialData.origin || '',
+        destination: initialData.destination || '',
+        origin_agent: initialData.origin_agent || '',
+        destination_agent: initialData.destination_agent || '',
+        carrier: initialData.carrier || '',
+        coloader: initialData.coloader || '',
+        transport_company: initialData.transport_company || '',
+        incident_summary: initialData.incident_summary || initialData.description || '',
+        mbl_mawb_issued: initialData.mbl_mawb_issued || 'N/A',
+        mbl_mawb_number: initialData.mbl_mawb_number || '',
+        hbl_hawb_issued: initialData.hbl_hawb_issued || 'N/A',
+        hbl_hawb_number: initialData.hbl_hawb_number || '',
       };
     }
     return {
@@ -81,14 +100,24 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
       upd('incident_id', incident_id);
     }
   }, [incident_id, initialData, f.incident_id]);
+  const parseMultiSelect = (val: any): string[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === 'string') {
+      // Dataverse multi-select uses '; ' separator, but frontend uses ', '
+      return val.split(/[;,]\s*/).map((s: string) => s.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
   const [incidentTypes, setIncidentTypes] = useState<string[]>(
-    initialData?.incident_types ? (typeof initialData.incident_types === 'string' ? initialData.incident_types.split(', ') : initialData.incident_types) : []
+    parseMultiSelect(initialData?.incident_types)
   );
   const [correctiveActions, setCorrectiveActions] = useState<string[]>(
-    initialData?.corrective_actions ? (typeof initialData.corrective_actions === 'string' ? initialData.corrective_actions.split(', ') : initialData.corrective_actions) : []
+    parseMultiSelect(initialData?.corrective_actions)
   );
   const [claimTypes, setClaimTypes] = useState<string[]>(
-    initialData?.claim_types ? (typeof initialData.claim_types === 'string' ? initialData.claim_types.split(', ') : initialData.claim_types) : []
+    parseMultiSelect(initialData?.claim_types)
   );
   const [files, setFiles] = useState<File[]>([]);
 

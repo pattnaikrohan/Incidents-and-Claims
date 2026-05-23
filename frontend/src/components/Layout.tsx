@@ -63,7 +63,7 @@ const INCIDENT_TYPES = [
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { logout, role, email, branchName, businessUnit } = useAuth();
+  const { logout, role, email, branchName, businessUnit, displayName: ssoDisplayName, isSSOUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -101,7 +101,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
-  const displayName = role === 'full_access' ? 'Global Admin' :
+  const roleLabel = role === 'full_access' ? 'Global Admin' :
     role === 'risk_compliance' ? 'Risk & Compliance' :
       role === 'bu_access' ? 'BU Manager' :
         role === 'hr_access' ? 'HR & Safety' :
@@ -111,7 +111,10 @@ export default function Layout({ children }: { children: ReactNode }) {
                 role === 'submit_only' ? 'Operator' :
                   'Branch Lead';
 
-  // Derive initials from display name (e.g. Global Admin -> GA)
+  // Use Azure AD display name for SSO users, role label for dev/mock users
+  const displayName = isSSOUser && ssoDisplayName ? ssoDisplayName : roleLabel;
+
+  // Derive initials from display name (e.g. Global Admin -> GA, John Smith -> JS)
   const userInitials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
@@ -409,13 +412,13 @@ export default function Layout({ children }: { children: ReactNode }) {
                         width: '48px',
                         height: '48px',
                         borderRadius: '14px',
-                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        background: isSSOUser ? 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '1.25rem',
                         fontWeight: 800,
-                        boxShadow: '0 8px 16px -4px rgba(99, 102, 241, 0.4)',
+                        boxShadow: isSSOUser ? '0 8px 16px -4px rgba(0, 120, 212, 0.4)' : '0 8px 16px -4px rgba(99, 102, 241, 0.4)',
                         color: '#fff'
                       }}>
                         {userInitials}
@@ -424,21 +427,46 @@ export default function Layout({ children }: { children: ReactNode }) {
                         <div style={{ fontSize: '1.125rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {displayName}
                         </div>
-                        <div style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '0.15rem 0.5rem',
-                          background: 'rgba(99, 102, 241, 0.15)',
-                          border: '1px solid rgba(99, 102, 241, 0.3)',
-                          borderRadius: '6px',
-                          fontSize: '0.65rem',
-                          fontWeight: 800,
-                          color: '#818cf8',
-                          marginTop: '0.4rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em'
-                        }}>
-                          Verified Account
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginTop: '0.4rem', flexWrap: 'wrap' }}>
+                          <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '0.15rem 0.5rem',
+                            background: 'rgba(99, 102, 241, 0.15)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            borderRadius: '6px',
+                            fontSize: '0.6rem',
+                            fontWeight: 800,
+                            color: '#818cf8',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>
+                            {roleLabel}
+                          </div>
+                          {isSSOUser && (
+                            <div style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.25rem',
+                              padding: '0.15rem 0.5rem',
+                              background: 'rgba(0, 120, 212, 0.15)',
+                              border: '1px solid rgba(0, 120, 212, 0.3)',
+                              borderRadius: '6px',
+                              fontSize: '0.6rem',
+                              fontWeight: 800,
+                              color: '#60a5fa',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em'
+                            }}>
+                              <svg width="10" height="10" viewBox="0 0 21 21" fill="none">
+                                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                              </svg>
+                              SSO
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
