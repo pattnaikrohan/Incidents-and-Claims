@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Shield, X, Save, Send } from 'lucide-react';
-import { CurrencyInput } from '../../components/CurrencyInput';
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
 
 function today() { return new Date().toLocaleDateString('en-AU'); }
@@ -35,21 +34,7 @@ export default function RiskForm({ onSubmit, onCancel, loading, initialData, rea
         incident_type: initialData.incident_type || initialData.type || '',
         description: initialData.description || initialData.short_description || initialData.incident_summary || '',
         short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
-        location_of_incident: initialData.location_of_incident || initialData.location || '',
-        location: initialData.location_of_incident || initialData.location || '',
-        system_job_number: initialData.system_job_number || initialData.job_number || '',
         regulation_policy_breached: initialData.regulation_policy_breached || initialData.legislation_policy_breached || '',
-        regulator_authority_involved: initialData.regulator_authority_involved || initialData.regulator_involved || initialData.regulatory_body || '',
-        notified_to_regulator: initialData.notified_to_regulator || initialData.notified_regulator || initialData.regulator_notified || '',
-        date_notified: initialData.date_notified || initialData.date_regulator_notified || '',
-        cro_notified: initialData.cro_notified || '',
-        legal_counsel_engaged: initialData.legal_counsel_engaged || '',
-        financial_penalty_imposed: initialData.financial_penalty_imposed || initialData.penalty_imposed || '',
-        penalty_amount: initialData.penalty_amount || initialData.financial_penalty_estimate || '',
-        root_cause: initialData.root_cause || '',
-        corrective_action: initialData.corrective_action || initialData.remediation_plan || '',
-        corrective_action_owner: initialData.corrective_action_owner || initialData.logged_by || 'System User',
-        board_notified: initialData.board_notified || '',
         incident_summary: initialData.incident_summary || initialData.description || '',
       };
     }
@@ -57,10 +42,7 @@ export default function RiskForm({ onSubmit, onCancel, loading, initialData, rea
       incident_id: stableId, date_of_incident:'', date_reported: today(),
       reported_by: localStorage.getItem('role')||'Current User',
       business_unit:'', branch_department:'', incident_type:'',
-      regulation_policy_breached:'', description:'',
-      regulator_authority_involved:'', notified_to_regulator:'', date_notified:'',
-      cro_notified:'', legal_counsel_engaged:'', financial_penalty_imposed:'', penalty_amount:'',
-      root_cause:'', corrective_action:'', corrective_action_owner: localStorage.getItem('role')||'Current User', files: [] as File[]
+      regulation_policy_breached:'', description:'', files: [] as File[]
     };
   });
 
@@ -74,28 +56,7 @@ export default function RiskForm({ onSubmit, onCancel, loading, initialData, rea
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const enrichedDescription = `
-${f.description}
-
---- REGULATORY & LEGAL ---
-Regulation / Policy Breached: ${f.regulation_policy_breached || 'N/A'}
-Regulator / Authority Involved: ${f.regulator_authority_involved || 'N/A'}
-Notified to Regulator: ${f.notified_to_regulator || 'N/A'}
-Date Notified: ${f.date_notified || 'N/A'}
-CRO Notified: ${f.cro_notified || 'N/A'}
-Legal Counsel Engaged: ${f.legal_counsel_engaged || 'N/A'}
-
---- PENALTIES ---
-Financial Penalty Imposed: ${f.financial_penalty_imposed || 'N/A'}
-Penalty Amount (AUD): ${f.penalty_amount || 'N/A'}
-
---- INVESTIGATION & CORRECTIVE ACTION ---
-Root Cause: ${f.root_cause || 'N/A'}
-Corrective Action: ${f.corrective_action || 'N/A'}
-Corrective Action Owner: ${f.corrective_action_owner || 'N/A'}
-    `.trim();
-
-    if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
+    if (onSubmit) onSubmit(f);
   };
 
   const handleDraft = (e: React.MouseEvent) => {
@@ -148,67 +109,6 @@ Corrective Action Owner: ${f.corrective_action_owner || 'N/A'}
             <textarea className="input-field" style={{minHeight:110}} placeholder="Objective account of the compliance or risk incident..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
 
-          <Field label="Regulator / Authority Involved (if applicable)">
-            <input type="text" className="input-field" value={f.regulator_authority_involved} onChange={e=>upd('regulator_authority_involved',e.target.value)} />
-          </Field>
-          
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Notified to Regulator">
-              <select className="input-field" value={f.notified_to_regulator} onChange={e=>upd('notified_to_regulator',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Date Notified">
-              <input type="date" className="input-field" value={f.date_notified} onChange={e=>upd('date_notified',e.target.value)} />
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="CRO Notified">
-              <select className="input-field" value={f.cro_notified} onChange={e=>upd('cro_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Legal Counsel Engaged">
-              <select className="input-field" value={f.legal_counsel_engaged} onChange={e=>upd('legal_counsel_engaged',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Financial Penalty Imposed">
-              <select className="input-field" value={f.financial_penalty_imposed} onChange={e=>upd('financial_penalty_imposed',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <CurrencyInput 
-              label="Penalty Amount" 
-              value={f.penalty_amount} 
-              onChange={v => upd('penalty_amount', v)} 
-            />
-          </div>
-
-          <Field label="Root Cause">
-            <input type="text" className="input-field" value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} />
-          </Field>
-          
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Corrective Action">
-              <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
-            </Field>
-            <Field label="Corrective Action Owner">
-              <input type="text" className="input-field" value={f.corrective_action_owner} onChange={e=>upd('corrective_action_owner',e.target.value)} disabled style={{opacity:0.7,cursor:'not-allowed'}} />
-            </Field>
-          </div>
 
           <Field label="Supporting Evidence (Attachments)">
             <input type="file" multiple className="input-field" style={{padding:'0.5rem'}} onChange={e=>{
