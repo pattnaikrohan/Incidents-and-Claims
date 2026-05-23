@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { PublicClientApplication, type AccountInfo, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { PublicClientApplication, type AccountInfo } from '@azure/msal-browser';
 import { msalConfig, loginRequest, graphConfig } from '../auth/msalConfig';
 import { resolveRoleFromGroups, extractGroupsFromToken, type ResolvedRole } from '../auth/adGroupMapping';
 
@@ -131,13 +131,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           account,
         });
         graphToken = tokenResponse.accessToken;
-      } catch (err) {
-        if (err instanceof InteractionRequiredAuthError) {
+      } catch (silentErr) {
+        console.warn('[SSO] Silent token acquisition failed, trying popup:', silentErr);
+        try {
           const tokenResponse = await msalInstance.acquireTokenPopup({
             scopes: ['User.Read', 'GroupMember.Read.All'],
             account,
           });
           graphToken = tokenResponse.accessToken;
+        } catch (popupErr) {
+          console.warn('[SSO] Graph API token acquisition failed, continuing without groups from Graph:', popupErr);
+          // Continue without graph token — groups may still come from ID token claims
         }
       }
 
