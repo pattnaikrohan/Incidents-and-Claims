@@ -6,11 +6,15 @@ import { resolveRoleFromGroups, extractGroupsFromToken, type ResolvedRole } from
 // Initialize MSAL instance (singleton)
 export const msalInstance = new PublicClientApplication(msalConfig);
 
-// MSAL v5+ requires explicit initialization before any interactions
-let msalInitPromise: Promise<void> | null = null;
-export function ensureMsalInitialized(): Promise<void> {
+// MSAL v5+ requires initialize() + handleRedirectPromise() before any interactions.
+// handleRedirectPromise MUST be called immediately after initialize, before React Router
+// processes the URL, otherwise the auth response hash is lost.
+let msalInitPromise: Promise<AuthenticationResult | null> | null = null;
+export function ensureMsalInitialized(): Promise<AuthenticationResult | null> {
   if (!msalInitPromise) {
-    msalInitPromise = msalInstance.initialize();
+    msalInitPromise = msalInstance.initialize().then(() => {
+      return msalInstance.handleRedirectPromise();
+    });
   }
   return msalInitPromise;
 }
@@ -44,7 +48,6 @@ async function fetchGroupsFromGraph(accessToken: string): Promise<string[]> {
     });
     if (!response.ok) throw new Error(`Graph API returned ${response.status}`);
     const data = await response.json();
-    // Filter to security groups and extract IDs
     return (data.value || [])
       .filter((item: any) => item['@odata.type'] === '#microsoft.graph.group')
       .map((group: any) => group.id);
@@ -56,7 +59,6 @@ async function fetchGroupsFromGraph(accessToken: string): Promise<string[]> {
 
 /**
  * Process a successful MSAL authentication result.
- * Extracts groups, resolves role, and stores auth state.
  */
 async function processAuthResult(authResult: AuthenticationResult): Promise<{
   accessToken: string;
@@ -92,19 +94,14 @@ async function processAuthResult(authResult: AuthenticationResult): Promise<{
 
   console.log('[SSO] User groups:', groupIds);
 
-  // Resolve role from AD group memberships
   const resolved = resolveRoleFromGroups(groupIds);
   console.log('[SSO] Resolved role:', resolved);
 
-  const accessToken = authResult.idToken;
-  const userEmail = account.username;
-  const userName = account.name || userEmail;
-
   return {
-    accessToken,
+    accessToken: authResult.idToken,
     role: resolved.role,
-    email: userEmail,
-    displayName: userName,
+    email: account.username,
+    displayName: account.name || account.username,
     branchName: resolved.branchName,
     businessUnit: resolved.businessUnit,
     resolved,
@@ -164,34 +161,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setResolvedGroupInfo(result.resolved);
   }, []);
 
-  // On mount: initialize MSAL and handle redirect response (if returning from Microsoft login)
+  // On mount: check the redirect response that was captured during MSAL initialization
   useEffect(() => {
     let cancelled = false;
 
-    async function handleRedirect() {
+    async function checkRedirectResult() {
       try {
-        await ensureMsalInitialized();
-        console.log('[MSAL] Initialized successfully');
+        setSsoLoading(true);
+        // ensureMsalInitialized() returns the cached promise which includes handleRedirectPromise result
+        const response = await ensureMsalInitialized();
 
-        // Check if we're returning from a redirect login
-        const response = await msalInstance.handleRedirectPromise();
-        
         if (response && response.account && !cancelled) {
-          console.log('[SSO] Redirect response received, processing...');
-          setSsoLoading(true);
+          console.log('[SSO] Redirect response found, processing login for:', response.account.username);
           const result = await processAuthResult(response);
           if (!cancelled) {
             applyAuthResult(result);
+            console.log('[SSO] Login complete! Role:', result.role);
           }
-          setSsoLoading(false);
+        } else {
+          console.log('[SSO] No redirect response (normal page load)');
         }
       } catch (err) {
         console.error('[MSAL] Redirect handling failed:', err);
-        setSsoLoading(false);
+      } finally {
+        if (!cancelled) setSsoLoading(false);
       }
     }
 
-    handleRedirect();
+    checkRedirectResult();
 
     return () => { cancelled = true; };
   }, [applyAuthResult]);
@@ -226,11 +223,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSSOUser(false);
   };
 
-  // Azure AD SSO Login — uses redirect flow (more reliable than popup)
+  // Azure AD SSO Login — uses redirect flow
   const loginWithSSO = useCallback(async () => {
     try {
       await ensureMsalInitialized();
-      // Redirect to Microsoft login — page will reload when user comes back
       await msalInstance.loginRedirect({
         ...loginRequest,
         prompt: 'select_account',
@@ -242,7 +238,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = () => {
-    // Clear local storage
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('email');
@@ -262,7 +257,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSSOUser(false);
     setResolvedGroupInfo(null);
 
-    // If SSO user, also logout from MSAL
     if (isSSOUser) {
       msalInstance.logoutRedirect().catch(() => {});
     }
