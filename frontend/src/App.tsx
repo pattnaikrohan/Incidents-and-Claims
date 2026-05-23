@@ -25,7 +25,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   const isManager = role !== 'submit_only';
   
-  if (!isManager && !location.pathname.startsWith('/incidents/new')) {
+  if (!isManager && !location.pathname.startsWith('/incidents/new') && !location.pathname.startsWith('/access-control')) {
     return <Navigate to="/incidents/new" replace />;
   }
   
