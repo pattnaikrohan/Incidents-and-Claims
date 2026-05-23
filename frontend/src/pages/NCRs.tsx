@@ -69,29 +69,42 @@ export default function NCRs() {
 
   return (
     <div className="fade-in">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eab30815', border: '1px solid #eab30830', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#eab308' }}>
-              <FileWarning size={20} />
+      {/* Hero Header */}
+      <div className="card fade-in" style={{
+        position: 'relative', overflow: 'hidden', padding: '1.5rem 2.5rem', marginBottom: '2rem',
+        background: 'linear-gradient(145deg, rgba(245, 158, 11, 0.08) 0%, var(--bg-surface) 100%)',
+        border: '1px solid var(--border-base)',
+        borderLeft: '4px solid #f59e0b',
+        boxShadow: '0 10px 30px -10px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem'
+      }}>
+        {/* Glow effect */}
+        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(245, 158, 11, 0.15) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
+
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{ padding: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '12px', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.15)' }}>
+              <FileWarning size={28} />
             </div>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-              Non-Conformance Reports
-            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, color: 'var(--fg-base)' }}>
+                Non-Conformance Reports
+              </h2>
+              <p style={{ color: 'var(--fg-muted)', fontSize: '0.95rem', margin: 0, fontWeight: 500 }}>
+                Process failures, defects, and quality non-conformances
+              </p>
+            </div>
           </div>
-          <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem' }}>
-            Process failures, defects, and quality non-conformances
-          </p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div style={{ textAlign: 'center', padding: '0.5rem 1.25rem', background: 'rgba(239,68,68,0.05)', borderRadius: 8, border: '1px solid rgba(239,68,68,0.15)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ef4444' }}>{openCount}</div>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Open</div>
+
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '1.25rem' }}>
+          <div style={{ textAlign: 'center', padding: '0.75rem 1.75rem', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f59e0b', lineHeight: 1 }}>{openCount}</div>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', marginTop: '0.25rem', letterSpacing: '0.05em' }}>Open</div>
           </div>
-          <div style={{ textAlign: 'center', padding: '0.5rem 1.25rem', background: 'rgba(16,185,129,0.05)', borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{closedCount}</div>
-            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Closed</div>
+          <div style={{ textAlign: 'center', padding: '0.75rem 1.75rem', background: 'rgba(16,185,129,0.05)', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.2)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981', lineHeight: 1 }}>{closedCount}</div>
+            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-muted)', textTransform: 'uppercase', marginTop: '0.25rem', letterSpacing: '0.05em' }}>Closed</div>
           </div>
         </div>
       </div>
@@ -150,17 +163,22 @@ export default function NCRs() {
           <table style={{ minWidth: '800px', borderCollapse: 'separate', borderSpacing: 0 }}>
             <thead>
               <tr style={{ background: 'var(--bg-subtle)' }}>
-                <th style={{ paddingLeft: '1.5rem' }}>Reference</th>
-                <th>Description</th>
-                <th>Branch / Dept</th>
-                <th>Lodged Date</th>
-                <th>Status</th>
+                <th style={{ paddingLeft: '1.5rem', whiteSpace: 'nowrap' }}>Reference</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Entity</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Business Unit</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Branch</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Level of NC</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Identification</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Identified By</th>
+                <th style={{ whiteSpace: 'nowrap' }}>At Fault Party</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Related Record</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredNCRs.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '4rem 2rem' }}>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '4rem 2rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', opacity: 0.4 }}>
                       <FileText size={32} strokeWidth={1.5} />
                       <div style={{ fontSize: '0.8125rem', fontWeight: 500 }}>
@@ -171,21 +189,39 @@ export default function NCRs() {
                 </tr>
               ) : (
                 filteredNCRs.map((ncr, i) => (
-                  <tr key={i} onClick={() => navigate(`/incidents/${ncr.id}`)} style={{ cursor: 'pointer' }}>
+                  <tr key={i} onClick={() => navigate(`/incidents/${ncr.id}`, { state: { source: 'ncrs' } })} style={{ cursor: 'pointer' }}>
                     <td style={{ fontWeight: 600, color: 'var(--fg-base)', paddingLeft: '1.5rem', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#eab308' }} />
                         {ncr.incident_number_str || `NCR-${ncr.id}`}
                       </div>
                     </td>
-                    <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ncr.description || ncr.type || 'N/A'}
+                    <td style={{ whiteSpace: 'nowrap' }}>{ncr.entity || ncr.ncr_entity || ncr.cr991_entity || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{ncr.business_unit || ncr.cr991_businessunitbu || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{ncr.branch_department || ncr.cr991_branch || ncr.location || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {ncr.level_of_nonconformity || ncr.ncr_level ? (
+                        <span style={{ 
+                          padding: '0.15rem 0.5rem', 
+                          borderRadius: '4px', 
+                          fontSize: '0.7rem', 
+                          fontWeight: 600,
+                          background: (ncr.level_of_nonconformity || ncr.ncr_level) === 'Critical' ? 'rgba(239,68,68,0.1)' : 
+                                      (ncr.level_of_nonconformity || ncr.ncr_level) === 'Major' ? 'rgba(245,158,11,0.1)' : 'rgba(59,130,246,0.1)',
+                          color: (ncr.level_of_nonconformity || ncr.ncr_level) === 'Critical' ? '#ef4444' : 
+                                 (ncr.level_of_nonconformity || ncr.ncr_level) === 'Major' ? '#f59e0b' : '#3b82f6'
+                        }}>
+                          {ncr.level_of_nonconformity || ncr.ncr_level}
+                        </span>
+                      ) : '—'}
                     </td>
-                    <td>{ncr.branch_department || ncr.location || 'N/A'}</td>
-                    <td className="monospaced" style={{ color: 'var(--fg-muted)' }}>{ncr.date}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{ncr.identification || ncr.ncr_identification || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{ncr.identified_by || ncr.ncr_identified_by || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{ncr.at_fault_party || ncr.ncr_at_fault_party || '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ncr.related_record || ncr.ncr_reference || '—'}</td>
                     <td>
-                      <span className={`badge badge-${ncr.status?.includes('Closed') ? 'closed' : ncr.status?.includes('Open') ? 'open' : 'review'}`}>
-                        {ncr.status}
+                      <span className={`badge badge-${(ncr.status || '').includes('Closed') ? 'closed' : (ncr.status || '').includes('Open') ? 'open' : 'review'}`}>
+                        {String(ncr.status || '')}
                       </span>
                     </td>
                   </tr>

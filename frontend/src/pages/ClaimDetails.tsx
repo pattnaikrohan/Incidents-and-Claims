@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useIncidents } from '../hooks/useIncidents';
 import { getIncidentCategory, CATEGORY_META } from '../utils/incidentRoles';
 import { api } from '../services/api';
+import { StructuredDescription } from '../components/StructuredDescription';
 
 export default function ClaimDetails() {
   const { id } = useParams();
@@ -411,31 +412,40 @@ export default function ClaimDetails() {
       </Link>
 
       {/* Hero Header */}
-      <div className="card" style={{ position: 'relative', overflow: 'hidden', padding: '2.5rem', marginBottom: '2rem', background: 'linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-elevated) 100%)', border: '1px solid var(--border-base)', boxShadow: '0 20px 40px -20px rgba(0,0,0,0.15)' }}>
-        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(239,68,68,0.12) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '2rem' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: '10px', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}><DollarSign size={22} /></div>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', margin: 0 }}>{incident.incident_number_str || `INC-${incident.id}`}</h2>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.6rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '20px', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Claims Log</span>
+      <div className="card fade-in" style={{
+        position: 'relative', overflow: 'hidden', padding: '1.25rem 2rem', marginBottom: '2rem',
+        background: 'linear-gradient(145deg, rgba(16, 185, 129, 0.1) 0%, var(--bg-surface) 100%)',
+        border: '1px solid var(--border-base)',
+        borderLeft: '4px solid #10b981',
+        boxShadow: '0 10px 30px -10px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem'
+      }}>
+        {/* Glow effect */}
+        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(16, 185, 129, 0.25) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
+
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{ padding: '0.6rem', background: 'rgba(16, 185, 129, 0.15)', borderRadius: '12px', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' }}><DollarSign size={24} /></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ width: 'fit-content', fontSize: '0.65rem', fontWeight: 800, padding: '0.2rem 0.6rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '20px', color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Claims Log</span>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, color: 'var(--fg-base)', whiteSpace: 'nowrap' }}>{incident.incident_number_str || `INC-${incident.id}`}</h2>
             </div>
-            <p style={{ fontSize: '0.95rem', color: 'var(--fg-muted)', maxWidth: '700px', lineHeight: 1.6, margin: 0 }}>{incident.description || 'No description provided'}</p>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end', minWidth: '280px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Incident Status</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: (incident.status || '').includes('Closed') ? '#10b981' : '#3b82f6' }} />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{incident.status || 'Open'}</span>
-              </div>
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(10px)' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Incident Status</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: (incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 8px ${(incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{String(incident?.status || '')}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(239,68,68,0.04)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ef4444', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Claim Status</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: claim.claim_status === 'Closed' ? '#10b981' : '#ef4444' }} />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{claim.claim_status}</span>
-              </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: 'rgba(16, 185, 129, 0.04)', borderRadius: '10px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#10b981', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Claim Status</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: claim.claim_status === 'Closed' ? '#10b981' : '#ef4444', boxShadow: `0 0 8px ${claim.claim_status === 'Closed' ? '#10b981' : '#ef4444'}` }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{claim.claim_status}</span>
             </div>
           </div>
         </div>
@@ -459,13 +469,19 @@ export default function ClaimDetails() {
                 </div>
               ))}
             </div>
+
+            {/* Description Narrative */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 700, color: 'var(--fg-base)' }}>Incident Narrative</h3>
+              <StructuredDescription description={incident.description} />
+            </div>
           </div>
 
           {/* Claims Form */}
-          <div className="card" style={{ padding: '2rem', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.02)' }}>
+          <div className="card" style={{ padding: '2rem', border: '1px solid rgba(16, 185, 129, 0.25)', background: 'rgba(16, 185, 129, 0.02)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(239,68,68,0.1)', borderRadius: 8, color: '#ef4444' }}><DollarSign size={20} /></div>
-              <h3 style={{ fontSize: '1.25rem', color: '#ef4444', margin: 0, fontWeight: 800 }}>Claims Log Details</h3>
+              <div style={{ padding: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 8, color: '#10b981' }}><DollarSign size={20} /></div>
+              <h3 style={{ fontSize: '1.25rem', color: '#10b981', margin: 0, fontWeight: 800 }}>Claims Log Details</h3>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               {inp('claim_reference', 'Insurance Reference Number (if applicable)', 'text', 'e.g. CLM-2024-001', false, false)}
@@ -589,19 +605,27 @@ export default function ClaimDetails() {
                   Claim Status <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <select className="input-field" value={claim.claim_status} 
+                  <select className="input-field" value={claim.claim_status || ''} 
                     onChange={e => {
                       setClaim({ ...claim, claim_status: e.target.value });
-                      if (errors.writeoff_required) {
-                        setErrors(prev => {
-                          const next = { ...prev };
-                          delete next.writeoff_required;
-                          return next;
-                        });
+                      if (e.target.value === 'Closed' && claim.outstanding_balance !== '0.00' && !claim.writeoff_required) {
+                        setErrors(prev => ({...prev, claim_status: 'Cannot close claim with outstanding balance unless written off'}));
+                      } else {
+                        setErrors(prev => ({...prev, claim_status: ''}));
                       }
                     }}
                     style={{ appearance: 'none', paddingRight: '2.5rem' }}
                   >
+                    {claim.claim_status && ![
+                      'Open - New',
+                      'Open - In Progress',
+                      'Open - Under Review',
+                      'Closed - Resolved',
+                      'Closed - Escalated'
+                    ].includes(claim.claim_status) && (
+                      <option value={claim.claim_status}>{claim.claim_status}</option>
+                    )}
+                    <option value="">— Select Status —</option>
                     <option value="Open - New">Open - New</option>
                     <option value="Open - In Progress">Open - In Progress</option>
                     <option value="Open - Under Review">Open - Under Review</option>
@@ -640,7 +664,7 @@ export default function ClaimDetails() {
             
             <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
               <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}
-                style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontSize: '0.875rem', fontWeight: 700, borderRadius: 10, boxShadow: '0 4px 14px rgba(239,68,68,0.35)' }}>
+                style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontSize: '0.875rem', fontWeight: 700, borderRadius: 10, boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}>
                 {isSaving ? 'Saving...' : 'Save Claim Details'}
               </button>
             </div>
@@ -649,8 +673,8 @@ export default function ClaimDetails() {
 
         {/* Sidebar */}
         <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(239,68,68,0.2)' }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={16} color="#ef4444" /> Claim Summary</h4>
+          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><DollarSign size={16} color="#10b981" /> Claim Summary</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {[
                 { label: 'Claim Amount', value: claim.claim_amount ? `AUD $${parseFloat(claim.claim_amount).toLocaleString()}` : 'Not set', color: '#ef4444' },
@@ -673,10 +697,10 @@ export default function ClaimDetails() {
             </Link>
           </div>
 
-          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(16,185,129,0.2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-base)', paddingBottom: '0.75rem' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                <Paperclip size={16} color="#ef4444" /> Supporting Evidence
+                <Paperclip size={16} color="#10b981" /> Supporting Evidence
               </h4>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <button 

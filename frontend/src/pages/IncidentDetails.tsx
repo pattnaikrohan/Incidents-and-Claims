@@ -18,6 +18,7 @@ import NCRForm from './forms/NCRForm';
 import IncidentSection from '../components/IncidentSection';
 import { HRDeptSection, HRConfidentialNotes, WHSDeptSection, ITDeptSection, RiskDeptSection, FinanceDeptSection } from '../components/DeptSections';
 import { getIncidentCategory, CATEGORY_META, isDeptSectionFilled, canSeeDeptSection, canEditDeptSection, canSeeRCSection, canSeeConfidentialNotes } from '../utils/incidentRoles';
+import { StructuredDescription } from '../components/StructuredDescription';
 
 export default function IncidentDetails() {
   const { id } = useParams();
@@ -202,7 +203,7 @@ export default function IncidentDetails() {
             if (finalIncident) {
               // Enrich Dataverse record with backend metadata, ignoring nulls or empty strings from the backend
               const cleanBackendData = Object.fromEntries(
-                Object.entries(backendData).filter(([_, v]) => v !== null && v !== undefined && v !== '')
+                Object.entries(backendData).filter(([k, v]) => v !== null && v !== undefined && v !== '' && k !== 'status')
               );
               finalIncident = { ...finalIncident, ...cleanBackendData };
             } else {
@@ -233,7 +234,6 @@ export default function IncidentDetails() {
           if (finalIncident.risk_register_updated === undefined || finalIncident.risk_register_updated === null || finalIncident.risk_register_updated === '') finalIncident.risk_register_updated = 'No — to be updated at close-out';
           if (finalIncident.qms_procedure_changed === undefined || finalIncident.qms_procedure_changed === null || finalIncident.qms_procedure_changed === '') finalIncident.qms_procedure_changed = 'No — SOP update in progress';
           if (finalIncident.capa_adequate === undefined || finalIncident.capa_adequate === null || finalIncident.capa_adequate === '') finalIncident.capa_adequate = 'No — pending effectiveness verification';
-          if (finalIncident.status === undefined || finalIncident.status === null || finalIncident.status === '' || finalIncident.status === 'Open' || finalIncident.status === 'Open - Incident Logged') finalIncident.status = 'In Progress';
         }
 
         // Shield: do not overwrite local state if the user is actively editing or we're in a post-save window
@@ -706,51 +706,63 @@ export default function IncidentDetails() {
       )}
 
       <div className="card fade-in" style={{
-        position: 'relative', overflow: 'hidden', padding: '2.5rem', marginBottom: '2.5rem',
-        background: 'linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-elevated) 100%)',
+        position: 'relative', overflow: 'hidden', padding: '1.25rem 2rem', marginBottom: '2rem',
+        background: `linear-gradient(145deg, ${CATEGORY_META[getIncidentCategory(incident)].color}15 0%, var(--bg-surface) 100%)`,
         border: '1px solid var(--border-base)',
-        boxShadow: '0 20px 40px -20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+        borderLeft: `4px solid ${CATEGORY_META[getIncidentCategory(incident)].color}`,
+        boxShadow: `0 10px 30px -10px ${CATEGORY_META[getIncidentCategory(incident)].color}20, inset 0 1px 0 rgba(255,255,255,0.05)`,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem'
       }}>
         {/* Glow effect */}
-        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: `radial-gradient(ellipse at center, ${CATEGORY_META[getIncidentCategory(incident)].color}25 0%, transparent 70%)`, transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '0.75rem' }}>
-            <h2 className="page-title" style={{ marginBottom: 0, fontSize: '2.25rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--fg-base)', background: 'linear-gradient(to right, var(--fg-base), var(--fg-muted))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              {incident.incident_number_str || `INC-${incident.id}`}
-            </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{ padding: '0.6rem', background: `${CATEGORY_META[getIncidentCategory(incident)].color}15`, borderRadius: '12px', color: CATEGORY_META[getIncidentCategory(incident)].color, border: `1px solid ${CATEGORY_META[getIncidentCategory(incident)].color}30` }}>
+              {(() => {
+                const cat = getIncidentCategory(incident);
+                return cat === 'hr' ? <Users size={24} /> :
+                  cat === 'whs' ? <HeartPulse size={24} /> :
+                  cat === 'it' ? <LockIcon size={24} /> :
+                  cat === 'risk' ? <Shield size={24} /> :
+                  cat === 'finance' ? <DollarSign size={24} /> :
+                  cat === 'ncr' ? <FileWarning size={24} /> : <FileText size={24} />;
+              })()}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ width: 'fit-content', fontSize: '0.65rem', fontWeight: 800, padding: '0.2rem 0.6rem', background: `${CATEGORY_META[getIncidentCategory(incident)].color}15`, border: `1px solid ${CATEGORY_META[getIncidentCategory(incident)].color}30`, borderRadius: '20px', color: CATEGORY_META[getIncidentCategory(incident)].color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {CATEGORY_META[getIncidentCategory(incident)].label}
+              </span>
+              <h2 className="page-title" style={{ marginBottom: 0, fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--fg-base)', whiteSpace: 'nowrap' }}>
+                {incident.incident_number_str || `INC-${incident.id}`}
+              </h2>
+            </div>
           </div>
-          <p className="page-subtitle" style={{ marginBottom: 0, fontSize: '1rem', color: 'var(--fg-muted)', maxWidth: '800px', lineHeight: 1.6 }}>
-            {incident.description || 'No description provided'}
-          </p>
         </div>
 
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end', minWidth: '350px' }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(10px)' }}>
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Workflow Status</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(10px)' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Workflow Status</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: (liability.status || incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 10px ${(liability.status || incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--fg-base)' }}>{liability.status || incident?.status || 'Open - Incident Logged'}</span>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: (incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 8px ${(incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{String(incident?.status || '')}</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <button
-              className="btn"
-              style={{ background: 'var(--bg-subtle)', color: 'var(--fg-base)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.2s ease', height: '36px' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-base)'; }}
-              onClick={() => {
-                const userId = prompt("Enter User ID to assign to (e.g., 2):");
-                if (userId) handleAssign(parseInt(userId), "Selected User");
-              }}
-              disabled={isAssigning}
-            >
-              <UserPlus size={16} /> Assign Handler
-            </button>
-          </div>
+          <button
+            className="btn"
+            style={{ background: 'var(--bg-subtle)', color: 'var(--fg-base)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 1rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.2s ease', height: '36px' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-subtle)'; e.currentTarget.style.borderColor = 'var(--border-base)'; }}
+            onClick={() => {
+              const userId = prompt("Enter User ID to assign to (e.g., 2):");
+              if (userId) handleAssign(parseInt(userId), "Selected User");
+            }}
+            disabled={isAssigning}
+          >
+            <UserPlus size={16} /> Assign Handler
+          </button>
         </div>
       </div>
 
@@ -760,7 +772,7 @@ export default function IncidentDetails() {
 
           {/* Main Details Panel */}
           <div className="card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem' }}>Incident Details</h3>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '2rem', fontWeight: 700, color: 'var(--fg-base)' }}>Incident Details</h3>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2.5rem' }}>
               <div style={{ display: 'flex', gap: '1rem' }}>
@@ -801,6 +813,12 @@ export default function IncidentDetails() {
                   <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.type || incident.incident_type || CATEGORY_META[getIncidentCategory(incident)].label}</div>
                 </div>
               </div>
+            </div>
+
+            {/* Description Narrative */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 700, color: 'var(--fg-base)' }}>Incident Narrative</h3>
+              <StructuredDescription description={incident.description} />
             </div>
 
             {getIncidentCategory(incident) === 'ncr' && (
@@ -867,17 +885,9 @@ export default function IncidentDetails() {
               </div>
             )}
 
-            <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 2rem 0' }} />
 
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '1rem', fontWeight: 600 }}>Description</h3>
 
-            <div style={{ fontSize: '0.9375rem', lineHeight: 1.6, color: 'var(--fg-muted)', background: 'var(--bg-subtle)', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-base)', marginBottom: '1.5rem' }}>
-              {incident.description || 'No description provided'}
-            </div>
-
-            <hr style={{ border: 0, borderBottom: '1px solid var(--border-base)', margin: '0 0 1.5rem 0' }} />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem' }}>
               <button
                 onClick={() => setShowOriginal(!showOriginal)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: 'none', color: '#3b82f6', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', padding: 0 }}
@@ -1231,12 +1241,22 @@ export default function IncidentDetails() {
                   <label className="overline">Status</label>
                   <select
                     className="input-field"
-                    value={incident.status || 'In Progress'}
+                    value={incident.status || ''}
                     onChange={(e) => {
                       handleFieldChange('status', e.target.value);
                       setLiability(prev => ({ ...prev, status: e.target.value }));
                     }}
                   >
+                    {incident.status && ![
+                      'In Progress',
+                      'Open - New',
+                      'Open - Under Investigation',
+                      'Open - Corrective Action Pending',
+                      'Closed - No Further Action'
+                    ].includes(incident.status) && (
+                      <option value={incident.status}>{incident.status}</option>
+                    )}
+                    <option value="">— Select Status —</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Open - New">Open - New</option>
                     <option value="Open - Under Investigation">Open - Under Investigation</option>

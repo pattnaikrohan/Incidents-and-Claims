@@ -34,18 +34,9 @@ export default function HRForm({ onSubmit, onCancel, loading, initialData, readO
         incident_type: initialData.incident_type || initialData.type || '',
         description: initialData.description || initialData.short_description || initialData.incident_summary || '',
         short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
-        location_of_incident: initialData.location_of_incident || initialData.location || '',
-        location: initialData.location_of_incident || initialData.location || '',
-        system_job_number: initialData.system_job_number || initialData.job_number || '',
         witnesses: initialData.witnesses || '',
         immediate_action: initialData.immediate_action || '',
         investigation_required: initialData.investigation_required || 'Yes',
-        investigation_outcome: initialData.investigation_outcome || '',
-        corrective_action: initialData.corrective_action || '',
-        legal_counsel_engaged: initialData.legal_counsel_engaged || '',
-        close_out_date: initialData.close_out_date || '',
-        notes: initialData.notes || '',
-        root_cause: initialData.root_cause || '',
         incident_summary: initialData.incident_summary || initialData.description || '',
       };
     }
@@ -53,9 +44,7 @@ export default function HRForm({ onSubmit, onCancel, loading, initialData, readO
       incident_ref: stableId, date_of_incident:'', date_reported: today(),
       reported_by: localStorage.getItem('role')||'Current User',
       employee_name:'', business_unit:'', branch_department:'',
-      incident_type:'', description:'', witnesses:'', immediate_action:'', investigation_required:'Yes',
-      investigation_outcome:'', corrective_action:'', legal_counsel_engaged:'',
-      close_out_date:'', notes:'', files: [] as File[]
+      incident_type:'', description:'', witnesses:'', immediate_action:'', investigation_required:'Yes', files: [] as File[]
     };
   });
 
@@ -70,25 +59,7 @@ export default function HRForm({ onSubmit, onCancel, loading, initialData, readO
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const enrichedDescription = `
-${f.description}
-
---- INCIDENT DETAILS & WITNESSES ---
-Witnesses (if any): ${f.witnesses || 'N/A'}
-Immediate Action Taken: ${f.immediate_action || 'N/A'}
-
---- INVESTIGATION & LEGAL ---
-Investigation Required: ${f.investigation_required || 'N/A'}
-Investigation Outcome: ${f.investigation_outcome || 'N/A'}
-Corrective / Disciplinary Action: ${f.corrective_action || 'N/A'}
-Legal Counsel Engaged: ${f.legal_counsel_engaged || 'N/A'}
-
---- ADMINISTRATION ---
-Close Out Date: ${f.close_out_date || 'N/A'}
-HR Confidential Notes: ${f.notes || 'N/A'}
-    `.trim();
-
-    if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
+    if (onSubmit) onSubmit(f);
   };
 
   const handleDraft = (e: React.MouseEvent) => {
@@ -163,32 +134,6 @@ HR Confidential Notes: ${f.notes || 'N/A'}
             </div>
           </Field>
           
-          <Field label="Investigation Outcome">
-            <textarea className="input-field" style={{minHeight:90}} placeholder="Outcome of the investigation..." value={f.investigation_outcome} onChange={e=>upd('investigation_outcome',e.target.value)} />
-          </Field>
-          
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Corrective / Disciplinary Action">
-              <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
-            </Field>
-            <Field label="Legal Counsel Engaged">
-              <select className="input-field" value={f.legal_counsel_engaged} onChange={e=>upd('legal_counsel_engaged',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Close Out Date">
-              <input type="date" className="input-field" value={f.close_out_date} onChange={e=>upd('close_out_date',e.target.value)} />
-            </Field>
-          </div>
-
-          <Field label="Notes (confidential - HR eyes only)">
-            <textarea className="input-field" style={{minHeight:90}} placeholder="Confidential notes for HR purposes..." value={f.notes} onChange={e=>upd('notes',e.target.value)} />
-          </Field>
 
           <Field label="Supporting Evidence (Attachments)">
             <input type="file" multiple className="input-field" style={{padding:'0.5rem'}} onChange={e=>{

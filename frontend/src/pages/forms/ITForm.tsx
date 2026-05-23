@@ -34,36 +34,15 @@ export default function ITForm({ onSubmit, onCancel, loading, initialData, readO
         incident_type: initialData.incident_type || initialData.type || '',
         description: initialData.description || initialData.short_description || initialData.incident_summary || '',
         short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
-        location_of_incident: initialData.location_of_incident || initialData.location || '',
-        location: initialData.location_of_incident || initialData.location || '',
-        system_job_number: initialData.system_job_number || initialData.job_number || '',
         systems_data_affected: initialData.systems_data_affected || initialData.system_affected || '',
-        containment_actions: initialData.containment_actions || '',
-        personal_data_involved: initialData.personal_data_involved || '',
-        number_of_records: initialData.number_of_records || initialData.records_affected || initialData.number_of_users_affected || '',
-        notifiable_privacy_breach: initialData.notifiable_privacy_breach || initialData.notifiable_data_breach || '',
-        date_notified_oaic: initialData.date_notified_oaic || '',
-        cio_notified: initialData.cio_notified || '',
-        cro_notified: initialData.cro_notified || '',
-        cyber_specialist_engaged: initialData.cyber_specialist_engaged || '',
-        insurer_notified: initialData.insurer_notified || initialData.insurer_notified_dept || '',
-        root_cause: initialData.root_cause || '',
-        corrective_action: initialData.corrective_action || '',
         incident_summary: initialData.incident_summary || initialData.description || '',
-        data_breach: initialData.data_breach || '',
-        data_type_compromised: initialData.data_type_compromised || '',
-        it_support_ticket_ref: initialData.it_support_ticket_ref || '',
-        system_restored: initialData.system_restored || '',
       };
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
       reported_by: localStorage.getItem('role')||'Current User',
       business_unit:'', branch_department:'', incident_type:'',
-      systems_data_affected:'', description:'',
-      containment_actions:'', personal_data_involved:'', number_of_records:'',
-      notifiable_privacy_breach:'', date_notified_oaic:'', cio_notified:'', cro_notified:'',
-      cyber_specialist_engaged:'', insurer_notified:'', root_cause:'', corrective_action:'', files: [] as File[]
+      systems_data_affected:'', description:'', files: [] as File[]
     };
   });
 
@@ -77,31 +56,7 @@ export default function ITForm({ onSubmit, onCancel, loading, initialData, readO
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const enrichedDescription = `
-${f.description}
-
---- SYSTEMS & CONTAINMENT ---
-Systems / Data Affected: ${f.systems_data_affected || 'N/A'}
-Containment Actions Taken: ${f.containment_actions || 'N/A'}
-
---- PRIVACY IMPACT ---
-Personal Data Involved: ${f.personal_data_involved || 'N/A'}
-Number of Records Affected: ${f.number_of_records || 'N/A'}
-Notifiable Privacy Breach: ${f.notifiable_privacy_breach || 'N/A'}
-Date Notified to OAIC: ${f.date_notified_oaic || 'N/A'}
-
---- NOTIFICATIONS & ESCALATION ---
-CIO Notified: ${f.cio_notified || 'N/A'}
-CRO Notified: ${f.cro_notified || 'N/A'}
-External Cyber Specialist Engaged: ${f.cyber_specialist_engaged || 'N/A'}
-Insurer Notified: ${f.insurer_notified || 'N/A'}
-
---- INVESTIGATION ---
-Root Cause: ${f.root_cause || 'N/A'}
-Corrective Action: ${f.corrective_action || 'N/A'}
-    `.trim();
-
-    if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
+    if (onSubmit) onSubmit(f);
   };
 
   const handleDraft = (e: React.MouseEvent) => {
@@ -152,73 +107,6 @@ Corrective Action: ${f.corrective_action || 'N/A'}
           </Field>
           <Field label="Description of Incident (factual only)" req>
             <textarea className="input-field" style={{minHeight:110}} placeholder="Objective account of the security or IT incident..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
-          </Field>
-          <Field label="Containment Actions Taken">
-            <textarea className="input-field" style={{minHeight:80}} placeholder="Describe immediate steps taken to contain the incident..." value={f.containment_actions} onChange={e=>upd('containment_actions',e.target.value)} />
-          </Field>
-          
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Personal Data Involved">
-              <select className="input-field" value={f.personal_data_involved} onChange={e=>upd('personal_data_involved',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Number of Records Affected">
-              <input type="number" className="input-field" value={f.number_of_records} onChange={e=>upd('number_of_records',e.target.value)} />
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Notifiable Privacy Breach">
-              <select className="input-field" value={f.notifiable_privacy_breach} onChange={e=>upd('notifiable_privacy_breach',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Date Notified to OAIC">
-              <input type="date" className="input-field" value={f.date_notified_oaic} onChange={e=>upd('date_notified_oaic',e.target.value)} />
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="CIO Notified">
-              <select className="input-field" value={f.cio_notified} onChange={e=>upd('cio_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="CRO Notified">
-              <select className="input-field" value={f.cro_notified} onChange={e=>upd('cro_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="External Cyber Specialist Engaged">
-              <select className="input-field" value={f.cyber_specialist_engaged} onChange={e=>upd('cyber_specialist_engaged',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Insurer Notified">
-              <select className="input-field" value={f.insurer_notified} onChange={e=>upd('insurer_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Root Cause">
-            <input type="text" className="input-field" value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} />
-          </Field>
-          <Field label="Corrective Action">
-            <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
           </Field>
 
           <Field label="Supporting Evidence (Attachments)">

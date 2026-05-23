@@ -240,7 +240,11 @@ export default function ICDashboard() {
             {recentTable.map((row: any, i) => (
               <tr key={i} style={{ borderBottom: i === recentTable.length - 1 ? 'none' : '1px solid #f5f5f5' }}>
                 <td style={{ padding: '0.75rem 0.5rem', color: '#333' }}>
-                  <Link to={`/incidents/${row.id}`} style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}>
+                  <Link 
+                    to={row.formal_claim_issued === 'Yes' ? `/claims/${row.id}` : row.cor_required === 'Yes' ? `/cors/${row.id}` : `/incidents/${row.id}`} 
+                    state={{ source: row.formal_claim_issued === 'Yes' ? 'claims' : row.cor_required === 'Yes' ? 'cors' : 'incidents' }}
+                    style={{ color: 'inherit', textDecoration: 'none', fontWeight: 600 }}
+                  >
                     {row.incident_number_str || `INC-${row.id}`}
                   </Link>
                 </td>

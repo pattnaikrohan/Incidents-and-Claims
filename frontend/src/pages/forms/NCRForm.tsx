@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileWarning, X, Save, Send } from 'lucide-react';
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
+import { useIncidents } from '../../hooks/useIncidents';
 
 function today() { return new Date().toLocaleDateString('en-AU'); }
 
@@ -11,6 +12,8 @@ const Field = ({label,req,children}:{label:string;req?:boolean;children:React.Re
 );
 
 export default function NCRForm({ onSubmit, onCancel, loading, initialData, readOnly, incident_id }: Props) {
+  const { incidents } = useIncidents(2000);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [f, setF] = useState<any>(() => {
     const stableId = initialData?.incident_number_str || initialData?.incident_id || incident_id || 'NCR-PENDING';
     
@@ -177,7 +180,60 @@ Related Record Reference: ${f.related_record || 'N/A'}
             <input type="text" className="input-field" value={f.notify} onChange={e=>upd('notify',e.target.value)} placeholder="Staff to notify" />
           </Field>
           <Field label="Related Record Reference">
-            <input type="text" className="input-field" value={f.related_record} onChange={e=>upd('related_record',e.target.value)} placeholder="e.g. Incident Log: INC-2026-0042" />
+            <div style={{ position: 'relative' }}>
+              <input 
+                type="text" 
+                className="input-field" 
+                value={f.related_record} 
+                onChange={e => {
+                  upd('related_record', e.target.value);
+                  setShowSuggestions(true);
+                }} 
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                placeholder="e.g. INC-2026-0042 or search..." 
+              />
+              {showSuggestions && f.related_record && f.related_record.length > 1 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, 
+                  background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', 
+                  borderRadius: '8px', boxShadow: 'var(--shadow-lg)', zIndex: 50, 
+                  maxHeight: '250px', overflowY: 'auto', marginTop: '4px'
+                }}>
+                  {incidents
+                    .filter((inc: any) => {
+                      const searchStr = `${inc.incident_number_str || ''} ${inc.id || ''} ${inc.description || ''} ${inc.type || ''}`.toLowerCase();
+                      return searchStr.includes(f.related_record.toLowerCase());
+                    })
+                    .slice(0, 10)
+                    .map((inc: any) => (
+                      <div 
+                        key={inc.id}
+                        onClick={() => {
+                          upd('related_record', inc.incident_number_str || `INC-${inc.id}`);
+                          setShowSuggestions(false);
+                        }}
+                        style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-subtle)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{ fontWeight: 600, color: 'var(--accent-fg)', fontSize: '0.8rem' }}>{inc.incident_number_str || `INC-${inc.id}`}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {inc.type} - {inc.description}
+                        </div>
+                      </div>
+                  ))}
+                  {incidents.filter((inc: any) => {
+                      const searchStr = `${inc.incident_number_str || ''} ${inc.id || ''} ${inc.description || ''} ${inc.type || ''}`.toLowerCase();
+                      return searchStr.includes(f.related_record.toLowerCase());
+                  }).length === 0 && (
+                    <div style={{ padding: '0.75rem 1rem', fontSize: '0.8rem', color: 'var(--fg-muted)', fontStyle: 'italic' }}>
+                      No matching records. Will be saved as free text.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </Field>
         </div>
         

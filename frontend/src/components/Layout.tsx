@@ -98,8 +98,30 @@ export default function Layout({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const isActive = (path: string) =>
-    path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    
+    // Check state source from navigation
+    const source = location.state?.source;
+    
+    if (path === '/claims') {
+      return location.pathname.startsWith('/claims') || source === 'claims';
+    }
+    if (path === '/cors') {
+      return location.pathname.startsWith('/cors') || source === 'cors';
+    }
+    if (path === '/ncrs') {
+      return location.pathname.startsWith('/ncrs') || source === 'ncrs';
+    }
+    if (path === '/incidents') {
+      // Don't highlight incidents if we are actually viewing a claim, cor, or ncr
+      if (location.pathname.startsWith('/claims') || location.pathname.startsWith('/cors') || location.pathname.startsWith('/ncrs')) return false;
+      if (source === 'claims' || source === 'cors' || source === 'ncrs') return false;
+      return location.pathname.startsWith(path);
+    }
+    
+    return location.pathname.startsWith(path);
+  };
 
   const roleLabel = role === 'full_access' ? 'Global Admin' :
     role === 'risk_compliance' ? 'Risk & Compliance' :

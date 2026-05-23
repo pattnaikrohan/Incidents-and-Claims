@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useIncidents } from '../hooks/useIncidents';
 import { getIncidentCategory, CATEGORY_META } from '../utils/incidentRoles';
 import { api } from '../services/api';
+import { StructuredDescription } from '../components/StructuredDescription';
 
 export default function CoRDetails() {
   const { id } = useParams();
@@ -228,80 +229,42 @@ export default function CoRDetails() {
       </Link>
 
       {/* Hero Header */}
-      <div className="card" style={{
-        position: 'relative', overflow: 'hidden', padding: '2.5rem', marginBottom: '2rem',
-        background: 'linear-gradient(145deg, var(--bg-surface) 0%, var(--bg-elevated) 100%)',
+      <div className="card fade-in" style={{
+        position: 'relative', overflow: 'hidden', padding: '1.25rem 2rem', marginBottom: '2rem',
+        background: 'linear-gradient(145deg, rgba(239, 68, 68, 0.1) 0%, var(--bg-surface) 100%)',
         border: '1px solid var(--border-base)',
-        boxShadow: '0 20px 40px -20px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+        borderLeft: '4px solid #ef4444',
+        boxShadow: '0 10px 30px -10px rgba(239, 68, 68, 0.2), inset 0 1px 0 rgba(255,255,255,0.05)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem'
       }}>
-        {/* Amber glow */}
-        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(245, 158, 11, 0.15) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
+        {/* Glow effect */}
+        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '50%', height: '200%', background: 'radial-gradient(ellipse at center, rgba(239, 68, 68, 0.25) 0%, transparent 70%)', transform: 'rotate(-25deg)', pointerEvents: 'none' }} />
 
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '2rem' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '10px', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                <AlertTriangle size={22} />
-              </div>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', margin: 0, color: 'var(--fg-base)' }}>
-                {incident.incident_number_str || `INC-${incident.id}`}
-              </h2>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.6rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '20px', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                CoR Compliance
-              </span>
+        <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{ padding: '0.6rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '12px', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }}><AlertTriangle size={24} /></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ width: 'fit-content', fontSize: '0.65rem', fontWeight: 800, padding: '0.2rem 0.6rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '20px', color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>CoR Compliance</span>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, color: 'var(--fg-base)', whiteSpace: 'nowrap' }}>{incident.incident_number_str || `INC-${incident.id}`}</h2>
             </div>
-            <p style={{ fontSize: '0.95rem', color: 'var(--fg-muted)', maxWidth: '700px', lineHeight: 1.6, margin: 0 }}>
-              {incident.description || 'No description provided'}
-            </p>
           </div>
+        </div>
 
-          {/* Status Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end', minWidth: '300px' }}>
-            {/* Incident Status */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(10px)' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Incident Status</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: (incident.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 10px ${(incident.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{incident.status || 'Open - Incident Logged'}</span>
-              </div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-subtle)', backdropFilter: 'blur(10px)' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--fg-faint)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Incident Status</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: (incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6', boxShadow: `0 0 8px ${(incident?.status || '').includes('Closed') ? '#10b981' : '#3b82f6'}` }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{String(incident?.status || '')}</span>
             </div>
-
-            {/* CoR Status */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: 'rgba(245, 158, 11, 0.04)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#f59e0b', letterSpacing: '0.05em', textTransform: 'uppercase' }}>CoR Status</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: cor.cor_status === 'Closed' ? '#10b981' : '#f59e0b', boxShadow: `0 0 10px ${cor.cor_status === 'Closed' ? '#10b981' : '#f59e0b'}` }} />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{cor.cor_status}</span>
-              </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.75rem', background: 'rgba(239, 68, 68, 0.04)', borderRadius: '10px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#ef4444', letterSpacing: '0.05em', textTransform: 'uppercase' }}>CoR Status</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: cor.cor_status === 'Closed' ? '#10b981' : '#ef4444', boxShadow: `0 0 8px ${cor.cor_status === 'Closed' ? '#10b981' : '#ef4444'}` }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--fg-base)' }}>{cor.cor_status}</span>
             </div>
-
-            {/* CoR Status Dropdown */}
-            {['full_access', 'risk_compliance'].includes(role || '') && (
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <div style={{ position: 'relative' }}>
-                  <select
-                    className="input-field"
-                    value={cor.cor_status}
-                    onChange={(e) => setCor({ ...cor, cor_status: e.target.value })}
-                    style={{ fontSize: '0.8rem', padding: '0.5rem 2rem 0.5rem 1rem', height: '36px', minWidth: '180px', appearance: 'none', background: 'var(--bg-surface)', borderRadius: '8px', cursor: 'pointer', border: '1px solid rgba(245, 158, 11, 0.3)', boxShadow: 'var(--shadow-sm)' }}
-                  >
-                    <option value="Open">Open</option>
-                    <option value="Under Investigation">Under Investigation</option>
-                    <option value="Corrective Action Pending">Corrective Action Pending</option>
-                    <option value="Closed">Closed</option>
-                  </select>
-                  <ChevronDown size={14} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#f59e0b', pointerEvents: 'none' }} />
-                </div>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  style={{ fontSize: '0.8rem', padding: '0 1rem', height: '36px', borderRadius: '8px', fontWeight: 600, background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)', border: 'none', color: '#fff' }}
-                >
-                  {isSaving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -354,13 +317,19 @@ export default function CoRDetails() {
                 </div>
               </div>
             </div>
+
+            {/* Description Narrative */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
+              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 700, color: 'var(--fg-base)' }}>Incident Narrative</h3>
+              <StructuredDescription description={incident.description} />
+            </div>
           </div>
 
           {/* CoR Form */}
-          <div className="card" style={{ padding: '2rem', border: '1px solid rgba(245, 158, 11, 0.25)', background: 'rgba(245, 158, 11, 0.02)' }}>
+          <div className="card" style={{ padding: '2rem', border: '1px solid rgba(239, 68, 68, 0.25)', background: 'rgba(239, 68, 68, 0.02)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-              <div style={{ padding: '0.5rem', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '8px', color: '#f59e0b' }}><AlertTriangle size={20} /></div>
-              <h3 style={{ fontSize: '1.25rem', color: '#f59e0b', margin: 0, fontWeight: 800 }}>Chain of Responsibility (CoR) Log</h3>
+              <div style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', color: '#ef4444' }}><AlertTriangle size={20} /></div>
+              <h3 style={{ fontSize: '1.25rem', color: '#ef4444', margin: 0, fontWeight: 800 }}>CoR Compliance Data</h3>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
               <div>
@@ -397,7 +366,16 @@ export default function CoRDetails() {
               </div>
               <div>
                 <label className="overline">CoR Incident Status</label>
-                <select className="input-field" value={cor.cor_status} onChange={(e) => setCor({ ...cor, cor_status: e.target.value })}>
+                <select className="input-field" value={cor.cor_status || ''} onChange={(e) => setCor({ ...cor, cor_status: e.target.value })}>
+                  {cor.cor_status && ![
+                    'Open',
+                    'Under Investigation',
+                    'Corrective Action Pending',
+                    'Closed'
+                  ].includes(cor.cor_status) && (
+                    <option value={cor.cor_status}>{cor.cor_status}</option>
+                  )}
+                  <option value="">— Select Status —</option>
                   <option value="Open">Open</option>
                   <option value="Under Investigation">Under Investigation</option>
                   <option value="Corrective Action Pending">Corrective Action Pending</option>
@@ -426,7 +404,7 @@ export default function CoRDetails() {
             <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 className="btn btn-primary"
-                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontSize: '0.875rem', fontWeight: 700, borderRadius: '10px', boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)' }}
+                style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', border: 'none', padding: '0.75rem 2rem', fontSize: '0.875rem', fontWeight: 700, borderRadius: '10px', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.35)' }}
                 onClick={handleSave}
                 disabled={isSaving}
               >
@@ -440,9 +418,9 @@ export default function CoRDetails() {
         <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
           {/* CoR Risk Assessment Card */}
-          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--fg-base)' }}>
-              <Shield size={16} color="#f59e0b" /> CoR Risk Assessment
+              <Shield size={16} color="#ef4444" /> CoR Risk Assessment
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -519,10 +497,10 @@ export default function CoRDetails() {
           </div>
 
           {/* Supporting Evidence Vault */}
-          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+          <div className="card" style={{ padding: '1.5rem', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-base)', paddingBottom: '0.75rem' }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--fg-base)' }}>
-                <Paperclip size={16} color="#f59e0b" /> Supporting Evidence
+                <Paperclip size={16} color="#ef4444" /> Supporting Evidence
               </h4>
               <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <button 
@@ -532,13 +510,13 @@ export default function CoRDetails() {
                   title="Refresh Attachments"
                   style={{ padding: '0.4rem', height: 'auto', background: 'var(--bg-subtle)', border: '1px solid var(--border-base)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <RefreshCw size={14} color={isRefreshing ? "#f59e0b" : "var(--fg-muted)"} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+                  <RefreshCw size={14} color={isRefreshing ? "#ef4444" : "var(--fg-muted)"} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
                 </button>
                 <button 
                   className="btn btn-primary" 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'linear-gradient(135deg,#f59e0b,#d97706)', border: 'none', color: '#fff' }}
+                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', height: 'auto', display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: '#fff' }}
                 >
                   <UploadCloud size={14} /> {isUploading ? '...' : 'Add'}
                 </button>

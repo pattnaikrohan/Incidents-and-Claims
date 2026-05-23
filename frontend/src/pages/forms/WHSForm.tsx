@@ -36,19 +36,8 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
         short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
         location_of_incident: initialData.location_of_incident || initialData.location || '',
         location: initialData.location_of_incident || initialData.location || '',
-        system_job_number: initialData.system_job_number || initialData.job_number || '',
         persons_involved: initialData.persons_involved || '',
         injury_details: initialData.injury_details || '',
-        medical_treatment_required: initialData.medical_treatment_required || '',
-        lost_time_injury: initialData.lost_time_injury || '',
-        notifiable_safework: initialData.notifiable_safework || '',
-        date_notified_regulator: initialData.date_notified_regulator || '',
-        root_cause: initialData.root_cause || '',
-        corrective_action: initialData.corrective_action || '',
-        corrective_action_owner: initialData.corrective_action_owner || initialData.logged_by || 'System User',
-        corrective_action_due_date: initialData.corrective_action_due_date || '',
-        chro_cro_notified: initialData.chro_cro_notified || '',
-        workers_comp_claim: initialData.workers_comp_claim || '',
         incident_summary: initialData.incident_summary || initialData.description || '',
       };
     }
@@ -56,11 +45,7 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
       incident_id: stableId, date_of_incident:'', date_reported: today(),
       reported_by: localStorage.getItem('role')||'Current User',
       business_unit:'', branch_department:'', persons_involved:'', location:'',
-      incident_type:'', description:'', injury_details:'',
-      medical_treatment_required:'', lost_time_injury:'', notifiable_safework:'',
-      date_notified_regulator:'', root_cause:'', corrective_action:'',
-      corrective_action_owner: localStorage.getItem('role')||'Current User',
-      corrective_action_due_date:'', chro_cro_notified:'', workers_comp_claim:'', files: [] as File[]
+      incident_type:'', description:'', injury_details:'', files: [] as File[]
     };
   });
 
@@ -74,28 +59,7 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
 
   const submitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const enrichedDescription = `
-${f.description}
-
---- INJURY & INCIDENT DETAILS ---
-Injury Details: ${f.injury_details || 'N/A'}
-Medical Treatment Required: ${f.medical_treatment_required || 'N/A'}
-Lost Time Injury: ${f.lost_time_injury || 'N/A'}
-
---- REGULATORY & ESCALATION ---
-Notifiable to SafeWork / WorkSafe: ${f.notifiable_safework || 'N/A'}
-Date Notified to Regulator: ${f.date_notified_regulator || 'N/A'}
-CHRO / CRO Notified: ${f.chro_cro_notified || 'N/A'}
-Workers Compensation Claim Lodged: ${f.workers_comp_claim || 'N/A'}
-
---- INVESTIGATION & CORRECTIVE ACTION ---
-Root Cause: ${f.root_cause || 'N/A'}
-Corrective Action: ${f.corrective_action || 'N/A'}
-Corrective Action Owner: ${f.corrective_action_owner || 'N/A'}
-Corrective Action Due Date: ${f.corrective_action_due_date || 'N/A'}
-    `.trim();
-
-    if (onSubmit) onSubmit({ ...f, description: enrichedDescription });
+    if (onSubmit) onSubmit(f);
   };
 
   const handleDraft = (e: React.MouseEvent) => {
@@ -154,68 +118,6 @@ Corrective Action Due Date: ${f.corrective_action_due_date || 'N/A'}
             <textarea className="input-field" style={{minHeight:90}} placeholder="e.g. Laceration to left forearm, bruising to lower back..." value={f.injury_details} onChange={e=>upd('injury_details',e.target.value)} required/>
           </Field>
           
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Medical Treatment Required">
-              <select className="input-field" value={f.medical_treatment_required} onChange={e=>upd('medical_treatment_required',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Lost Time Injury">
-              <select className="input-field" value={f.lost_time_injury} onChange={e=>upd('lost_time_injury',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="Notifiable to SafeWork / WorkSafe">
-              <select className="input-field" value={f.notifiable_safework} onChange={e=>upd('notifiable_safework',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Date Notified to Regulator">
-              <input type="date" className="input-field" value={f.date_notified_regulator} onChange={e=>upd('date_notified_regulator',e.target.value)} />
-            </Field>
-          </div>
-
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-            <Field label="CHRO / CRO Notified">
-              <select className="input-field" value={f.chro_cro_notified} onChange={e=>upd('chro_cro_notified',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-            <Field label="Workers Compensation Claim Lodged">
-              <select className="input-field" value={f.workers_comp_claim} onChange={e=>upd('workers_comp_claim',e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="Yes">Yes</option>
-                <option value="No">No</option>
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Root Cause">
-            <input type="text" className="input-field" value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} />
-          </Field>
-          
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem'}}>
-            <Field label="Corrective Action">
-              <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
-            </Field>
-            <Field label="Corrective Action Owner">
-              <input type="text" className="input-field" value={f.corrective_action_owner} disabled style={{opacity:0.7,cursor:'not-allowed'}} />
-            </Field>
-            <Field label="Corrective Action Due Date">
-              <input type="date" className="input-field" value={f.corrective_action_due_date} onChange={e=>upd('corrective_action_due_date',e.target.value)} />
-            </Field>
-          </div>
 
           <Field label="Supporting Evidence (Attachments)">
             <input type="file" multiple className="input-field" style={{padding:'0.5rem'}} onChange={e=>{
