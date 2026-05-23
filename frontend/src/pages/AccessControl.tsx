@@ -60,10 +60,11 @@ export default function AccessControl() {
         account: activeAccount
       });
 
-      const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members`, {
+      const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers?$select=id,displayName,mail,userPrincipalName`, {
         headers: {
           Authorization: `Bearer ${tokenResponse.accessToken}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'ConsistencyLevel': 'eventual'
         }
       });
 
@@ -83,8 +84,11 @@ export default function AccessControl() {
             const activeAccount = msalInstance.getActiveAccount();
             if (activeAccount) {
                 const popupResponse = await msalInstance.acquireTokenPopup({ scopes: ['GroupMember.Read.All'] });
-                const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members`, {
-                    headers: { Authorization: `Bearer ${popupResponse.accessToken}` }
+                const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers?$select=id,displayName,mail,userPrincipalName`, {
+                    headers: { 
+                      Authorization: `Bearer ${popupResponse.accessToken}`,
+                      'ConsistencyLevel': 'eventual'
+                    }
                 });
                 const data = await res.json();
                 setGroupMembers(prev => ({ ...prev, [groupId]: data.value || [] }));
@@ -199,7 +203,7 @@ export default function AccessControl() {
                     </div>
                   ) : members.length === 0 ? (
                     <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--fg-muted)', fontSize: '0.875rem' }}>
-                      No members found in this group.
+                      No members found in this group. (Transitive check applied)
                     </div>
                   ) : (
                     <div style={{ padding: '1rem 1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
