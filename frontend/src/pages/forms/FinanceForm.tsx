@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, X, Save, Send } from 'lucide-react';
-import { CurrencyInput } from '../../components/CurrencyInput';
+
 import { BUSINESS_UNITS, BRANCH_MAPPING } from '../../constants/branches';
 
 function today() { return new Date().toLocaleDateString('en-AU'); }
@@ -26,7 +26,7 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
         ...initialData,
         incident_id: stableId,
         date_of_incident: initialData.date_of_incident || initialData.date || '',
-        date_reported: initialData.date_reported || initialData.date_logged || initialData.date || today(),
+        date_reported: initialData.date_reported || initialData.reported_date || initialData.date_logged || initialData.date || today(),
         reported_by: initialData.reported_by || initialData.logged_by || 'System User',
         logged_by: initialData.logged_by || initialData.reported_by || 'System User',
         business_unit: initialData.business_unit || '',
@@ -34,22 +34,6 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
         incident_type: initialData.incident_type || initialData.type || '',
         description: initialData.description || initialData.short_description || initialData.incident_summary || '',
         short_description: initialData.short_description || initialData.description || initialData.incident_summary || '',
-        location_of_incident: initialData.location_of_incident || initialData.location || '',
-        location: initialData.location_of_incident || initialData.location || '',
-        financial_value: initialData.financial_value || initialData.financial_impact_aud || '',
-        actual_loss: initialData.actual_loss || initialData.actual_financial_loss || '',
-        actual_financial_loss: initialData.actual_financial_loss || initialData.actual_loss || '',
-        recovery_possible: initialData.recovery_possible || '',
-        recovery_amount: initialData.recovery_amount || '',
-        cfo_notified: initialData.cfo_notified || '',
-        cro_notified: initialData.cro_notified || '',
-        police_reported: initialData.police_reported || initialData.police_notified || '',
-        insurer_notified: initialData.insurer_notified || initialData.insurer_notified_dept || '',
-        root_cause: initialData.root_cause || '',
-        corrective_action: initialData.corrective_action || '',
-        write_off_required: initialData.write_off_required || '',
-        vendor_customer_name: initialData.vendor_customer_name || '',
-        control_failure_identified: initialData.control_failure_identified || '',
         incident_summary: initialData.incident_summary || initialData.description || '',
       };
     }
@@ -57,10 +41,7 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
       incident_id: stableId, date_of_incident:'', date_reported: today(),
       reported_by: localStorage.getItem('email')||'Current User',
       business_unit:'', branch_department:'',
-      incident_type:'', description:'',
-      financial_value:'', actual_financial_loss:'', recovery_possible:'', recovery_amount:'',
-      cfo_notified:'', cro_notified:'', police_reported:'', insurer_notified:'',
-      root_cause:'', corrective_action:'', write_off_required:'', files: [] as File[]
+      incident_type:'', description:'', files: [] as File[]
     };
   });
 
@@ -82,7 +63,6 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
     if (onSubmit) onSubmit({ ...f, status: 'Draft' }, true);
   };
 
-  const isCreateMode = !initialData;
 
   return (
     <form onSubmit={submitForm} style={{display:'flex',flexDirection:'column',gap:'2rem', pointerEvents: readOnly ? 'none' : 'auto', opacity: readOnly ? 0.95 : 1}}>
@@ -125,84 +105,6 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
           <Field label="Description of Incident (factual only)" req>
             <textarea className="input-field" style={{minHeight:130}} placeholder="Describe the financial incident in factual terms..." value={f.description} onChange={e=>upd('description',e.target.value)} required/>
           </Field>
-          
-          {/* Only show these fields in detail view (if initialData exists) */}
-          {!isCreateMode && (
-            <>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-                <CurrencyInput 
-                  label="Financial Value Involved" 
-                  value={f.financial_value} 
-                  onChange={v => upd('financial_value', v)} 
-                />
-                <CurrencyInput 
-                  label="Actual Financial Loss" 
-                  value={f.actual_loss} 
-                  onChange={v => upd('actual_loss', v)} 
-                />
-              </div>
-
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'1rem'}}>
-                <Field label="Recovery Possible">
-                  <select className="input-field" value={f.recovery_possible} onChange={e=>upd('recovery_possible',e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </Field>
-                <CurrencyInput 
-                  label="Recovery Amount" 
-                  value={f.recovery_amount} 
-                  onChange={v => upd('recovery_amount', v)} 
-                />
-                <Field label="Write-Off Required">
-                  <select className="input-field" value={f.write_off_required} onChange={e=>upd('write_off_required',e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </Field>
-              </div>
-
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
-                <Field label="CFO Notified">
-                  <select className="input-field" value={f.cfo_notified} onChange={e=>upd('cfo_notified',e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </Field>
-                <Field label="CRO Notified">
-                  <select className="input-field" value={f.cro_notified} onChange={e=>upd('cro_notified',e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </Field>
-                <Field label="Police Reported">
-                  <select className="input-field" value={f.police_reported} onChange={e=>upd('police_reported',e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </Field>
-                <Field label="Insurer Notified">
-                  <select className="input-field" value={f.insurer_notified} onChange={e=>upd('insurer_notified',e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </Field>
-              </div>
-
-              <Field label="Root Cause">
-                <input type="text" className="input-field" value={f.root_cause} onChange={e=>upd('root_cause',e.target.value)} />
-              </Field>
-              <Field label="Corrective Action">
-                <input type="text" className="input-field" value={f.corrective_action} onChange={e=>upd('corrective_action',e.target.value)} />
-              </Field>
-            </>
-          )}
 
           <Field label="Supporting Evidence (Attachments)">
             <input type="file" multiple className="input-field" style={{padding:'0.5rem'}} onChange={e=>{
