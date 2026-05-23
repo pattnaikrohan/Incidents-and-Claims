@@ -63,7 +63,7 @@ const INCIDENT_TYPES = [
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const { logout, role, email, branchName, businessUnit, displayName: ssoDisplayName, isSSOUser } = useAuth();
+  const { logout, role, email, branchName, businessUnit, displayName: ssoDisplayName, isSSOUser, resolvedGroupInfo } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -572,6 +572,47 @@ export default function Layout({ children }: { children: ReactNode }) {
                       <div style={{ color: '#94a3b8', marginBottom: '0.25rem' }}>{email}</div>
                       <div>{branchName ? branchName : businessUnit ? businessUnit : 'Global Headquarters'}</div>
                     </div>
+
+                    {/* AD Group Info (SSO users only) */}
+                    {isSSOUser && (
+                      <div style={{
+                        marginTop: '0.75rem',
+                        padding: '1rem',
+                        background: 'rgba(99, 102, 241, 0.04)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(99, 102, 241, 0.1)',
+                        fontSize: '0.7rem',
+                        color: '#64748b',
+                        lineHeight: 1.5
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                          <Shield size={12} style={{ color: '#818cf8' }} />
+                          <span style={{ fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.6rem' }}>AD Group Membership</span>
+                        </div>
+                        {resolvedGroupInfo && resolvedGroupInfo.matchedGroups.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {resolvedGroupInfo.matchedGroups.map((group, idx) => (
+                              <div key={idx} style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.35rem 0.6rem',
+                                background: 'rgba(99, 102, 241, 0.08)',
+                                borderRadius: '6px',
+                                fontSize: '0.68rem',
+                                color: '#94a3b8',
+                                fontWeight: 600
+                              }}>
+                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#818cf8', flexShrink: 0 }} />
+                                {group}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ color: '#64748b', fontStyle: 'italic' }}>No AD groups matched</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
