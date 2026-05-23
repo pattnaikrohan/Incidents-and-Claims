@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Clock, MapPin, Briefcase, ChevronDown, Shield, AlertTriangle, Paperclip, UploadCloud, RefreshCw, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, FileText, Clock, MapPin, Briefcase, Shield, AlertTriangle, Paperclip, UploadCloud, RefreshCw, Trash2, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect, useRef } from 'react';
 import { useIncidents } from '../hooks/useIncidents';

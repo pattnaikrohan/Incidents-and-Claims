@@ -15,6 +15,7 @@ import Reports from './pages/Reports';
 import NCRDashboard from './pages/NCRDashboard';
 import NCRs from './pages/NCRs';
 import ICDashboard from './pages/ICDashboard';
+import AccessControl from './pages/AccessControl';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { token, role } = useAuth();
@@ -131,6 +132,11 @@ export default function App() {
             <Route path="/ncr-dashboard" element={
               <ProtectedRoute>
                 <NCRDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/access-control" element={
+              <ProtectedRoute>
+                <AccessControl />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
