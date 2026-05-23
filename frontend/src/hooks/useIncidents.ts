@@ -145,7 +145,7 @@ export function useIncidents(pollingInterval = 2000) {
           if (cleanKey === 'correctiveactionduedate') cleanKey = 'corrective_action_due_date';
           if (cleanKey === 'chro_cronotified' || cleanKey === 'chroncronotified' || cleanKey === 'chrocronotified') cleanKey = 'chro_cro_notified';
           if (cleanKey === 'personsinvolved' || cleanKey === 'person_involved') cleanKey = 'persons_involved';
-          if (cleanKey === 'injurydetails' || cleanKey === 'injurydetailsnatureandbodypart') cleanKey = 'injury_details';
+          if (cleanKey === 'injurydetails' || cleanKey === 'injurydetailsnatureandbodypart' || cleanKey === 'injurydetailsnatureandbodypartifapplicable') cleanKey = 'injury_details';
           if (cleanKey === 'workerscompclaim' || cleanKey === 'workerscompensationclaim' || cleanKey === 'workerscompclaims') cleanKey = 'workers_comp_claim';
 
           // Risk & Compliance Specific Mappings
@@ -362,9 +362,21 @@ export function useIncidents(pollingInterval = 2000) {
 
         // ── HUMAN RESOURCES ───────────────────────────────────
         if (Array.isArray(payload.human_resources_incidents)) {
+          let hrDebugDone = false;
           payload.human_resources_incidents.forEach((raw: any) => {
             const clean = mapRawToClean(raw);
             const foundFriendlyId = Object.values(clean).find(v => typeof v === 'string' && v.startsWith('HR-')) as string;
+
+            // Diagnostic: Log raw Dataverse keys for first HR incident to identify exact column names
+            if (!hrDebugDone) {
+              hrDebugDone = true;
+              const allKeys = Object.keys(raw);
+              console.log('[HR DEBUG] All raw keys:', allKeys);
+              console.log('[HR DEBUG] Employee-related keys:', allKeys.filter(k => k.toLowerCase().includes('employee') || k.toLowerCase().includes('person') || k.toLowerCase().includes('name')));
+              console.log('[HR DEBUG] Witness keys:', allKeys.filter(k => k.toLowerCase().includes('witness')));
+              console.log('[HR DEBUG] Immediate action keys:', allKeys.filter(k => k.toLowerCase().includes('immediate') || k.toLowerCase().includes('action')));
+              console.log('[HR DEBUG] Clean mapped:', { employee_name: clean.employee_name, employee: clean.employee, employeename: clean.employeename, witnesses: clean.witnesses, immediate_action: clean.immediate_action });
+            }
 
             addOrMerge({
               id: clean.humanresourcesincidentid || raw.id,
@@ -387,18 +399,18 @@ export function useIncidents(pollingInterval = 2000) {
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
               logged_by: raw.cr991_loggedby || '',
-              employee_name: raw.cr991_employee || raw.cr991_employeeinvolved || '',
+              employee_name: raw.cr991_employee || raw.cr991_employeeinvolved || raw.cr991_employeename || clean.employee_name || clean.employee || clean.employeeinvolved || clean.employeename || '',
               incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-              witnesses: raw.cr991_witnesses || '',
-              immediate_action: raw.cr991_immediateaction || '',
-              investigation_required: raw["cr991_investigationrequired@OData.Community.Display.V1.FormattedValue"] || '',
+              witnesses: raw.cr991_witnesses || raw.cr991_witnessesifany || raw.cr991_witnessesIfAny || clean.witnesses || '',
+              immediate_action: raw.cr991_immediateaction || raw.cr991_immediateactiontaken || raw.cr991_immediateAction || clean.immediate_action || '',
+              investigation_required: raw["cr991_investigationrequired@OData.Community.Display.V1.FormattedValue"] || raw["cr991_investigationrequiredyn@OData.Community.Display.V1.FormattedValue"] || clean.investigation_required || '',
               investigation_outcome: raw.cr991_investigationoutcome || raw.investigationoutcome || raw.investigation_outcome || clean.investigation_outcome || clean.investigationoutcome || '',
               corrective_action: raw.cr991_correctivedisciplinaryaction || raw.correctivedisciplinaryaction || raw.cr991_correctiveaction || raw.corrective_action || clean.corrective_action || clean.correctiveaction || clean.correctivedisciplinaryaction || '',
               legal_counsel_engaged: raw["cr991_legalcounselengagedyn@OData.Community.Display.V1.FormattedValue"] || raw["cr991_legalcounselengaged@OData.Community.Display.V1.FormattedValue"] || raw.cr991_legalcounselengagedyn || raw.legalcounselengagedyn || raw.legal_counsel_engaged || clean.legal_counsel_engaged || clean.legalcounselengaged || clean.legalcounselengagedyn || '',
               close_out_date: raw.cr991_closeoutdate || raw.closeoutdate || raw.close_out_date || clean.close_out_date || clean.closeoutdate || '',
               notes: raw.cr991_notesconfidentialhreyesonly || raw.notesconfidentialhreyesonly || raw.cr991_notes || raw.notes || clean.notes || clean.notesconfidentialhreyesonly || '',
-              incident_summary: raw.cr991_incidentsummary || '',
-              root_cause: raw.cr991_rootcause || '',
+              incident_summary: raw.cr991_incidentsummary || clean.incident_summary || '',
+              root_cause: raw.cr991_rootcause || clean.root_cause || '',
             }, raw);
           });
         }
@@ -431,7 +443,7 @@ export function useIncidents(pollingInterval = 2000) {
               logged_by: raw.cr991_loggedby || '',
               persons_involved: raw.cr991_personsinvolved || '',
               incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
-              injury_details: raw.cr991_injurydetails || '',
+              injury_details: raw.cr991_injurydetails || raw.cr991_injurydetailsnatureandbodypart || raw.cr991_injurydetailsnatureandbodypartifapplicable || clean.injury_details || clean.injurydetails || '',
               medical_treatment_required: raw["cr991_medicaltreatmentrequired@OData.Community.Display.V1.FormattedValue"] || raw.medical_treatment_required || clean.medical_treatment_required || '',
               lost_time_injury: raw["cr991_losttimeinjury@OData.Community.Display.V1.FormattedValue"] || raw.lost_time_injury || clean.lost_time_injury || '',
               notifiable_safework: raw["cr991_notifiablesafework@OData.Community.Display.V1.FormattedValue"] || raw.notifiable_safework || clean.notifiable_safework || '',
