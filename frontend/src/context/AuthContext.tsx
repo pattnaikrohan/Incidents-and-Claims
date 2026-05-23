@@ -124,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       msalInstance.setActiveAccount(account);
 
       // 2. Get access token for Graph API (to fetch groups if needed)
+      // Only try silent acquisition — no second popup to avoid bad UX
       let graphToken: string | null = null;
       try {
         const tokenResponse = await msalInstance.acquireTokenSilent({
@@ -132,17 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         graphToken = tokenResponse.accessToken;
       } catch (silentErr) {
-        console.warn('[SSO] Silent token acquisition failed, trying popup:', silentErr);
-        try {
-          const tokenResponse = await msalInstance.acquireTokenPopup({
-            scopes: ['User.Read', 'GroupMember.Read.All'],
-            account,
-          });
-          graphToken = tokenResponse.accessToken;
-        } catch (popupErr) {
-          console.warn('[SSO] Graph API token acquisition failed, continuing without groups from Graph:', popupErr);
-          // Continue without graph token — groups may still come from ID token claims
-        }
+        console.warn('[SSO] Silent Graph token failed, will use ID token claims for groups:', silentErr);
       }
 
       // 3. Extract groups from ID token claims OR call Graph API
