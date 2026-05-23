@@ -1,10 +1,22 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { PublicClientApplication, type AccountInfo, InteractionRequiredAuthError } from '@azure/msal-browser';
 import { msalConfig, loginRequest, graphConfig } from '../auth/msalConfig';
 import { resolveRoleFromGroups, extractGroupsFromToken, type ResolvedRole } from '../auth/adGroupMapping';
 
 // Initialize MSAL instance (singleton)
 export const msalInstance = new PublicClientApplication(msalConfig);
+
+// MSAL v5+ requires explicit initialization before any interactions
+let msalInitPromise: Promise<void> | null = null;
+export function ensureMsalInitialized(): Promise<void> {
+  if (!msalInitPromise) {
+    msalInitPromise = msalInstance.initialize().then(() => {
+      // Handle any redirect responses (important for popup fallback scenarios)
+      return msalInstance.handleRedirectPromise().then(() => {});
+    });
+  }
+  return msalInitPromise;
+}
 
 interface AuthContextType {
   token: string | null;
@@ -57,6 +69,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isSSOUser, setIsSSOUser] = useState<boolean>(localStorage.getItem('isSSOUser') === 'true');
   const [resolvedGroupInfo, setResolvedGroupInfo] = useState<ResolvedRole | null>(null);
 
+  // Initialize MSAL on mount
+  useEffect(() => {
+    ensureMsalInitialized().then(() => {
+      console.log('[MSAL] Initialized successfully');
+    }).catch((err) => {
+      console.error('[MSAL] Initialization failed:', err);
+    });
+  }, []);
+
   // Legacy login (email/password or mock personas)
   const login = (newToken: string, newRole: string, newEmail: string, newBranchId: number | null, newBranchName: string | null, newBusinessUnit: string | null) => {
     localStorage.setItem('token', newToken);
@@ -90,6 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Azure AD SSO Login
   const loginWithSSO = useCallback(async () => {
     try {
+      // Ensure MSAL is fully initialized before attempting login
+      await ensureMsalInitialized();
+
       // 1. Acquire token via popup
       const loginResponse = await msalInstance.loginPopup({
         ...loginRequest,

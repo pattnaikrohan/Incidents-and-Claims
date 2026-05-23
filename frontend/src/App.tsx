@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MsalProvider } from '@azure/msal-react';
-import { AuthProvider, useAuth, msalInstance } from './context/AuthContext';
+import { AuthProvider, useAuth, msalInstance, ensureMsalInitialized } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -31,6 +32,36 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
+  const [msalReady, setMsalReady] = useState(false);
+
+  useEffect(() => {
+    ensureMsalInitialized()
+      .then(() => setMsalReady(true))
+      .catch((err) => {
+        console.error('[MSAL] Init failed, continuing without SSO:', err);
+        setMsalReady(true); // Still render app, just SSO won't work
+      });
+  }, []);
+
+  if (!msalReady) {
+    return (
+      <div style={{
+        height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#f1f5f9', fontFamily: 'Inter, system-ui, sans-serif'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '50%',
+            border: '3px solid #e2e8f0', borderTopColor: '#6366f1',
+            animation: 'spin 1s linear infinite', margin: '0 auto 1rem'
+          }} />
+          <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Initializing secure session...</p>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <MsalProvider instance={msalInstance}>
       <AuthProvider>
