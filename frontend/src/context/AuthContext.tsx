@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { PublicClientApplication, type AccountInfo } from '@azure/msal-browser';
+import { PublicClientApplication, type AccountInfo, type AuthenticationResult } from '@azure/msal-browser';
 import { msalConfig, loginRequest, graphConfig } from '../auth/msalConfig';
 import { resolveRoleFromGroups, extractGroupsFromToken, type ResolvedRole } from '../auth/adGroupMapping';
 
@@ -10,10 +10,7 @@ export const msalInstance = new PublicClientApplication(msalConfig);
 let msalInitPromise: Promise<void> | null = null;
 export function ensureMsalInitialized(): Promise<void> {
   if (!msalInitPromise) {
-    msalInitPromise = msalInstance.initialize().then(() => {
-      // Handle any redirect responses (important for popup fallback scenarios)
-      return msalInstance.handleRedirectPromise().then(() => {});
-    });
+    msalInitPromise = msalInstance.initialize();
   }
   return msalInitPromise;
 }
@@ -27,6 +24,7 @@ interface AuthContextType {
   branchName: string | null;
   businessUnit: string | null;
   isSSOUser: boolean;
+  ssoLoading: boolean;
   resolvedGroupInfo: ResolvedRole | null;
   login: (token: string, role: string, email: string, branchId: number | null, branchName: string | null, businessUnit: string | null) => void;
   loginWithSSO: () => Promise<void>;
@@ -56,6 +54,63 @@ async function fetchGroupsFromGraph(accessToken: string): Promise<string[]> {
   }
 }
 
+/**
+ * Process a successful MSAL authentication result.
+ * Extracts groups, resolves role, and stores auth state.
+ */
+async function processAuthResult(authResult: AuthenticationResult): Promise<{
+  accessToken: string;
+  role: string;
+  email: string;
+  displayName: string;
+  branchName: string | null;
+  businessUnit: string | null;
+  resolved: ResolvedRole;
+}> {
+  const account: AccountInfo = authResult.account;
+  msalInstance.setActiveAccount(account);
+
+  // Try to get Graph API token silently for group fetching
+  let graphToken: string | null = null;
+  try {
+    const tokenResponse = await msalInstance.acquireTokenSilent({
+      scopes: ['User.Read', 'GroupMember.Read.All'],
+      account,
+    });
+    graphToken = tokenResponse.accessToken;
+  } catch (silentErr) {
+    console.warn('[SSO] Silent Graph token failed, will use ID token claims for groups:', silentErr);
+  }
+
+  // Extract groups from ID token claims OR call Graph API
+  let groupIds = extractGroupsFromToken(authResult.idTokenClaims || {});
+  
+  if (groupIds.length === 0 && graphToken) {
+    console.log('[SSO] No groups in token, fetching from Graph API...');
+    groupIds = await fetchGroupsFromGraph(graphToken);
+  }
+
+  console.log('[SSO] User groups:', groupIds);
+
+  // Resolve role from AD group memberships
+  const resolved = resolveRoleFromGroups(groupIds);
+  console.log('[SSO] Resolved role:', resolved);
+
+  const accessToken = authResult.idToken;
+  const userEmail = account.username;
+  const userName = account.name || userEmail;
+
+  return {
+    accessToken,
+    role: resolved.role,
+    email: userEmail,
+    displayName: userName,
+    branchName: resolved.branchName,
+    businessUnit: resolved.businessUnit,
+    resolved,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
@@ -67,16 +122,79 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.getItem('branchId') ? Number(localStorage.getItem('branchId')) : null
   );
   const [isSSOUser, setIsSSOUser] = useState<boolean>(localStorage.getItem('isSSOUser') === 'true');
+  const [ssoLoading, setSsoLoading] = useState<boolean>(false);
   const [resolvedGroupInfo, setResolvedGroupInfo] = useState<ResolvedRole | null>(null);
 
-  // Initialize MSAL on mount
-  useEffect(() => {
-    ensureMsalInitialized().then(() => {
-      console.log('[MSAL] Initialized successfully');
-    }).catch((err) => {
-      console.error('[MSAL] Initialization failed:', err);
-    });
+  /** Apply SSO auth result to state and localStorage */
+  const applyAuthResult = useCallback((result: {
+    accessToken: string;
+    role: string;
+    email: string;
+    displayName: string;
+    branchName: string | null;
+    businessUnit: string | null;
+    resolved: ResolvedRole;
+  }) => {
+    localStorage.setItem('token', result.accessToken);
+    localStorage.setItem('role', result.role);
+    localStorage.setItem('email', result.email);
+    localStorage.setItem('displayName', result.displayName);
+    localStorage.setItem('isSSOUser', 'true');
+
+    if (result.branchName) {
+      localStorage.setItem('branchName', result.branchName);
+    } else {
+      localStorage.removeItem('branchName');
+    }
+    if (result.businessUnit) {
+      localStorage.setItem('businessUnit', result.businessUnit);
+    } else {
+      localStorage.removeItem('businessUnit');
+    }
+    localStorage.removeItem('branchId');
+
+    setToken(result.accessToken);
+    setRole(result.role);
+    setEmail(result.email);
+    setDisplayName(result.displayName);
+    setBranchName(result.branchName);
+    setBusinessUnit(result.businessUnit);
+    setBranchId(null);
+    setIsSSOUser(true);
+    setResolvedGroupInfo(result.resolved);
   }, []);
+
+  // On mount: initialize MSAL and handle redirect response (if returning from Microsoft login)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function handleRedirect() {
+      try {
+        await ensureMsalInitialized();
+        console.log('[MSAL] Initialized successfully');
+
+        // Check if we're returning from a redirect login
+        const response = await msalInstance.handleRedirectPromise();
+        
+        if (response && response.account && !cancelled) {
+          console.log('[SSO] Redirect response received, processing...');
+          setSsoLoading(true);
+          const result = await processAuthResult(response);
+          if (!cancelled) {
+            applyAuthResult(result);
+          }
+          setSsoLoading(false);
+        }
+      } catch (err) {
+        console.error('[MSAL] Redirect handling failed:', err);
+        setSsoLoading(false);
+      }
+    }
+
+    handleRedirect();
+
+    return () => { cancelled = true; };
+  }, [applyAuthResult]);
 
   // Legacy login (email/password or mock personas)
   const login = (newToken: string, newRole: string, newEmail: string, newBranchId: number | null, newBranchName: string | null, newBusinessUnit: string | null) => {
@@ -108,84 +226,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsSSOUser(false);
   };
 
-  // Azure AD SSO Login
+  // Azure AD SSO Login — uses redirect flow (more reliable than popup)
   const loginWithSSO = useCallback(async () => {
     try {
-      // Ensure MSAL is fully initialized before attempting login
       await ensureMsalInitialized();
-
-      // 1. Acquire token via popup
-      const loginResponse = await msalInstance.loginPopup({
+      // Redirect to Microsoft login — page will reload when user comes back
+      await msalInstance.loginRedirect({
         ...loginRequest,
         prompt: 'select_account',
       });
-
-      const account: AccountInfo = loginResponse.account;
-      msalInstance.setActiveAccount(account);
-
-      // 2. Get access token for Graph API (to fetch groups if needed)
-      // Only try silent acquisition — no second popup to avoid bad UX
-      let graphToken: string | null = null;
-      try {
-        const tokenResponse = await msalInstance.acquireTokenSilent({
-          scopes: ['User.Read', 'GroupMember.Read.All'],
-          account,
-        });
-        graphToken = tokenResponse.accessToken;
-      } catch (silentErr) {
-        console.warn('[SSO] Silent Graph token failed, will use ID token claims for groups:', silentErr);
-      }
-
-      // 3. Extract groups from ID token claims OR call Graph API
-      let groupIds = extractGroupsFromToken(loginResponse.idTokenClaims || {});
-      
-      if (groupIds.length === 0 && graphToken) {
-        console.log('[SSO] No groups in token, fetching from Graph API...');
-        groupIds = await fetchGroupsFromGraph(graphToken);
-      }
-
-      console.log('[SSO] User groups:', groupIds);
-
-      // 4. Resolve role from AD group memberships
-      const resolved = resolveRoleFromGroups(groupIds);
-      console.log('[SSO] Resolved role:', resolved);
-
-      // 5. Store auth state
-      const accessToken = loginResponse.idToken; // Use ID token for API auth
-      const userEmail = account.username;
-      const userName = account.name || userEmail;
-
-      localStorage.setItem('token', accessToken);
-      localStorage.setItem('role', resolved.role);
-      localStorage.setItem('email', userEmail);
-      localStorage.setItem('displayName', userName);
-      localStorage.setItem('isSSOUser', 'true');
-
-      if (resolved.branchName) {
-        localStorage.setItem('branchName', resolved.branchName);
-      } else {
-        localStorage.removeItem('branchName');
-      }
-      if (resolved.businessUnit) {
-        localStorage.setItem('businessUnit', resolved.businessUnit);
-      } else {
-        localStorage.removeItem('businessUnit');
-      }
-      localStorage.removeItem('branchId'); // SSO doesn't use numeric branch IDs
-
-      setToken(accessToken);
-      setRole(resolved.role);
-      setEmail(userEmail);
-      setDisplayName(userName);
-      setBranchName(resolved.branchName);
-      setBusinessUnit(resolved.businessUnit);
-      setBranchId(null);
-      setIsSSOUser(true);
-      setResolvedGroupInfo(resolved);
-
     } catch (err: any) {
-      console.error('[SSO] Login failed:', err);
-      throw err; // Re-throw so the Login page can handle it
+      console.error('[SSO] Login redirect failed:', err);
+      throw err;
     }
   }, []);
 
@@ -212,12 +264,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // If SSO user, also logout from MSAL
     if (isSSOUser) {
-      msalInstance.logoutPopup().catch(() => {});
+      msalInstance.logoutRedirect().catch(() => {});
     }
   };
 
   return (
-    <AuthContext.Provider value={{ token, role, email, displayName, branchId, branchName, businessUnit, isSSOUser, resolvedGroupInfo, login, loginWithSSO, logout }}>
+    <AuthContext.Provider value={{ token, role, email, displayName, branchId, branchName, businessUnit, isSSOUser, ssoLoading, resolvedGroupInfo, login, loginWithSSO, logout }}>
       {children}
     </AuthContext.Provider>
   );

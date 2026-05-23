@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, Mail, Lock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
@@ -7,43 +7,41 @@ import { api } from '../services/api';
 import logo from '../assets/aaw_new.png';
 
 export default function Login() {
-  const { login, loginWithSSO } = useAuth();
+  const { token, login, loginWithSSO, ssoLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('full.access@aaw.com');
   const [password, setPassword] = useState('Access2026!');
   const [error, setError] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
-  const [ssoLoading, setSsoLoading] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+  // Auto-navigate when token is set (e.g., after SSO redirect return)
+  useEffect(() => {
+    if (token) {
+      setAuthStatus('success');
+      const timer = setTimeout(() => navigate('/'), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [token, navigate]);
+
+  // Show verifying state when SSO redirect is being processed
+  useEffect(() => {
+    if (ssoLoading) {
+      setAuthStatus('verifying');
+    }
+  }, [ssoLoading]);
+
   const handleSSO = async () => {
-    setSsoLoading(true);
     setError('');
     setAuthStatus('verifying');
     try {
+      // This will redirect away from the page to Microsoft login
       await loginWithSSO();
-      setAuthStatus('success');
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      navigate('/');
+      // If we reach here, the redirect is about to happen
     } catch (err: any) {
       console.error('SSO login failed:', err);
-      // Handle MSAL-specific error codes
-      const errorCode = err?.errorCode || '';
-      const isCancelled = errorCode === 'user_cancelled' || 
-                          errorCode === 'interaction_in_progress' ||
-                          errorCode === 'popup_window_error' ||
-                          err?.message?.includes('user cancelled') ||
-                          err?.message?.includes('popup_window_error') ||
-                          err?.message?.includes('User cancelled');
-      
-      if (isCancelled) {
-        setError('Sign-in was cancelled. Please try again.');
-      } else {
-        setError(err.message || 'Azure AD authentication failed. Please try again or use the manual login below.');
-      }
+      setError(err.message || 'Azure AD authentication failed. Please try again.');
       setAuthStatus('error');
-    } finally {
-      setSsoLoading(false);
     }
   };
 
