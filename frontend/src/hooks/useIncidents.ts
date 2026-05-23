@@ -579,6 +579,7 @@ export function useIncidents(pollingInterval = 2000) {
               created_at: raw.createdon,
               date_of_incident: raw.cr991_dateofincident || '',
               date_logged: raw.cr991_datelogged || '',
+              reported_date: (raw.cr991_datereported || raw.cr991_date_reported || clean.date_reported || clean.datereported || '').split('T')[0].split(' ')[0],
               logged_by: raw.cr991_loggedby || '',
               incident_type: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || '',
               financial_impact_aud: raw.cr991_financialimpactaud || '',

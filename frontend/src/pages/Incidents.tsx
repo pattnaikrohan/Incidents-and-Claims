@@ -61,7 +61,7 @@ export default function Incidents() {
     { id: 'whs', label: 'WH&S Incident', icon: HeartPulse, color: '#ef4444', desc: 'Workplace health, safety & injuries', columns: ['Reference', 'Injury / Incident', 'Location', 'Branch / Dept', 'Lodged Date', 'Status'] },
     { id: 'it', label: 'IT & Security', icon: Lock, color: '#06b6d4', desc: 'Cyber, data breach & system issues', columns: ['Reference', 'Issue Type', 'System', 'Branch / Dept', 'Lodged Date', 'Status'] },
     { id: 'risk', label: 'Risk & Compliance', icon: Shield, color: '#10b981', desc: 'Regulatory breaches & compliance', columns: ['Reference', 'Breach Type', 'Regulatory Body', 'Branch / Dept', 'Lodged Date', 'Status'] },
-    { id: 'finance', label: 'Finance', icon: DollarSign, color: '#3b82f6', desc: 'Financial incidents & travel disruption', columns: ['Reference', 'Financial Incident', 'Transaction Ref', 'Branch / Dept', 'Lodged Date', 'Status'] },
+    { id: 'finance', label: 'Finance', icon: DollarSign, color: '#3b82f6', desc: 'Financial incidents & travel disruption', columns: ['Reference', 'Financial Incident', 'Branch / Dept', 'Reported Date', 'Status'] },
     { id: 'ncr', label: 'Non-Conformance Report', icon: FileWarning, color: '#eab308', desc: 'Process failures & defects', columns: ['Reference', 'Process Failure', 'Root Cause', 'Branch / Dept', 'Lodged Date', 'Status'] },
   ];
 
@@ -720,7 +720,7 @@ export default function Incidents() {
                                 {category.id === 'finance' && (
                                   <>
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.transaction_ref || incident.vendor_customer_name || incident.incident_number_str || 'N/A'}</td>
+
                                     <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.branch_department || 'N/A'}</td>
                                   </>
                                 )}
@@ -732,7 +732,7 @@ export default function Incidents() {
                                   </>
                                 )}
 
-                                <td className="monospaced" style={{ color: 'var(--fg-muted)', fontWeight: 600, fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.date}</td>
+                                <td className="monospaced" style={{ color: 'var(--fg-muted)', fontWeight: 600, fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{category.id === 'finance' ? (incident.reported_date || incident.date || 'N/A') : incident.date}</td>
                                 <td style={{ padding: '0.4rem 0.75rem', borderTopRightRadius: '10px', borderBottomRightRadius: '10px', border: '1px solid transparent', borderLeft: 'none' }}>
                                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                                     <span className={`badge badge-${(String(incident.status || '').toLowerCase().includes('closed') || String(incident.status || '').toLowerCase() === 'close') ? 'closed' : (String(incident.status || '').toLowerCase().includes('open') || String(incident.status || '').toLowerCase() === 'new') ? 'open' : 'review'}`} style={{ fontWeight: 700, padding: '0.2rem 0.6rem', fontSize: '0.65rem' }}>
