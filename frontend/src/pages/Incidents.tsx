@@ -112,7 +112,11 @@ export default function Incidents() {
     if (role === 'bu_access' && businessUnit) {
       displayedIncidents = displayedIncidents.filter(i => i.business_unit === businessUnit || i.branch_department === businessUnit);
     } 
-    // Dept-specific roles see ALL incidents but only their category
+    // If Branch user, they ONLY see their branch
+    else if (role === 'branch_access' && branchName) {
+      displayedIncidents = displayedIncidents.filter(i => i.branch_department === branchName);
+    }
+    // Dept-specific roles see their category of incidents (globally — they are functional oversight roles)
     else if (role === 'hr_access') {
       displayedIncidents = displayedIncidents.filter(i => {
         const cat = getCategory(i);
@@ -128,9 +132,9 @@ export default function Incidents() {
     else if (role === 'finance_access') {
       displayedIncidents = displayedIncidents.filter(i => getCategory(i) === 'finance');
     }
-    // If Branch Manager (or other branch-specific role), they ONLY see their branch
-    else if (branchName) {
-      displayedIncidents = displayedIncidents.filter(i => i.branch_department === branchName);
+    // Fallback: only own incidents (submit_only)
+    else {
+      displayedIncidents = [];
     }
   }
 

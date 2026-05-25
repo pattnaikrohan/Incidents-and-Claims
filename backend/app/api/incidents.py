@@ -138,21 +138,34 @@ def read_incidents(
     if role in [RoleEnum.full_access, RoleEnum.risk_compliance]:
         filtered = incidents
     elif role == RoleEnum.bu_access:
-        # A BU Manager should see all incidents within their Business Unit.
-        # We need to map branch_id -> branch -> business_unit
+        # BU Manager sees all incidents within their Business Unit
         bu_map = {b["id"]: b["business_unit"] for b in db.branches}
-        # A bit hacky: infer the BU name from the user's email or assume they manage the AU BU for this demo
-        # Actually, let's just show them all AU incidents for this demo if they are BU manager
-        filtered = [i for i in incidents if bu_map.get(get_val(i, "branch_id"), "") == "AAW Global Logistics - AU"]
-    elif role == RoleEnum.it_access:
-        filtered = [i for i in incidents if get_val(i, "type") in ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']]
-    elif role == RoleEnum.finance_access:
-        filtered = [i for i in incidents if get_val(i, "type") == 'Travel Disruption']
-    elif role == RoleEnum.hr_access:
-        filtered = [i for i in incidents if get_val(i, "type") in ['Near Miss','First Aid Injury','Lost Time Injury']]
+        user_bu = getattr(current_user, 'business_unit', None)
+        if user_bu:
+            filtered = [i for i in incidents if bu_map.get(get_val(i, "branch_id"), "") == user_bu or get_val(i, "business_unit") == user_bu]
+        else:
+            # Fallback: if no BU set, show nothing (safety)
+            filtered = [i for i in incidents if get_val(i, "creator_id") == current_user.id]
     elif role == RoleEnum.branch_access:
+        # Branch user sees only their branch's incidents
         filtered = [i for i in incidents if get_val(i, "branch_id") == current_user.branch_id]
+    elif role in [RoleEnum.it_access, RoleEnum.hr_access, RoleEnum.finance_access]:
+        # Department roles: scoped to their branch's BU, filtered to their incident types
+        user_bu = getattr(current_user, 'business_unit', None)
+        bu_map = {b["id"]: b["business_unit"] for b in db.branches}
+        
+        # Determine which incident types this dept role can see
+        type_filter = []
+        if role == RoleEnum.it_access:
+            type_filter = ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']
+        elif role == RoleEnum.hr_access:
+            type_filter = ['Near Miss','First Aid Injury','Lost Time Injury','Workplace Harassment','Misconduct','Grievance']
+        elif role == RoleEnum.finance_access:
+            type_filter = ['Travel Disruption','Financial Loss','Fraud','Payment Error']
+        
+        filtered = [i for i in incidents if get_val(i, "type") in type_filter]
     else:
+        # submit_only: only see own incidents
         filtered = [i for i in incidents if get_val(i, "creator_id") == current_user.id]
         
     branch_map = {b["id"]: b["name"] for b in db.branches}

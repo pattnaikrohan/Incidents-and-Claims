@@ -92,10 +92,16 @@ def get_current_user(request: Request, db = Depends(get_db), token: str = Depend
     if user is None:
         raise credentials_exception
     
+    # Resolve business_unit from branch_id for BU scoping
+    user_data = dict(user)
+    if user_data.get("branch_id") and "business_unit" not in user_data:
+        branch = next((b for b in db.branches if b["id"] == user_data["branch_id"]), None)
+        user_data["business_unit"] = branch["business_unit"] if branch else None
+    
     # Convert dict to a simple object for attribute access compatibility
     class UserObj:
         def __init__(self, **entries): self.__dict__.update(entries)
-    return UserObj(**user)
+    return UserObj(**user_data)
 
 def get_current_active_user(current_user = Depends(get_current_user)):
     return current_user
