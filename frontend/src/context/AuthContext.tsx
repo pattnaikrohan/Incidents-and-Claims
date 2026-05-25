@@ -42,19 +42,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
  * Used as fallback when groups are not included in the token (overage scenario).
  */
 async function fetchGroupsFromGraph(accessToken: string): Promise<string[]> {
-  try {
-    const response = await fetch(graphConfig.graphMemberOfEndpoint, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!response.ok) throw new Error(`Graph API returned ${response.status}`);
-    const data = await response.json();
-    return (data.value || [])
-      .filter((item: any) => item['@odata.type'] === '#microsoft.graph.group')
-      .map((group: any) => group.id);
-  } catch (err) {
-    console.error('[SSO] Failed to fetch groups from Graph API:', err);
-    return [];
+  // Try transitiveMemberOf first (captures nested groups, needs GroupMember.Read.All)
+  // Fall back to memberOf (direct memberships only, works with User.Read)
+  const endpoints = [
+    'https://graph.microsoft.com/v1.0/me/transitiveMemberOf?$select=id,displayName&$top=999',
+    'https://graph.microsoft.com/v1.0/me/memberOf?$select=id,displayName&$top=999',
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) {
+        console.warn(`[SSO] ${endpoint.split('/v1.0/')[1]?.split('?')[0]} returned ${response.status}, trying next...`);
+        continue;
+      }
+      const data = await response.json();
+      const groups = (data.value || [])
+        .filter((item: any) => item['@odata.type'] === '#microsoft.graph.group')
+        .map((group: any) => group.id);
+      console.log(`[SSO] Groups fetched from Graph API (${endpoint.includes('transitive') ? 'transitive' : 'direct'}):`, groups.length, 'groups found');
+      if (groups.length > 0) return groups;
+    } catch (err) {
+      console.warn(`[SSO] Graph endpoint failed:`, err);
+    }
   }
+  
+  console.error('[SSO] All Graph group-fetch endpoints failed');
+  return [];
 }
 
 /**
@@ -72,7 +88,8 @@ async function processAuthResult(authResult: AuthenticationResult): Promise<{
   const account: AccountInfo = authResult.account;
   msalInstance.setActiveAccount(account);
 
-  // Try to get Graph API token silently for group fetching
+  // Try to get Graph API token for group fetching
+  // Strategy: try with GroupMember.Read.All first, fallback to just User.Read
   let graphToken: string | null = null;
   try {
     const tokenResponse = await msalInstance.acquireTokenSilent({
@@ -80,16 +97,33 @@ async function processAuthResult(authResult: AuthenticationResult): Promise<{
       account,
     });
     graphToken = tokenResponse.accessToken;
-  } catch (silentErr) {
-    console.warn('[SSO] Silent Graph token failed, will use ID token claims for groups:', silentErr);
+  } catch {
+    // GroupMember.Read.All may not be consented — fallback to User.Read only
+    try {
+      const tokenResponse = await msalInstance.acquireTokenSilent({
+        scopes: ['User.Read'],
+        account,
+      });
+      graphToken = tokenResponse.accessToken;
+      console.log('[SSO] Using User.Read-only token for Graph fallback');
+    } catch (err2) {
+      console.warn('[SSO] Could not acquire any Graph token:', err2);
+    }
   }
 
-  // Extract groups from ID token claims OR call Graph API
+  // Extract groups from ID token claims
   let groupIds = extractGroupsFromToken(authResult.idTokenClaims || {});
+  console.log('[SSO] Groups from token claims:', groupIds.length);
   
+  // ALWAYS try Graph API if token claims had no groups
   if (groupIds.length === 0 && graphToken) {
-    console.log('[SSO] No groups in token, fetching from Graph API...');
+    console.log('[SSO] No groups in token claims, fetching from Graph API...');
     groupIds = await fetchGroupsFromGraph(graphToken);
+  }
+  
+  // If STILL empty, try Graph API one more time with just User.Read token
+  if (groupIds.length === 0 && !graphToken) {
+    console.warn('[SSO] No groups found and no Graph token available. User will get submit_only role.');
   }
 
   console.log('[SSO] User groups:', groupIds);

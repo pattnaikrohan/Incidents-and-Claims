@@ -20,6 +20,14 @@ api.interceptors.request.use((config) => {
   const isSSOUser = localStorage.getItem('isSSOUser') === 'true';
   if (isSSOUser && config.headers) {
     config.headers['X-Auth-Source'] = 'azure-ad';
+    // Send resolved role and group IDs so backend can use them
+    // (groups may not be in the ID token if groupMembershipClaims isn't configured)
+    const role = localStorage.getItem('role');
+    const branchName = localStorage.getItem('branchName');
+    const businessUnit = localStorage.getItem('businessUnit');
+    if (role) config.headers['X-User-Role'] = role;
+    if (branchName) config.headers['X-User-Branch'] = branchName;
+    if (businessUnit) config.headers['X-User-BU'] = businessUnit;
   }
   return config;
 });

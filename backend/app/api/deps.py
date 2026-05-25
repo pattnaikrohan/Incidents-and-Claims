@@ -34,9 +34,23 @@ def get_current_user(request: Request, db = Depends(get_db), token: str = Depend
             name = claims.get("name", email)
             group_ids = claims.get("groups", [])
             
-            # Resolve role from AD group memberships
+            # Resolve role from AD group memberships in the token
             resolved = resolve_role_from_groups(group_ids)
             role_str = resolved["role"]
+            
+            # If token had no groups (groupMembershipClaims not configured),
+            # fall back to the frontend's Graph API-resolved role sent in headers.
+            # The token itself was already validated above, so we know the user is authenticated.
+            if role_str == "submit_only" and not group_ids:
+                header_role = request.headers.get("X-User-Role", "")
+                if header_role and header_role != "submit_only":
+                    print(f"[Auth] No groups in token; using frontend-resolved role: {header_role}")
+                    role_str = header_role
+                    resolved = {
+                        "role": header_role,
+                        "branch_name": request.headers.get("X-User-Branch"),
+                        "business_unit": request.headers.get("X-User-BU"),
+                    }
             
             # Map string role to RoleEnum
             try:
