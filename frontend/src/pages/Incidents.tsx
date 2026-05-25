@@ -159,6 +159,7 @@ export default function Incidents() {
           'Hoyer Logistics Australia': ['Hoyer Logistics Australia'],
           'Coastalbridge': ['Coastalbridge', 'Coastalbridge Agencies'],
           'Regional Shipping Services': ['PIL Logistics Australia', 'Regional Shipping Services'],
+          'International Logistics Management': ['ILM'],
         }).find(([, branches]) => branches.includes(fullBranch))?.[0];
         
         if (branchBU && branchBU.toLowerCase() === bu) {
