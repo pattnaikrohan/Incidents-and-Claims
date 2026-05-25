@@ -8,7 +8,7 @@
 // ── Functional / Department Group IDs ────────────────────────
 // Full Access / Global Admin
 // TODO: Replace with the actual Object ID from your IT admin (Step 1 of Azure Portal setup)
-const FULL_ACCESS_GROUP_ID: string | null = null; // e.g. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+const FULL_ACCESS_GROUP_ID: string | null = '893a070a-54ec-42fb-bdda-98066d3a7569';
 
 const GROUPS = {
   // Department-level functional groups

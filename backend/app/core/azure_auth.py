@@ -77,7 +77,7 @@ def validate_azure_token(token: str) -> dict:
 
 # Full Access / Global Admin group
 # TODO: Replace with the actual Object ID from your IT admin (Step 1 of Azure Portal setup)
-FULL_ACCESS_GROUP_ID = None  # e.g. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+FULL_ACCESS_GROUP_ID = '893a070a-54ec-42fb-bdda-98066d3a7569'
 
 # Functional/Department groups
 FUNCTIONAL_GROUPS = {
