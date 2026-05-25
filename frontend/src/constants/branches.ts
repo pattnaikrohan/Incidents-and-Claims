@@ -17,30 +17,30 @@ export const BRANCH_MAPPING: Record<string, string[]> = {
     "People & Safety"
   ],
   "AAW Global Logistics - AU": [
-    "AAW Global - MEL",
-    "AAW Global - SYD",
-    "AAW Global - BNE",
-    "AAW Global - ADL",
-    "AAW Global - FRE",
-    "AAW Brokerage",
+    "AAW Global Logistics - Melbourne",
+    "AAW Global Logistics - Sydney",
+    "AAW Global Logistics - Brisbane",
+    "AAW Global Logistics - Adelaide",
+    "AAW Global Logistics - Fremantle",
+    "AAW Customs Brokerage",
     "AAW Project Logistics"
   ],
   "AAW Global Logistics - NZ": [
-    "AAW Global - AKL"
+    "AAW Global Logistics - Auckland"
   ],
   "AAW Bulk Liquid Logistics": [
-    "AAW BLL"
+    "AAW Bulk Liquid Logistics Team"
   ],
   "Hoyer Logistics Australia": [
-    "HLA"
+    "Hoyer Logistics Australia"
   ],
   "Coastalbridge": [
     "Coastalbridge",
     "Coastalbridge Agencies"
   ],
   "Regional Shipping Services": [
-    "PILLA",
-    "RSS"
+    "PIL Logistics Australia",
+    "Regional Shipping Services"
   ],
   "International Logistics Management": [
     "ILM"

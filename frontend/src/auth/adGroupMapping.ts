@@ -6,10 +6,11 @@
  */
 
 // ── Functional / Department Group IDs ────────────────────────
-const GROUPS = {
-  // Full Access / Global Admin (TODO: Add group ID when provided)
-  // FULL_ACCESS_ADMIN: '???',
+// Full Access / Global Admin
+// TODO: Replace with the actual Object ID from your IT admin (Step 1 of Azure Portal setup)
+const FULL_ACCESS_GROUP_ID: string | null = null; // e.g. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
 
+const GROUPS = {
   // Department-level functional groups
   RISK_COMPLIANCE: 'f29747c6-0fb4-4869-b681-0786d602ac29',
   PEOPLE_SAFETY: 'd8195075-cc4c-4e62-b857-f4cc9c76b380',
@@ -74,11 +75,10 @@ export function resolveRoleFromGroups(groupIds: string[]): ResolvedRole {
   const matchedGroups: string[] = [];
 
   // Priority 1: Full Access / Global Admin
-  // TODO: Uncomment when group ID is provided
-  // if (groupSet.has(GROUPS.FULL_ACCESS_ADMIN.toLowerCase())) {
-  //   matchedGroups.push('Full Access / Global Admin');
-  //   return { role: 'full_access', businessUnit: null, branchName: null, matchedGroups };
-  // }
+  if (FULL_ACCESS_GROUP_ID && groupSet.has(FULL_ACCESS_GROUP_ID.toLowerCase())) {
+    matchedGroups.push('Full Access / Global Admin');
+    return { role: 'full_access', businessUnit: null, branchName: null, matchedGroups };
+  }
 
   // Priority 2: Department functional groups
   if (groupSet.has(GROUPS.RISK_COMPLIANCE.toLowerCase())) {

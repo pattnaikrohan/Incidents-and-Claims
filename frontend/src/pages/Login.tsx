@@ -442,17 +442,17 @@ export default function Login() {
                     { role: 'IT Security', email: 'it.security@aaw.com', color: '#06b6d4', desc: 'Cyber/CIO' },
                     { role: 'Finance', email: 'finance@aaw.com', color: '#3b82f6', desc: 'CFO / Loss' },
                     
-                    // BU MANAGERS
+                    // BU MANAGERS (use mock fallback — no dedicated store users)
                     { role: 'BU: AU', email: 'aaw.global.logistics.au.manager@aaw.com', color: '#f59e0b', desc: 'Logistics AU' },
                     { role: 'BU: NZ', email: 'aaw.global.logistics.nz.manager@aaw.com', color: '#f59e0b', desc: 'Logistics NZ' },
                     { role: 'BU: Bulk', email: 'aaw.bulk.liquid.logistics.manager@aaw.com', color: '#f59e0b', desc: 'Bulk Liquid' },
                     { role: 'BU: Hoyer', email: 'hoyer.logistics.australia.manager@aaw.com', color: '#f59e0b', desc: 'Hoyer AU' },
                     
                     // BRANCHES
-                    { role: 'MEL Branch', email: 'aaw.global.mel@aaw.com', color: '#a855f7', desc: 'Melbourne' },
-                    { role: 'SYD Branch', email: 'aaw.global.syd@aaw.com', color: '#a855f7', desc: 'Sydney' },
-                    { role: 'AKL Branch', email: 'aaw.global.akl@aaw.com', color: '#a855f7', desc: 'Auckland' },
-                    { role: 'Brokerage', email: 'aaw.brokerage@aaw.com', color: '#a855f7', desc: 'Brokerage' },
+                    { role: 'MEL Branch', email: 'aaw.global.logistics.melbourne@aaw.com', color: '#a855f7', desc: 'Melbourne' },
+                    { role: 'SYD Branch', email: 'aaw.global.logistics.sydney@aaw.com', color: '#a855f7', desc: 'Sydney' },
+                    { role: 'AKL Branch', email: 'aaw.global.logistics.auckland@aaw.com', color: '#a855f7', desc: 'Auckland' },
+                    { role: 'Brokerage', email: 'aaw.customs.brokerage@aaw.com', color: '#a855f7', desc: 'Brokerage' },
                     { role: 'Coastalbridge', email: 'coastalbridge@aaw.com', color: '#a855f7', desc: 'Coastalbridge' },
                   ].map((acc) => (
                     <button 

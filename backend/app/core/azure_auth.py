@@ -75,9 +75,12 @@ def validate_azure_token(token: str) -> dict:
 
 # ── AD Group → Role Mapping (mirrors frontend adGroupMapping.ts) ──
 
+# Full Access / Global Admin group
+# TODO: Replace with the actual Object ID from your IT admin (Step 1 of Azure Portal setup)
+FULL_ACCESS_GROUP_ID = None  # e.g. 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+
 # Functional/Department groups
 FUNCTIONAL_GROUPS = {
-    # 'full_access_admin_group_id': 'full_access',  # TODO: Add when group ID provided
     'f29747c6-0fb4-4869-b681-0786d602ac29': 'risk_compliance',
     'd8195075-cc4c-4e62-b857-f4cc9c76b380': 'hr_access',
     'b355c48b-09fc-4d35-b7cc-a80e53d9f3b7': 'it_access',
@@ -110,6 +113,21 @@ BRANCH_GROUPS = {
     'c65d09a2-1b50-4adc-903b-4dc5da9dfa92': 'PIL Logistics Australia',
 }
 
+# ── Branch → Business Unit Lookup (mirrors frontend BRANCH_TO_BU) ────
+BRANCH_TO_BU = {
+    'AAW Global Logistics - Melbourne': 'AAW Global Logistics - AU',
+    'AAW Global Logistics - Sydney': 'AAW Global Logistics - AU',
+    'AAW Global Logistics - Brisbane': 'AAW Global Logistics - AU',
+    'AAW Global Logistics - Adelaide': 'AAW Global Logistics - AU',
+    'AAW Global Logistics - Fremantle': 'AAW Global Logistics - AU',
+    'AAW Customs Brokerage': 'AAW Global Logistics - AU',
+    'AAW Project Logistics': 'AAW Global Logistics - AU',
+    'AAW Global Logistics - Auckland': 'AAW Global Logistics - NZ',
+    'AAW Bulk Liquid Logistics Team': 'AAW Bulk Liquid Logistics',
+    'Coastalbridge': 'Coastalbridge',
+    'PIL Logistics Australia': 'Regional Shipping Services',
+}
+
 
 def resolve_role_from_groups(group_ids: list) -> dict:
     """
@@ -118,9 +136,9 @@ def resolve_role_from_groups(group_ids: list) -> dict:
     """
     group_set = {g.lower() for g in group_ids}
     
-    # Priority 1: Full Access (TODO: uncomment when group ID provided)
-    # if 'full_access_group_id' in group_set:
-    #     return {'role': 'full_access', 'business_unit': None, 'branch_name': None}
+    # Priority 1: Full Access / Global Admin
+    if FULL_ACCESS_GROUP_ID and FULL_ACCESS_GROUP_ID.lower() in group_set:
+        return {'role': 'full_access', 'business_unit': None, 'branch_name': None}
 
     # Priority 2: Functional department groups
     for gid, role in FUNCTIONAL_GROUPS.items():
@@ -132,10 +150,11 @@ def resolve_role_from_groups(group_ids: list) -> dict:
         if gid.lower() in group_set:
             return {'role': 'bu_access', 'business_unit': bu_name, 'branch_name': None}
     
-    # Priority 4: Branch groups
+    # Priority 4: Branch groups — also resolve business_unit via BRANCH_TO_BU
     for gid, branch_name in BRANCH_GROUPS.items():
         if gid.lower() in group_set:
-            return {'role': 'branch_access', 'business_unit': None, 'branch_name': branch_name}
+            business_unit = BRANCH_TO_BU.get(branch_name)
+            return {'role': 'branch_access', 'business_unit': business_unit, 'branch_name': branch_name}
     
     # Default: submit_only
     return {'role': 'submit_only', 'business_unit': None, 'branch_name': None}

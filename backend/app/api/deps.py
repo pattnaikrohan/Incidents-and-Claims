@@ -47,10 +47,16 @@ def get_current_user(request: Request, db = Depends(get_db), token: str = Depend
             # Find matching branch_id if we have a branch_name
             branch_id = None
             if resolved.get("branch_name"):
+                # Try exact match first, then case-insensitive contains as fallback
                 for b in db.branches:
                     if b["name"] == resolved["branch_name"]:
                         branch_id = b["id"]
                         break
+                if branch_id is None:
+                    for b in db.branches:
+                        if resolved["branch_name"].lower() in b["name"].lower() or b["name"].lower() in resolved["branch_name"].lower():
+                            branch_id = b["id"]
+                            break
             
             # Create a user-like object for compatibility
             class SSOUserObj:
