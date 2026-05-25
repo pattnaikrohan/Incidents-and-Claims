@@ -55,48 +55,79 @@ export default function AccessControl() {
         throw new Error('No active account! Please log in with Azure AD (SSO).');
       }
 
-      // We need GroupMember.Read.All or Directory.Read.All permission
-      const tokenResponse = await msalInstance.acquireTokenSilent({
-        scopes: ['GroupMember.Read.All'],
-        account: activeAccount
-      });
+      // Request both scopes — User.Read.All resolves displayName/mail for other users
+      let tokenResponse;
+      try {
+        tokenResponse = await msalInstance.acquireTokenSilent({
+          scopes: ['GroupMember.Read.All', 'User.Read.All'],
+          account: activeAccount
+        });
+      } catch {
+        // Fallback: try without User.Read.All if it's not consented
+        tokenResponse = await msalInstance.acquireTokenSilent({
+          scopes: ['GroupMember.Read.All'],
+          account: activeAccount
+        });
+      }
 
-      const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers?$select=id,displayName,mail,userPrincipalName&$top=999`, {
+      const accessToken = tokenResponse.accessToken;
+
+      // Step 1: Get group members (no $select — let Graph return all default properties)
+      const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members?$top=999`, {
         headers: {
-          Authorization: `Bearer ${tokenResponse.accessToken}`,
-          'Content-Type': 'application/json',
-          'ConsistencyLevel': 'eventual'
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!res.ok) {
-        if (res.status === 403) throw new Error('403 Forbidden: The App Registration does not have GroupMember.Read.All API permissions or you are not authorized.');
+        if (res.status === 403) throw new Error('403 Forbidden: Insufficient permissions to read group members.');
         if (res.status === 404) throw new Error(`404 Not Found: Group ${groupId} does not exist.`);
         throw new Error(`Graph API Error: ${res.status}`);
       }
 
       const data = await res.json();
-      // Filter to only user objects — exclude nested groups and service principals
-      const users = (data.value || []).filter((m: any) =>
-        !m['@odata.type'] || m['@odata.type'] === '#microsoft.graph.user'
+      // Filter to only user objects
+      let users = (data.value || []).filter((m: any) =>
+        m['@odata.type'] === '#microsoft.graph.user'
       );
+
+      // Step 2: If displayName is missing, try individual /users/{id} lookups
+      const needsLookup = users.some((u: any) => !u.displayName);
+      if (needsLookup) {
+        const enriched = await Promise.all(
+          users.map(async (member: any) => {
+            if (member.displayName) return member;
+            try {
+              const userRes = await fetch(`https://graph.microsoft.com/v1.0/users/${member.id}?$select=id,displayName,mail,userPrincipalName`, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              });
+              if (userRes.ok) {
+                const userData = await userRes.json();
+                return { ...member, ...userData };
+              }
+            } catch { /* ignore individual lookup failures */ }
+            return member;
+          })
+        );
+        users = enriched;
+      }
+
       setGroupMembers(prev => ({ ...prev, [groupId]: users }));
     } catch (err: any) {
       console.error('Failed to fetch group members:', err);
-      // Also fallback to silent token fetch with alternative scope if needed
+      // Fallback: try interactive popup if silent fails
       if (err.name === 'InteractionRequiredAuthError' || err.name === 'BrowserAuthError') {
         try {
             const activeAccount = msalInstance.getActiveAccount();
             if (activeAccount) {
-                const popupResponse = await msalInstance.acquireTokenPopup({ scopes: ['GroupMember.Read.All'] });
-                const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers?$select=id,displayName,mail,userPrincipalName`, {
-                    headers: { 
-                      Authorization: `Bearer ${popupResponse.accessToken}`,
-                      'ConsistencyLevel': 'eventual'
-                    }
+                const popupResponse = await msalInstance.acquireTokenPopup({ scopes: ['GroupMember.Read.All', 'User.Read.All'] });
+                const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/members?$top=999`, {
+                    headers: { Authorization: `Bearer ${popupResponse.accessToken}` }
                 });
                 const data = await res.json();
-                setGroupMembers(prev => ({ ...prev, [groupId]: data.value || [] }));
+                const users = (data.value || []).filter((m: any) => m['@odata.type'] === '#microsoft.graph.user');
+                setGroupMembers(prev => ({ ...prev, [groupId]: users }));
                 return;
             }
         } catch(e) {
