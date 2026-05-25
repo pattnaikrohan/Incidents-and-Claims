@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { PublicClientApplication, type AccountInfo, type AuthenticationResult } from '@azure/msal-browser';
-import { msalConfig, loginRequest, graphConfig } from '../auth/msalConfig';
+import { msalConfig, loginRequest } from '../auth/msalConfig';
 import { resolveRoleFromGroups, extractGroupsFromToken, type ResolvedRole } from '../auth/adGroupMapping';
 
 // Initialize MSAL instance (singleton)
