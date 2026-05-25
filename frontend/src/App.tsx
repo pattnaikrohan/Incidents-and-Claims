@@ -17,15 +17,20 @@ import NCRs from './pages/NCRs';
 import ICDashboard from './pages/ICDashboard';
 import AccessControl from './pages/AccessControl';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, requireAdmin }: { children: React.ReactNode; requireAdmin?: boolean }) => {
   const { token, role } = useAuth();
   const location = useLocation();
   
   if (!token) return <Navigate to="/login" replace />;
   
+  // Admin-only routes (e.g., Access Control)
+  if (requireAdmin && role !== 'full_access') {
+    return <Navigate to="/" replace />;
+  }
+  
   const isManager = role !== 'submit_only';
   
-  if (!isManager && !location.pathname.startsWith('/incidents/new') && !location.pathname.startsWith('/access-control')) {
+  if (!isManager && !location.pathname.startsWith('/incidents/new')) {
     return <Navigate to="/incidents/new" replace />;
   }
   
@@ -135,7 +140,7 @@ export default function App() {
               </ProtectedRoute>
             } />
             <Route path="/access-control" element={
-              <ProtectedRoute>
+              <ProtectedRoute requireAdmin>
                 <AccessControl />
               </ProtectedRoute>
             } />

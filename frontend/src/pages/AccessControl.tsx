@@ -3,6 +3,7 @@ import { Shield, Users, Loader2, ChevronDown, ChevronRight, User, AlertTriangle 
 import { msalInstance } from '../context/AuthContext';
 
 const GROUPS = [
+  { id: '893a070a-54ec-42fb-bdda-98066d3a7569', name: 'RC-Hub Full Access Admin', type: 'Admin' },
   { id: 'f29747c6-0fb4-4869-b681-0786d602ac29', name: 'Risk & Compliance Global', type: 'Core' },
   { id: 'd8195075-cc4c-4e62-b857-f4cc9c76b380', name: 'People & Safety Global', type: 'Core' },
   { id: 'b355c48b-09fc-4d35-b7cc-a80e53d9f3b7', name: 'IT & Security Global', type: 'Core' },
@@ -60,7 +61,7 @@ export default function AccessControl() {
         account: activeAccount
       });
 
-      const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers?$select=id,displayName,mail,userPrincipalName`, {
+      const res = await fetch(`https://graph.microsoft.com/v1.0/groups/${groupId}/transitiveMembers?$select=id,displayName,mail,userPrincipalName&$top=999`, {
         headers: {
           Authorization: `Bearer ${tokenResponse.accessToken}`,
           'Content-Type': 'application/json',
@@ -75,7 +76,11 @@ export default function AccessControl() {
       }
 
       const data = await res.json();
-      setGroupMembers(prev => ({ ...prev, [groupId]: data.value || [] }));
+      // Filter to only user objects — exclude nested groups and service principals
+      const users = (data.value || []).filter((m: any) =>
+        !m['@odata.type'] || m['@odata.type'] === '#microsoft.graph.user'
+      );
+      setGroupMembers(prev => ({ ...prev, [groupId]: users }));
     } catch (err: any) {
       console.error('Failed to fetch group members:', err);
       // Also fallback to silent token fetch with alternative scope if needed
@@ -106,6 +111,7 @@ export default function AccessControl() {
 
   const getBadgeColor = (type: string) => {
     switch (type) {
+      case 'Admin': return 'rgba(239, 68, 68, 0.15)';
       case 'Core': return 'rgba(99, 102, 241, 0.15)';
       case 'BU Manager': return 'rgba(234, 179, 8, 0.15)';
       case 'Branch': return 'rgba(16, 185, 129, 0.15)';
@@ -115,6 +121,7 @@ export default function AccessControl() {
 
   const getBadgeTextColor = (type: string) => {
     switch (type) {
+      case 'Admin': return '#dc2626';
       case 'Core': return '#4f46e5';
       case 'BU Manager': return '#ca8a04';
       case 'Branch': return '#059669';
@@ -214,10 +221,10 @@ export default function AccessControl() {
                           </div>
                           <div style={{ overflow: 'hidden' }}>
                             <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--fg-base)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {member.displayName || 'Unknown User'}
+                              {member.displayName || member.userPrincipalName?.split('@')[0] || 'Service Account'}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {member.mail || member.userPrincipalName || 'No email'}
+                              {member.mail || member.userPrincipalName || member.id}
                             </div>
                           </div>
                         </div>

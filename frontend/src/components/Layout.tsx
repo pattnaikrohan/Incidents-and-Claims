@@ -349,14 +349,16 @@ export default function Layout({ children }: { children: ReactNode }) {
             </>
           )}
 
-          <Link
-            to="/access-control"
-            className={`sidebar__nav-item ${isActive('/access-control') ? 'active' : ''}`}
-            title="Access Control"
-          >
-            <Shield size={18} color="#6366f1" />
-            {!collapsed && <span>Access Control</span>}
-          </Link>
+          {role === 'full_access' && (
+            <Link
+              to="/access-control"
+              className={`sidebar__nav-item ${isActive('/access-control') ? 'active' : ''}`}
+              title="Access Control"
+            >
+              <Shield size={18} color="#6366f1" />
+              {!collapsed && <span>Access Control</span>}
+            </Link>
+          )}
         </nav>
 
         {/* Sidebar Footer - Slogan */}
