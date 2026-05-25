@@ -25,12 +25,57 @@ export default function NCRs() {
         return cat === 'ncr' || t.includes('non-conformance') || t.includes('ncr') || ref.startsWith('NCR-');
       });
 
+      // ── Fuzzy matching helpers ───────────────────────────────────
+      const BRANCH_KEYWORDS: Record<string, string[]> = {
+        'AAW Global Logistics - Melbourne': ['melbourne', 'mel', 'aaw global - mel'],
+        'AAW Global Logistics - Sydney': ['sydney', 'syd', 'aaw global - syd'],
+        'AAW Global Logistics - Brisbane': ['brisbane', 'bne', 'aaw global - bne'],
+        'AAW Global Logistics - Adelaide': ['adelaide', 'adl', 'aaw global - adl'],
+        'AAW Global Logistics - Fremantle': ['fremantle', 'fre', 'aaw global - fre'],
+        'AAW Customs Brokerage': ['customs', 'brokerage', 'aaw brokerage'],
+        'AAW Project Logistics': ['project logistics', 'aaw project'],
+        'AAW Global Logistics - Auckland': ['auckland', 'akl', 'aaw global - akl'],
+        'AAW Bulk Liquid Logistics Team': ['bulk liquid', 'bll', 'aaw bll'],
+        'Coastalbridge': ['coastalbridge'], 'Coastalbridge Agencies': ['coastalbridge agencies'],
+        'PIL Logistics Australia': ['pil', 'pilla'], 'Regional Shipping Services': ['rss', 'regional shipping'],
+        'Hoyer Logistics Australia': ['hoyer', 'hla'], 'ILM': ['ilm', 'international logistics'],
+        'IT & Security': ['it & security', 'it and security'], 'Finance': ['finance'],
+        'Risk & Compliance': ['risk & compliance', 'risk and compliance'], 'People & Safety': ['people & safety', 'people and safety'],
+      };
+      const BU_HIERARCHY: Record<string, string[]> = {
+        'AAW Group Holdings': ['IT & Security', 'Finance', 'Risk & Compliance', 'People & Safety'],
+        'AAW Global Logistics - AU': ['AAW Global Logistics - Melbourne', 'AAW Global Logistics - Sydney', 'AAW Global Logistics - Brisbane', 'AAW Global Logistics - Adelaide', 'AAW Global Logistics - Fremantle', 'AAW Customs Brokerage', 'AAW Project Logistics'],
+        'AAW Global Logistics - NZ': ['AAW Global Logistics - Auckland'], 'AAW Bulk Liquid Logistics': ['AAW Bulk Liquid Logistics Team'],
+        'Hoyer Logistics Australia': ['Hoyer Logistics Australia'], 'Coastalbridge': ['Coastalbridge', 'Coastalbridge Agencies'],
+        'Regional Shipping Services': ['PIL Logistics Australia', 'Regional Shipping Services'], 'International Logistics Management': ['ILM'],
+      };
+      const matchesBranch = (incBr: string, userBr: string) => {
+        if (!incBr || !userBr) return false;
+        const a = incBr.toLowerCase().trim(), b = userBr.toLowerCase().trim();
+        if (a === b || a.includes(b) || b.includes(a)) return true;
+        return (BRANCH_KEYWORDS[userBr] || []).some(kw => a.includes(kw) || a === kw);
+      };
+      const matchesBU = (incBU: string, incBr: string, userBU: string) => {
+        if (!userBU) return false;
+        const bu = userBU.toLowerCase().trim();
+        if (incBU && (incBU.toLowerCase().trim() === bu || incBU.toLowerCase().includes(bu) || bu.includes(incBU.toLowerCase()))) return true;
+        if (incBr) {
+          for (const [fb] of Object.entries(BRANCH_KEYWORDS)) {
+            const bbu = Object.entries(BU_HIERARCHY).find(([, br]) => br.includes(fb))?.[0];
+            if (bbu && bbu.toLowerCase() === bu && matchesBranch(incBr, fb)) return true;
+          }
+        }
+        return false;
+      };
+
       // RBAC
       if (role !== 'full_access' && role !== 'risk_compliance') {
         if (role === 'bu_access' && businessUnit) {
-          ncrData = ncrData.filter((i: any) => i.business_unit === businessUnit || i.branch_department === businessUnit);
-        } else if (branchName) {
-          ncrData = ncrData.filter((i: any) => i.branch_department === branchName);
+          ncrData = ncrData.filter((i: any) => matchesBU(i.business_unit, i.branch_department, businessUnit));
+        } else if (role === 'branch_access' && branchName) {
+          ncrData = ncrData.filter((i: any) => matchesBranch(i.branch_department, branchName));
+        } else {
+          ncrData = [];
         }
       }
 
