@@ -43,13 +43,21 @@ export default function Incidents() {
   const [filterStates, setFilterStates] = useState<Record<string, any>>({}); // category: { status: [], branch: [] }
   const filterMenuRef = useRef<HTMLDivElement>(null);
 
+  // Global Filter State
+  const [globalFilter, setGlobalFilter] = useState({ bu: '', branch: '' });
+  const [globalFilterMenuOpen, setGlobalFilterMenuOpen] = useState(false);
+  const globalFilterRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
         setActiveFilterMenu(null);
       }
+      if (globalFilterRef.current && !globalFilterRef.current.contains(event.target as Node)) {
+        setGlobalFilterMenuOpen(false);
+      }
     }
-    if (activeFilterMenu) {
+    if (activeFilterMenu || globalFilterMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
@@ -203,6 +211,18 @@ export default function Incidents() {
     }
   }
 
+  // Apply User-Selected Global Filter
+  if (globalFilter.bu) {
+    displayedIncidents = displayedIncidents.filter(i => matchesBU(i.business_unit, i.branch_department, globalFilter.bu));
+  }
+  if (globalFilter.branch) {
+    displayedIncidents = displayedIncidents.filter(i => matchesBranch(i.branch_department, globalFilter.branch));
+  }
+
+  // Generate unique values for Global Filter dropdowns based on all incidents (bypassing RBAC so options exist)
+  const uniqueBUs = Array.from(new Set(incidents.map(i => i.business_unit).filter(Boolean))).sort();
+  const uniqueBranches = Array.from(new Set(incidents.map(i => i.branch_department).filter(Boolean))).sort();
+
   // Final filter by tab
   displayedIncidents = displayedIncidents.filter(i => {
     const draftRegistry = JSON.parse(localStorage.getItem('incident_draft_registry') || '[]');
@@ -274,31 +294,125 @@ export default function Incidents() {
             </h1>
           </div>
 
-          <button 
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
-            className="btn"
-            style={{
-              padding: '0.4rem 0.8rem',
-              borderRadius: '10px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#fff',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              backdropFilter: 'blur(10px)'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-          >
-            <RefreshCw size={12} className={isRefreshing ? "spin-animation" : ""} />
-            {isRefreshing ? 'Refreshing...' : 'Global Refresh'}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ position: 'relative' }} ref={globalFilterRef}>
+              <button 
+                onClick={() => setGlobalFilterMenuOpen(!globalFilterMenuOpen)}
+                className="btn"
+                style={{
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '10px',
+                  background: (globalFilter.bu || globalFilter.branch) ? 'var(--primary)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#fff',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  backdropFilter: 'blur(10px)'
+                }}
+                onMouseEnter={e => {
+                  if (!(globalFilter.bu || globalFilter.branch)) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!(globalFilter.bu || globalFilter.branch)) {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  }
+                }}
+              >
+                <Filter size={12} />
+                Global Filter
+                {(globalFilter.bu || globalFilter.branch) && (
+                  <span style={{ 
+                    background: '#fff', color: 'var(--primary)', 
+                    borderRadius: '50%', width: '16px', height: '16px', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem'
+                  }}>
+                    {(globalFilter.bu ? 1 : 0) + (globalFilter.branch ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+
+              {globalFilterMenuOpen && (
+                <div style={{ 
+                  position: 'absolute', top: '120%', right: 0, zIndex: 100,
+                  background: 'var(--bg-elevated)', border: '1px solid var(--border-base)',
+                  borderRadius: '8px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',
+                  width: '250px', padding: '1rem',
+                  color: 'var(--fg-base)'
+                }}>
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Business Unit</div>
+                    <select 
+                      className="input-field" 
+                      style={{ height: '28px', fontSize: '0.7rem', padding: '2px 4px', width: '100%', color: 'var(--fg-base)', background: 'var(--bg-input)' }}
+                      value={globalFilter.bu}
+                      onChange={e => setGlobalFilter({ ...globalFilter, bu: e.target.value })}
+                    >
+                      <option value="">All Units</option>
+                      {uniqueBUs.map(bu => (
+                        <option key={String(bu)} value={String(bu)}>{String(bu)}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--fg-faint)', marginBottom: '0.5rem' }}>Branch / Department</div>
+                    <select 
+                      className="input-field" 
+                      style={{ height: '28px', fontSize: '0.7rem', padding: '2px 4px', width: '100%', color: 'var(--fg-base)', background: 'var(--bg-input)' }}
+                      value={globalFilter.branch}
+                      onChange={e => setGlobalFilter({ ...globalFilter, branch: e.target.value })}
+                    >
+                      <option value="">All Branches</option>
+                      {uniqueBranches.map(br => (
+                        <option key={String(br)} value={String(br)}>{String(br)}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ width: '100%', fontSize: '0.65rem', padding: '4px' }}
+                    onClick={() => setGlobalFilter({ bu: '', branch: '' })}
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button 
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="btn"
+              style={{
+                padding: '0.4rem 0.8rem',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                backdropFilter: 'blur(10px)'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            >
+              <RefreshCw size={12} className={isRefreshing ? "spin-animation" : ""} />
+              {isRefreshing ? 'Refreshing...' : 'Global Refresh'}
+            </button>
+          </div>
         </div>
       </div>
 

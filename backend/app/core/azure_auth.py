@@ -87,15 +87,28 @@ FUNCTIONAL_GROUPS = {
     '2dcbf776-a8ce-4316-8dc8-c5aef73409f7': 'finance_access',
 }
 
-# BU Manager groups → (role, business_unit)
+# BU Manager groups → Actual Azure AD Group Names
 BU_MANAGER_GROUPS = {
-    '38e4b0e2-ba59-4b60-8c61-8650509b1a70': 'AAW Group Holdings',
-    '956cde96-2a25-4574-8e7b-fb0de9712c0d': 'AAW Global Logistics - AU',
-    '5ba26317-0cfe-461a-a8ac-ee35ed50a7dc': 'AAW Global Logistics - NZ',
-    '83c2912d-604a-4e3f-b79e-5500b040197d': 'AAW Bulk Liquid Logistics',
-    'e4fb09bd-ed76-4a1c-b964-396057c02de6': 'Hoyer Logistics Australia',
-    '18444ce2-793a-485c-99d1-7d0a1073945d': 'Coastalbridge',
-    '57b8fe69-df5e-441f-94ef-1adad5458d8e': 'Regional Shipping Services',
+    '38e4b0e2-ba59-4b60-8c61-8650509b1a70': 'BU Manager- AAW Group Holdings',
+    '956cde96-2a25-4574-8e7b-fb0de9712c0d': 'BU Manager- AAW Global Logistics-AU',
+    '5ba26317-0cfe-461a-a8ac-ee35ed50a7dc': 'BU Manager- AAW Global Logistics -NZ',
+    '83c2912d-604a-4e3f-b79e-5500b040197d': 'BU Manager- Bulk Liquid Logistics',
+    'e4fb09bd-ed76-4a1c-b964-396057c02de6': 'BU Manager- Hoyer Logistics Australia',
+    '18444ce2-793a-485c-99d1-7d0a1073945d': 'BU Manager- Coastalbridge',
+    '57b8fe69-df5e-441f-94ef-1adad5458d8e': 'BU Manager- PIL Logistics Australia',
+}
+
+# AD Group Name → Application Business Unit Name
+# Maps the actual Azure AD group display name to the app's internal BU name
+# (used for data filtering and access control scoping)
+BU_AD_TO_APP = {
+    'BU Manager- AAW Group Holdings': 'AAW Group Holdings',
+    'BU Manager- AAW Global Logistics-AU': 'AAW Global Logistics - AU',
+    'BU Manager- AAW Global Logistics -NZ': 'AAW Global Logistics - NZ',
+    'BU Manager- Bulk Liquid Logistics': 'AAW Bulk Liquid Logistics',
+    'BU Manager- Hoyer Logistics Australia': 'Hoyer Logistics Australia',
+    'BU Manager- Coastalbridge': 'Coastalbridge',
+    'BU Manager- PIL Logistics Australia': 'Regional Shipping Services',
 }
 
 # Branch groups → branch_name
@@ -146,8 +159,9 @@ def resolve_role_from_groups(group_ids: list) -> dict:
             return {'role': role, 'business_unit': None, 'branch_name': None}
     
     # Priority 3: BU Manager groups
-    for gid, bu_name in BU_MANAGER_GROUPS.items():
+    for gid, ad_name in BU_MANAGER_GROUPS.items():
         if gid.lower() in group_set:
+            bu_name = BU_AD_TO_APP.get(ad_name, ad_name)
             return {'role': 'bu_access', 'business_unit': bu_name, 'branch_name': None}
     
     # Priority 4: Branch groups — also resolve business_unit via BRANCH_TO_BU
