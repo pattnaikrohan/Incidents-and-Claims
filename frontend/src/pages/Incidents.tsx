@@ -263,15 +263,16 @@ export default function Incidents() {
         background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95))',
         boxShadow: '0 10px 20px -8px rgba(0, 0, 0, 0.3)',
         position: 'relative',
-        overflow: 'hidden',
         marginBottom: '1rem',
         color: 'white',
         border: '1px solid rgba(255, 255, 255, 0.1)'
       }}>
-        {/* Subtle background glow */}
-        <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: `radial-gradient(circle, ${headerColor}20 0%, transparent 60%)`, filter: 'blur(30px)', zIndex: 0 }} />
+        {/* Background wrapper for the glow to maintain overflow hidden without clipping dropdowns */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden', borderRadius: '12px', zIndex: 0, pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '300px', height: '300px', background: `radial-gradient(circle, ${headerColor}20 0%, transparent 60%)`, filter: 'blur(30px)' }} />
+        </div>
         
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ position: 'relative', zIndex: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ 
               width: '36px', height: '36px', borderRadius: '10px', 
