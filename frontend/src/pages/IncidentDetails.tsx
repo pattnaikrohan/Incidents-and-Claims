@@ -606,6 +606,47 @@ export default function IncidentDetails() {
     }
   };
 
+  const handleOriginalFormSubmit = async (formData: any, isDraft?: boolean) => {
+    setIsEditingForm(false);
+    setIsUpdatingDept(true);
+    try {
+      // Clean up formData before sending to backend and flow
+      const { files, attachments, ...restFormData } = formData;
+      
+      // For backend: sanitize lists
+      const backendPayload = { ...restFormData };
+      if (Array.isArray(backendPayload.incident_types)) backendPayload.incident_types = backendPayload.incident_types.join('; ');
+      if (Array.isArray(backendPayload.corrective_actions)) backendPayload.corrective_actions = backendPayload.corrective_actions.join('; ');
+      if (Array.isArray(backendPayload.claim_types)) backendPayload.claim_types = backendPayload.claim_types.join('; ');
+
+      await api.patch(`/incidents/${searchId}`, backendPayload);
+
+      // Trigger Power Automate Flow
+      const flowUrl = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/74f8a63304df494087f857e6f1b2052c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oodv6eTDdoSD_vCx-h3peZ8Ltfz0WbXcYUMkYG4YuOE';
+      
+      const payloadToFlow = {
+        ...restFormData,
+        incident_category: getIncidentCategory(incident),
+        editor_email: email || role
+      };
+
+      fetch(flowUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadToFlow)
+      }).catch(err => console.error('Power Automate edit trigger failed:', err));
+
+      showNotification('Submission updated successfully.');
+      activatePostSaveShield();
+      triggerFastPolling();
+    } catch (err) {
+      console.error('Failed to update submission:', err);
+      alert('Failed to update submission.');
+    } finally {
+      setIsUpdatingDept(false);
+    }
+  };
+
   if (loading) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Loading incident data...</div>;
   if (!incident) return <div className="fade-in" style={{ padding: '4rem', textAlign: 'center' }}>Incident not found.</div>;
 
@@ -613,13 +654,13 @@ export default function IncidentDetails() {
     const category = getIncidentCategory(incident);
 
     switch (category) {
-      case 'cargo': return <CargoForm initialData={incident} readOnly={!isEditingForm} />;
-      case 'hr': return <HRForm initialData={incident} readOnly={!isEditingForm} />;
-      case 'whs': return <WHSForm initialData={incident} readOnly={!isEditingForm} />;
-      case 'it': return <ITForm initialData={incident} readOnly={!isEditingForm} />;
-      case 'risk': return <RiskForm initialData={incident} readOnly={!isEditingForm} />;
-      case 'finance': return <FinanceForm initialData={incident} readOnly={!isEditingForm} />;
-      case 'ncr': return <NCRForm initialData={incident} readOnly={!isEditingForm} />;
+      case 'cargo': return <CargoForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'hr': return <HRForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'whs': return <WHSForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'it': return <ITForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'risk': return <RiskForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'finance': return <FinanceForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'ncr': return <NCRForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
     }
 
     // Fallback to generic JSON mapping if form not matched
