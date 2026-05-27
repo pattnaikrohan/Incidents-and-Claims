@@ -606,7 +606,7 @@ export default function IncidentDetails() {
     }
   };
 
-  const handleOriginalFormSubmit = async (formData: any, isDraft?: boolean) => {
+  const handleOriginalFormSubmit = async (formData: any, _isDraft?: boolean) => {
     setIsEditingForm(false);
     setIsUpdatingDept(true);
     try {
