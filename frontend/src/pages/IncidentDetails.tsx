@@ -625,9 +625,11 @@ export default function IncidentDetails() {
       const flowUrl = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/74f8a63304df494087f857e6f1b2052c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oodv6eTDdoSD_vCx-h3peZ8Ltfz0WbXcYUMkYG4YuOE';
       
       const payloadToFlow = {
-        ...restFormData,
-        incident_category: getIncidentCategory(incident),
-        editor_email: email || role
+        body: {
+          ...restFormData,
+          incident_category: getIncidentCategory(incident),
+          editor_email: email || role
+        }
       };
 
       fetch(flowUrl, {
