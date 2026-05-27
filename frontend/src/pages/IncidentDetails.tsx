@@ -626,9 +626,10 @@ export default function IncidentDetails() {
       
       const payloadToFlow = {
         body: {
-          ...restFormData,
-          incident_category: getIncidentCategory(incident),
-          editor_email: email || role
+          "editor email": email || '',
+          "incident id": incident.id,
+          "incident type": getIncidentCategory(incident),
+          ...restFormData
         }
       };
 
