@@ -26,8 +26,8 @@ export default function RiskForm({ onSubmit, onCancel, loading, initialData, rea
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         date_reported: initialData.date_reported || initialData.date_logged || initialData.date || today(),
         date_logged: initialData.date_logged || initialData.date || today(),
-        reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || 'System User',
-        logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || 'System User',
+        reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || (localStorage.getItem('email') || 'System User'),
+        logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || (localStorage.getItem('email') || 'System User'),
         employee_name: initialData.employee_name || initialData.customer_name || '',
         business_unit: initialData.business_unit || '',
         branch_department: initialData.branch_department || '',
@@ -40,7 +40,7 @@ export default function RiskForm({ onSubmit, onCancel, loading, initialData, rea
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: (localStorage.getItem('email') || 'System User'),
       business_unit:'', branch_department:'', incident_type:'',
       regulation_policy_breached:'', description:'', files: [] as File[]
     };

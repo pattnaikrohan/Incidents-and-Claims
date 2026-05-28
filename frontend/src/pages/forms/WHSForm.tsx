@@ -26,8 +26,8 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         date_reported: initialData.date_reported || initialData.date_logged || initialData.date || today(),
         date_logged: initialData.date_logged || initialData.date || today(),
-        reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || 'System User',
-        logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || 'System User',
+        reported_by: initialData.reported_by || initialData.logged_by || initialData.creator_id || (localStorage.getItem('email') || 'System User'),
+        logged_by: initialData.logged_by || initialData.reported_by || initialData.creator_id || (localStorage.getItem('email') || 'System User'),
         employee_name: initialData.employee_name || initialData.customer_name || '',
         business_unit: initialData.business_unit || '',
         branch_department: initialData.branch_department || '',
@@ -43,7 +43,7 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: (localStorage.getItem('email') || 'System User'),
       business_unit:'', branch_department:'', persons_involved:'', location:'',
       incident_type:'', description:'', injury_details:'', files: [] as File[]
     };

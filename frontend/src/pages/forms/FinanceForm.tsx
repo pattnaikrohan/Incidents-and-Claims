@@ -27,8 +27,8 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
         incident_id: stableId,
         date_of_incident: initialData.date_of_incident || initialData.date || '',
         date_reported: initialData.date_reported || initialData.reported_date || initialData.date_logged || initialData.date || today(),
-        reported_by: initialData.reported_by || initialData.logged_by || 'System User',
-        logged_by: initialData.logged_by || initialData.reported_by || 'System User',
+        reported_by: initialData.reported_by || initialData.logged_by || (localStorage.getItem('email') || 'System User'),
+        logged_by: initialData.logged_by || initialData.reported_by || (localStorage.getItem('email') || 'System User'),
         business_unit: initialData.business_unit || '',
         branch_department: initialData.branch_department || '',
         incident_type: initialData.incident_type || initialData.type || '',
@@ -39,7 +39,7 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('email')||'Current User',
+      reported_by: (localStorage.getItem('email') || 'System User'),
       business_unit:'', branch_department:'',
       incident_type:'', description:'', files: [] as File[]
     };
