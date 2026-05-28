@@ -23,7 +23,7 @@ import { StructuredDescription } from '../components/StructuredDescription';
 export default function IncidentDetails() {
   const { id } = useParams();
   const { role, email } = useAuth();
-  const [pollingInterval, setPollingInterval] = useState(30 * 60 * 1000); // 30 minutes in ms
+  const [pollingInterval, setPollingInterval] = useState(5000); // 5 seconds in ms
   const { incidents, loading: hookLoading, handleManualRefresh } = useIncidents(pollingInterval);
   const [incident, setIncident] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +82,7 @@ export default function IncidentDetails() {
     setPollingInterval(2000);
     handleManualRefresh();
     fastPollingTimeoutRef.current = setTimeout(() => {
-      setPollingInterval(30 * 60 * 1000);
+      setPollingInterval(5000);
       fastPollingTimeoutRef.current = null;
     }, 8000);
   };
