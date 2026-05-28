@@ -16,12 +16,12 @@ import NCRForm from './forms/NCRForm';
 import { useIncidents } from '../hooks/useIncidents';
 
 const FORM_META: Record<string, { label: string; icon: any; color: string; desc: string; prefix: string }> = {
-  cargo: { label: 'Cargo & Equipment Incident', icon: Package, color: '#f59e0b', desc: 'Log cargo damage, theft, equipment failure and related events.', prefix: 'INC' },
-  hr: { label: 'Human Resources Incident', icon: Users, color: '#8b5cf6', desc: 'Report HR matters including misconduct, grievances, and policy breaches.', prefix: 'INC' },
-  whs: { label: 'WH&S Incident', icon: HeartPulse, color: '#ef4444', desc: 'Report workplace health, safety incidents, near misses, and injuries.', prefix: 'INC' },
-  it: { label: 'IT & Security Incident', icon: Lock, color: '#06b6d4', desc: 'Report cyber incidents, data breaches, outages, and unauthorised access.', prefix: 'INC' },
-  risk: { label: 'Risk & Compliance Incident', icon: Shield, color: '#10b981', desc: 'Report regulatory breaches, policy non-compliance, and sanctions violations.', prefix: 'INC' },
-  finance: { label: 'Finance Incident', icon: DollarSign, color: '#3b82f6', desc: 'Report financial incidents and travel disruption events.', prefix: 'INC' },
+  cargo: { label: 'Cargo & Equipment Incident', icon: Package, color: '#f59e0b', desc: 'Log cargo damage, theft, equipment failure and related events.', prefix: 'CEI' },
+  hr: { label: 'Human Resources Incident', icon: Users, color: '#8b5cf6', desc: 'Report HR matters including misconduct, grievances, and policy breaches.', prefix: 'HR' },
+  whs: { label: 'WH&S Incident', icon: HeartPulse, color: '#ef4444', desc: 'Report workplace health, safety incidents, near misses, and injuries.', prefix: 'WHS' },
+  it: { label: 'IT & Security Incident', icon: Lock, color: '#06b6d4', desc: 'Report cyber incidents, data breaches, outages, and unauthorised access.', prefix: 'ITS' },
+  risk: { label: 'Risk & Compliance Incident', icon: Shield, color: '#10b981', desc: 'Report regulatory breaches, policy non-compliance, and sanctions violations.', prefix: 'RCI' },
+  finance: { label: 'Finance Incident', icon: DollarSign, color: '#3b82f6', desc: 'Report financial incidents and travel disruption events.', prefix: 'FIN' },
   ncr: { label: 'Non-Conformance Report (NCR)', icon: FileWarning, color: '#eab308', desc: 'Log non-conformance reports, process failures, and defects.', prefix: 'NCR' },
 };
 
@@ -65,7 +65,7 @@ export default function NewIncident() {
       });
     
     const maxSeq = relatedIds.length > 0 ? Math.max(...relatedIds) : 0;
-    return `${prefix}-${(maxSeq + 1).toString().padStart(6, '0')}`;
+    return `${prefix}-${(maxSeq + 1).toString().padStart(3, '0')}`;
   }, [meta, incidents]);
 
   // Set stickyId once we have a calculated ID and haven't set it yet
