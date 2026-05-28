@@ -99,7 +99,18 @@ export default function NewIncident() {
       const currentIncidentId = (data.incident_id && !data.incident_id.includes('PENDING')) 
         ? data.incident_id 
         : (stickyId || calculatedNextId || `${meta.prefix}-${Date.now()}`);
+
+      const basePayload = { ...data };
+      const autoMappedPayload: any = {};
+      Object.keys(basePayload).forEach(key => {
+        if (!key.startsWith('cr991_')) {
+          const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+          autoMappedPayload[`cr991_${cleanKey}`] = basePayload[key];
+        }
+      });
+
       const payload = {
+        ...autoMappedPayload,
         ...data,
         incident_id: currentIncidentId,
         incident_ref: currentIncidentId,
@@ -125,18 +136,6 @@ export default function NewIncident() {
           cr991_immediatecontainmentaction: data.containment || '',
           cr991_relatedrecordreference: data.related_record || '',
         } : {}),
-      const basePayload = { ...data };
-      const autoMappedPayload: any = {};
-      Object.keys(basePayload).forEach(key => {
-        if (!key.startsWith('cr991_')) {
-          const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-          autoMappedPayload[`cr991_${cleanKey}`] = basePayload[key];
-        }
-      });
-
-      const payload = {
-        ...data,
-        ...autoMappedPayload,
         category: type,
         type: meta.label,
         status: isDraft ? 'Draft' : (DEFAULT_STATUSES[type] || 'Open - New'),
