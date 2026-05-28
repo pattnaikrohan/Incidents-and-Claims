@@ -143,6 +143,7 @@ export default function NewIncident() {
         cr991_incidenttype: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : data.incident_types,
         cr991_immediatecorrectiveaction: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
         cr991_intenttoclaimissued: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
+        cr991_incidentsummary: data.incident_summary || data.description || 'N/A',
       };
       delete payload.files;
       
