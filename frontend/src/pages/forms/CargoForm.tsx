@@ -197,10 +197,11 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Remove any previously generated structured sections to avoid duplicating them on edit
+    const baseSummary = (f.incident_summary || '').split('--- CARGO & TRANSPORT DETAILS ---')[0].trim();
+    
     const enrichedSummary = `
-${f.incident_summary}
-
---- CARGO & TRANSPORT DETAILS ---
+${baseSummary ? baseSummary + '\n\n' : ''}--- CARGO & TRANSPORT DETAILS ---
 Short Description: ${f.short_description || 'N/A'}
 System Job Number: ${f.system_job_number || 'N/A'}
 MBL/MAWB Issued: ${f.mbl_mawb_issued} (Number: ${f.mbl_mawb_number || 'N/A'})
