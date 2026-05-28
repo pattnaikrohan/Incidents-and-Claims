@@ -136,9 +136,13 @@ export default function NewIncident() {
         date_of_incident: formatToISO(data.date_of_incident),
         date_reported: formatToISO(data.date_reported),
         // Ensure arrays are converted to strings for the backend schema
-        corrective_actions: Array.isArray(data.corrective_actions) ? data.corrective_actions.join(', ') : data.corrective_actions,
-        incident_types: Array.isArray(data.incident_types) ? data.incident_types.join(', ') : data.incident_types,
-        claim_types: Array.isArray(data.claim_types) ? data.claim_types.join(', ') : data.claim_types,
+        corrective_actions: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
+        incident_types: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : data.incident_types,
+        claim_types: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
+        // Explicit mappings for Power Automate logical names
+        cr991_incidenttype: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : data.incident_types,
+        cr991_immediatecorrectiveaction: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
+        cr991_intenttoclaimissued: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
       };
       delete payload.files;
       
