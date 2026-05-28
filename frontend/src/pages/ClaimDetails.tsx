@@ -473,7 +473,7 @@ export default function ClaimDetails() {
             {/* Description Narrative */}
             <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
               <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 700, color: 'var(--fg-base)' }}>Incident Narrative</h3>
-              <StructuredDescription description={incident.description} />
+              <StructuredDescription description={incident.incident_summary || incident.description} />
             </div>
           </div>
 
