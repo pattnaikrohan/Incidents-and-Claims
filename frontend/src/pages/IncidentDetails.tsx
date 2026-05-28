@@ -625,14 +625,22 @@ export default function IncidentDetails() {
       const flowUrl = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/74f8a63304df494087f857e6f1b2052c/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=oodv6eTDdoSD_vCx-h3peZ8Ltfz0WbXcYUMkYG4YuOE';
       
       const cat = getIncidentCategory(incident);
+      const autoMappedPayload: any = {};
+      Object.keys(backendPayload).forEach(key => {
+        if (!key.startsWith('cr991_')) {
+          const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+          autoMappedPayload[`cr991_${cleanKey}`] = backendPayload[key];
+        }
+      });
+
       const payloadToFlow = {
         "editor email": email || '',
         "incident id": incident.id,
         "incident type": cat === 'risk' ? 'risk and compliance' : cat,
         ...backendPayload,
-        "type": cat === 'risk' ? 'risk and compliance' : cat,
-        cr991_incidenttype: backendPayload.incident_types,
-        cr991_immediatecorrectiveaction: backendPayload.corrective_actions,
+        ...autoMappedPayload,
+        cr991_incidenttype: backendPayload.incident_types || backendPayload.incident_type,
+        cr991_immediatecorrectiveaction: backendPayload.corrective_actions || backendPayload.immediate_action || backendPayload.corrective_action,
         cr991_intenttoclaimissued: backendPayload.claim_types,
         cr991_incidentsummary: backendPayload.incident_summary || backendPayload.description,
         cr991_shippinglineairline: backendPayload.carrier || '',

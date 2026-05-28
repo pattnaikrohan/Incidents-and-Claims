@@ -125,6 +125,18 @@ export default function NewIncident() {
           cr991_immediatecontainmentaction: data.containment || '',
           cr991_relatedrecordreference: data.related_record || '',
         } : {}),
+      const basePayload = { ...data };
+      const autoMappedPayload: any = {};
+      Object.keys(basePayload).forEach(key => {
+        if (!key.startsWith('cr991_')) {
+          const cleanKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+          autoMappedPayload[`cr991_${cleanKey}`] = basePayload[key];
+        }
+      });
+
+      const payload = {
+        ...data,
+        ...autoMappedPayload,
         category: type,
         type: meta.label,
         status: isDraft ? 'Draft' : (DEFAULT_STATUSES[type] || 'Open - New'),
@@ -137,14 +149,15 @@ export default function NewIncident() {
         date_reported: formatToISO(data.date_reported),
         // Ensure arrays are converted to strings for the backend schema
         corrective_actions: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
-        incident_types: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : data.incident_types,
+        incident_types: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : (data.incident_types || data.incident_type),
         claim_types: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
         // Explicit mappings for Power Automate logical names
-        cr991_incidenttype: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : data.incident_types,
+        cr991_incidenttype: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : (data.incident_types || data.incident_type),
         cr991_immediatecorrectiveaction: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
         cr991_intenttoclaimissued: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
         cr991_incidentsummary: data.incident_summary || data.description || 'N/A',
         cr991_shippinglineairline: data.carrier || '',
+        cr991_branchdepartment: data.branch_department || '',
       };
       delete payload.files;
       
