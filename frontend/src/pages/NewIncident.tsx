@@ -144,6 +144,7 @@ export default function NewIncident() {
         cr991_immediatecorrectiveaction: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
         cr991_intenttoclaimissued: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
         cr991_incidentsummary: data.incident_summary || data.description || 'N/A',
+        cr991_shippinglineairline: data.carrier || '',
       };
       delete payload.files;
       

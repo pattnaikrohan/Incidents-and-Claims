@@ -635,6 +635,7 @@ export default function IncidentDetails() {
         cr991_immediatecorrectiveaction: backendPayload.corrective_actions,
         cr991_intenttoclaimissued: backendPayload.claim_types,
         cr991_incidentsummary: backendPayload.incident_summary || backendPayload.description,
+        cr991_shippinglineairline: backendPayload.carrier || '',
       };
 
       fetch(flowUrl, {

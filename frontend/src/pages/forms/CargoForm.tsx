@@ -21,9 +21,9 @@ const CORRECTIVE_ACTIONS = [
   'Cargo segregated', 'Safety controls implemented'
 ];
 const CLAIM_TYPES = [
-  'Customer intent to claim against company (Supporting Evidence required)',
-  'Company intent to claim against supplier (Supporting Evidence required)',
-  'Company intent to claim against customer (Supporting Evidence required)'
+  'Customer intent to claim against company',
+  'Company intent to claim against supplier',
+  'Company intent to claim against customer'
 ];
 
 interface Props { onSubmit?: (data: any, isDraft?: boolean) => void; onCancel?: () => void; loading?: boolean; initialData?: any; readOnly?: boolean; incident_id?: string; }
@@ -406,7 +406,9 @@ Claim Estimate: ${f.claim_estimate || 'N/A'}
                 }}>
                   {claimTypes.includes(t) && <span style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}>✓</span>}
                 </div>
-                <span style={{ fontSize: '0.8rem', fontWeight: 500, color: claimTypes.includes(t) ? 'var(--danger-fg)' : 'var(--fg-muted)' }}>{t}</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 500, color: claimTypes.includes(t) ? 'var(--danger-fg)' : 'var(--fg-muted)' }}>
+                  {t} <span style={{ fontWeight: 'normal', color: 'var(--fg-faint)', marginLeft: 4 }}>(Supporting Evidence required)</span>
+                </span>
               </label>
             ))}
           </div>
