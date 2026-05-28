@@ -221,6 +221,7 @@ Scope of Work: ${f.scope_of_work === 'Other' ? f.scope_of_work_other : f.scope_o
 Role Performed: ${f.role_performed || 'N/A'}
 
 --- CLAIMS & ESTIMATES ---
+Intent to Claim: ${claimTypes.length > 0 ? claimTypes.join(', ') : 'None'}
 Claim Estimate: ${f.claim_estimate || 'N/A'}
     `.trim();
 
