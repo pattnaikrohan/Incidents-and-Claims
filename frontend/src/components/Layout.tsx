@@ -335,16 +335,6 @@ export default function Layout({ children }: { children: ReactNode }) {
 
               {/* Search link moved to header */}
 
-              {role === 'risk_compliance' && (
-                <Link
-                  to="/reports"
-                  className={`sidebar__nav-item ${isActive('/reports') ? 'active' : ''}`}
-                  title="Reports"
-                >
-                  <BarChart3 size={18} color="#f43f5e" />
-                  {!collapsed && <span>Reports</span>}
-                </Link>
-              )}
 
             </>
           )}
@@ -384,8 +374,32 @@ export default function Layout({ children }: { children: ReactNode }) {
       <div className="sidebar-main">
         {/* Topbar strip */}
         <header className="sidebar-topbar">
-          <div className="sidebar-topbar__left">
-            {/* Breadcrumb removed as per user request */}
+          <div className="sidebar-topbar__left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '0.5rem' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '28px',
+              height: '28px',
+              borderRadius: '8px',
+              background: 'rgba(59, 130, 246, 0.1)',
+              border: '1px solid rgba(59, 130, 246, 0.2)'
+            }}>
+              <Shield size={14} color="#60a5fa" />
+            </div>
+            <div style={{
+              fontSize: '0.85rem',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.15em',
+              background: 'linear-gradient(135deg, #ffffff 0%, #94a3b8 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              opacity: 0.95,
+              transform: 'translateY(1px)'
+            }}>
+              Risk & Compliance Hub
+            </div>
           </div>
           <div className="sidebar-topbar__right">
             <button
