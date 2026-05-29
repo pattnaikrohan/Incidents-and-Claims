@@ -346,10 +346,19 @@ export default function IncidentDetails() {
   };
 
   useEffect(() => {
-    if (!hookLoading && !isDirty && !postSaveShieldRef.current) {
+    if (!hookLoading && !isDirty && !postSaveShieldRef.current && !isEditingForm) {
       fetchIncident();
     }
-  }, [id, incidents, hookLoading, isDirty]);
+  }, [id, incidents, hookLoading, isDirty, isEditingForm]);
+
+  // Pause polling while actively editing
+  useEffect(() => {
+    if (isEditingForm) {
+      setPollingInterval(0);
+    } else {
+      setPollingInterval(5000);
+    }
+  }, [isEditingForm]);
 
   const handleAssign = async (userId: number, name: string) => {
     try {
