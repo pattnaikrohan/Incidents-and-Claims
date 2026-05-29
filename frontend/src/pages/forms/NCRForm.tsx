@@ -60,7 +60,7 @@ export default function NCRForm({ onSubmit, onCancel, loading, initialData, read
     }
     return {
       incident_id: stableId, date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       entity: '', business_unit: '', branch_department: '',
       incident_type: 'Non-Conformance Report', description: '',
       

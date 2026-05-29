@@ -39,7 +39,7 @@ export default function FinanceForm({ onSubmit, onCancel, loading, initialData, 
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('email')||'Current User',
+      reported_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       business_unit:'', branch_department:'',
       incident_type:'', description:'', files: [] as File[]
     };

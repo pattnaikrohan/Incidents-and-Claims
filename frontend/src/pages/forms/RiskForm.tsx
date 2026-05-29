@@ -40,7 +40,7 @@ export default function RiskForm({ onSubmit, onCancel, loading, initialData, rea
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       business_unit:'', branch_department:'', incident_type:'',
       regulation_policy_breached:'', description:'', files: [] as File[]
     };

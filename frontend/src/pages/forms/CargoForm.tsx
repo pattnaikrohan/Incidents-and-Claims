@@ -80,7 +80,7 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
     return {
       incident_id: stableId,
       short_description: '', date_of_incident: '', date_logged: today(),
-      logged_by: localStorage.getItem('role') || 'Current User',
+      logged_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       business_unit: '', branch_department: '', system_job_number: '',
       mbl_mawb_issued: 'Yes', hbl_hawb_issued: 'Yes',
       mbl_mawb_number: '', hbl_hawb_number: '',

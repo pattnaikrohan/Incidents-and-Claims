@@ -40,7 +40,7 @@ export default function ITForm({ onSubmit, onCancel, loading, initialData, readO
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       business_unit:'', branch_department:'', incident_type:'',
       systems_data_affected:'', description:'', files: [] as File[]
     };

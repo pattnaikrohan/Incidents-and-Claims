@@ -43,7 +43,7 @@ export default function WHSForm({ onSubmit, onCancel, loading, initialData, read
     }
     return {
       incident_id: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       business_unit:'', branch_department:'', persons_involved:'', location:'',
       incident_type:'', description:'', injury_details:'', files: [] as File[]
     };

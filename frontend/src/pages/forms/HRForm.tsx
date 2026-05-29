@@ -42,7 +42,7 @@ export default function HRForm({ onSubmit, onCancel, loading, initialData, readO
     }
     return {
       incident_ref: stableId, date_of_incident:'', date_reported: today(),
-      reported_by: localStorage.getItem('role')||'Current User',
+      reported_by: localStorage.getItem('email') || localStorage.getItem('role') || 'Current User',
       employee_name:'', business_unit:'', branch_department:'',
       incident_type:'', description:'', witnesses:'', immediate_action:'', investigation_required:'Yes', files: [] as File[]
     };
