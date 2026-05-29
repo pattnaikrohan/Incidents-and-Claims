@@ -27,7 +27,7 @@ const FORM_META: Record<string, { label: string; icon: any; color: string; desc:
 
 export default function NewIncident() {
   const navigate = useNavigate();
-  const { role, email, name } = useAuth();
+  const { role, email } = useAuth();
   const { incidents, loading: incidentsLoading } = useIncidents(0); // No polling needed here, just the list
   const [params] = useSearchParams();
   const type = params.get('type') || '';
@@ -110,7 +110,7 @@ export default function NewIncident() {
       });
 
       const incidentLink = `${window.location.origin}/incidents/${currentIncidentId}`;
-      const loggedBy = name || email || localStorage.getItem('email') || 'System User';
+      const loggedBy = email || localStorage.getItem('email') || 'System User';
 
       const payload = {
         ...autoMappedPayload,
