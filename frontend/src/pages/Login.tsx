@@ -252,11 +252,21 @@ export default function Login() {
           flex: '0 0 65%',
           background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
           height: '100%',
-          overflowY: 'auto',
           display: 'flex',
-          flexDirection: 'column'
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden'
         }}>
-          <div style={{ padding: '1.5rem 4rem 4rem 4rem' }}>
+          {/* Subtle decorative dots pattern */}
+          <div style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)',
+            backgroundSize: '32px 32px', opacity: 0.5
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '420px', padding: '0 3rem' }}>
+            {/* Status indicator */}
             <div style={{ marginBottom: '2rem', position: 'relative' }}>
               {/* High-tech corner accents */}
               <div style={{ position: 'absolute', top: 0, left: 0, width: '20px', height: '2px', background: '#6366f1' }} />
@@ -277,11 +287,11 @@ export default function Login() {
                 </div>
 
                 <h2 style={{
-                  fontSize: '4rem',
+                  fontSize: '3.5rem',
                   fontWeight: 900,
                   color: '#0f172a',
                   letterSpacing: '-0.07em',
-                  margin: '0 0 0.5rem 0',
+                  margin: '0 0 0.75rem 0',
                   fontFamily: "'Outfit', sans-serif",
                   lineHeight: 0.85,
                   background: 'linear-gradient(135deg, #0f172a 30%, #6366f1 100%)',
@@ -291,13 +301,14 @@ export default function Login() {
                   Authenticate
                 </h2>
 
-                <p style={{ color: '#64748b', fontSize: '1.15rem', fontWeight: 500, margin: 0, lineHeight: 1.5, maxWidth: '400px' }}>
-                  Secure identification required to access the <br />
+                <p style={{ color: '#64748b', fontSize: '1rem', fontWeight: 500, margin: 0, lineHeight: 1.6, maxWidth: '360px' }}>
+                  Secure identification required to access the{' '}
                   <span style={{ color: '#6366f1', fontWeight: 800 }}>R&C-Hub</span> Intelligence Core.
                 </p>
               </div>
             </div>
 
+            {/* Auth Card */}
             <div style={{
               background: 'linear-gradient(165deg, rgba(248, 250, 252, 0.95) 0%, rgba(226, 232, 240, 0.9) 100%)',
               backdropFilter: 'blur(40px)',
@@ -313,7 +324,7 @@ export default function Login() {
                 disabled={ssoLoading || authStatus !== 'idle'}
                 style={{
                   width: '100%',
-                  padding: '1rem 1.5rem',
+                  padding: '1.1rem 1.5rem',
                   fontSize: '0.95rem',
                   fontWeight: 700,
                   borderRadius: '16px',
@@ -327,7 +338,6 @@ export default function Login() {
                   gap: '0.75rem',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 10px 25px rgba(0, 120, 212, 0.3), 0 0 0 1px rgba(0,120,212,0.1)',
-                  marginBottom: '1.5rem',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
@@ -345,7 +355,16 @@ export default function Login() {
                 <ArrowRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
               </button>
 
+              {/* Subtle security note */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.25rem' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }} />
+                <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.05em' }}>Protected by Azure Active Directory</span>
+              </div>
+            </div>
 
+            {/* Version tag */}
+            <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#cbd5e1', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Enterprise SSO Authentication</span>
             </div>
           </div>
         </div>
