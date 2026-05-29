@@ -355,7 +355,7 @@ export default function IncidentDetails() {
   useEffect(() => {
     if (isEditingForm) {
       setPollingInterval(0);
-    } else {
+    } else if (!fastPollingTimeoutRef.current) {
       setPollingInterval(5000);
     }
   }, [isEditingForm]);
@@ -642,10 +642,12 @@ export default function IncidentDetails() {
         }
       });
 
-      const payloadToFlow = {
+      const flowPayload = {
         "editor email": email || '',
         "incident id": incident.id,
         "incident type": cat === 'risk' ? 'risk and compliance' : cat,
+        cr991_incidentnumber: incident.incident_number_str || '',
+        cr991_incidentstatus: _isDraft ? 'Draft' : 'Open - Incident Logged',
         ...backendPayload,
         ...autoMappedPayload,
         cr991_incidenttypeselectallapplicableincid: backendPayload.incident_types || backendPayload.incident_type,
@@ -667,8 +669,9 @@ export default function IncidentDetails() {
       }).catch(err => console.error('Power Automate edit trigger failed:', err));
 
       showNotification('Submission updated successfully.');
-      activatePostSaveShield();
-      triggerFastPolling();
+      await handleManualRefresh(); // Fetch immediately
+      triggerFastPolling(); // Continue fast polling for a few seconds
+
     } catch (err) {
       console.error('Failed to update submission:', err);
       alert('Failed to update submission.');
