@@ -665,7 +665,7 @@ export default function IncidentDetails() {
       fetch(flowUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payloadToFlow)
+        body: JSON.stringify(flowPayload)
       }).catch(err => console.error('Power Automate edit trigger failed:', err));
 
       showNotification('Submission updated successfully.');
