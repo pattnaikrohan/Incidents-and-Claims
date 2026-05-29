@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShieldAlert, Mail, Lock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { ShieldAlert, ArrowRight, ShieldCheck } from 'lucide-react';
 
 import { api } from '../services/api';
 import logo from '../assets/aaw_new.png';
@@ -9,8 +9,6 @@ import logo from '../assets/aaw_new.png';
 export default function Login() {
   const { token, login, loginWithSSO, ssoLoading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('full.access@aaw.com');
-  const [password, setPassword] = useState('Access2026!');
   const [error, setError] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -45,53 +43,7 @@ export default function Login() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setAuthStatus('verifying');
 
-    // Artificial delay for the verifying animation
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    try {
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
-
-      const response = await api.post('/auth/login', formData, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
-
-      const { access_token, role, branch_id, branch_name, business_unit } = response.data;
-      login(access_token, role, email, branch_id, branch_name, business_unit);
-
-      setAuthStatus('success');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      navigate('/');
-    } catch (err: any) {
-      console.warn('Backend authentication failed, attempting local demo fallback...', err);
-      
-      // MOCK FALLBACK for demo purposes if backend is down
-      const mockPersonas: any = {
-        'full.access@aaw.com': { role: 'full_access', name: 'Global Admin' },
-        'risk.compliance@aaw.com': { role: 'risk_compliance', name: 'Risk & Compliance' },
-        'aaw.global.logistics.au.manager@aaw.com': { role: 'bu_access', name: 'BU Manager', business_unit: 'AAW Global Logistics - AU' },
-        'people.safety@aaw.com': { role: 'hr_access', name: 'People & Safety' },
-        'submit.only@aaw.com': { role: 'submit_only', name: 'Operator' }
-      };
-
-      if (mockPersonas[email] && password === 'Access2026!') {
-        const user = mockPersonas[email];
-        login('mock_token', user.role, email, null, user.name, user.business_unit);
-        setAuthStatus('success');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        navigate('/');
-      } else {
-        setAuthStatus('error');
-        setError(err.response?.data?.detail || 'Authentication failed. Verify your credentials or use the Persona Selector.');
-      }
-    }
-  };
 
 
 
@@ -393,100 +345,7 @@ export default function Login() {
                 <ArrowRight size={16} style={{ marginLeft: 'auto', opacity: 0.7 }} />
               </button>
 
-              {/* Divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, #e2e8f0)' }} />
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.15em', textTransform: 'uppercase' }}>or use development login</span>
-                <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
-              </div>
 
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Corporate Identity</label>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}><Mail size={18} /></div>
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="premium-input" placeholder="name@aaw-group.com" />
-                  </div>
-                </div>
-
-                <div className="input-group">
-                  <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Security Authorization</label>
-                  <div style={{ position: 'relative' }}>
-                    <div style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}><Lock size={18} /></div>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="premium-input" placeholder="••••••••" />
-                  </div>
-                </div>
-
-                <button type="submit" disabled={authStatus !== 'idle'} className="premium-btn elite-launch-btn" style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-                  <Zap size={18} fill="#fff" className="zap-icon" />
-                  <span style={{ letterSpacing: '0.02em' }}>Initialize Secure Session</span>
-                  <ArrowRight size={18} className="arrow-icon" style={{ marginLeft: 'auto' }} />
-                </button>
-              </form>
-
-              {/* Elite Authorized Personnel Section for Rapid Testing */}
-              <div style={{ marginTop: '3rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, #e2e8f0)' }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Rapid Testing Personas</span>
-                  <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, #e2e8f0, transparent)' }} />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                  {[
-                    // CORE
-                    { role: 'Global Admin', email: 'full.access@aaw.com', color: '#6366f1', desc: 'Full Oversight' },
-                    { role: 'Risk & Comp', email: 'risk.compliance@aaw.com', color: '#10b981', desc: 'R&C Manager' },
-                    { role: 'People & Safety', email: 'people.safety@aaw.com', color: '#ec4899', desc: 'HR / WHS' },
-                    { role: 'IT Security', email: 'it.security@aaw.com', color: '#06b6d4', desc: 'Cyber/CIO' },
-                    { role: 'Finance', email: 'finance@aaw.com', color: '#3b82f6', desc: 'CFO / Loss' },
-                    
-                    // BU MANAGERS (use mock fallback — no dedicated store users)
-                    { role: 'BU: AU', email: 'aaw.global.logistics.au.manager@aaw.com', color: '#f59e0b', desc: 'Logistics AU' },
-                    { role: 'BU: NZ', email: 'aaw.global.logistics.nz.manager@aaw.com', color: '#f59e0b', desc: 'Logistics NZ' },
-                    { role: 'BU: Bulk', email: 'aaw.bulk.liquid.logistics.manager@aaw.com', color: '#f59e0b', desc: 'Bulk Liquid' },
-                    { role: 'BU: Hoyer', email: 'hoyer.logistics.australia.manager@aaw.com', color: '#f59e0b', desc: 'Hoyer AU' },
-                    
-                    // BRANCHES
-                    { role: 'MEL Branch', email: 'aaw.global.logistics.melbourne@aaw.com', color: '#a855f7', desc: 'Melbourne' },
-                    { role: 'SYD Branch', email: 'aaw.global.logistics.sydney@aaw.com', color: '#a855f7', desc: 'Sydney' },
-                    { role: 'AKL Branch', email: 'aaw.global.logistics.auckland@aaw.com', color: '#a855f7', desc: 'Auckland' },
-                    { role: 'Brokerage', email: 'aaw.customs.brokerage@aaw.com', color: '#a855f7', desc: 'Brokerage' },
-                    { role: 'Coastalbridge', email: 'coastalbridge@aaw.com', color: '#a855f7', desc: 'Coastalbridge' },
-                  ].map((acc) => (
-                    <button 
-                      type="button" 
-                      key={acc.email + acc.role} 
-                      onClick={() => { 
-                        setEmail(acc.email); 
-                        setPassword('Access2026!'); 
-                        // Visual feedback
-                        setTimeout(() => {
-                           const form = document.querySelector('form');
-                           if (form) form.requestSubmit();
-                        }, 200);
-                      }} 
-                      className="elite-persona-card"
-                      style={{ padding: '1.25rem' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{
-                          width: '40px', height: '40px', borderRadius: '12px', background: `${acc.color}08`,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${acc.color}15`,
-                          transition: 'all 0.3s ease', flexShrink: 0
-                        }} className="icon-box">
-                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: acc.color, boxShadow: `0 0 10px ${acc.color}50` }} />
-                        </div>
-                        <div style={{ textAlign: 'left', minWidth: 0 }}>
-                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>{acc.role}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500, marginTop: '2px' }}>{acc.desc}</div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
