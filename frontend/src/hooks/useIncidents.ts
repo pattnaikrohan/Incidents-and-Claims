@@ -298,7 +298,24 @@ export function useIncidents(pollingInterval = 2000) {
 
         // ── CARGO & EQUIPMENT ─────────────────────────────────
         if (Array.isArray(payload.cargo_equipment_incidents)) {
+          let cargoDebugDone = false;
           payload.cargo_equipment_incidents.forEach((raw: any) => {
+            if (!cargoDebugDone) {
+              cargoDebugDone = true;
+              const allKeys = Object.keys(raw);
+              console.log('[CARGO DEBUG] All raw keys:', allKeys);
+              console.log('[CARGO DEBUG] incidenttype keys:', allKeys.filter(k => k.toLowerCase().includes('incidenttype') || k.toLowerCase().includes('incident_type')));
+              console.log('[CARGO DEBUG] corrective/action keys:', allKeys.filter(k => k.toLowerCase().includes('corrective') || k.toLowerCase().includes('immediateaction') || k.toLowerCase().includes('immediatecorrective')));
+              console.log('[CARGO DEBUG] claim/intent keys:', allKeys.filter(k => k.toLowerCase().includes('claim') || k.toLowerCase().includes('intent')));
+              console.log('[CARGO DEBUG] incidenttype value:', raw.cr991_incidenttype);
+              console.log('[CARGO DEBUG] incidenttype formatted:', raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"]);
+              console.log('[CARGO DEBUG] immediatecorrectiveaction value:', raw.cr991_immediatecorrectiveaction);
+              console.log('[CARGO DEBUG] immediatecorrectiveaction formatted:', raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"]);
+              console.log('[CARGO DEBUG] intenttoclaimissued value:', raw.cr991_intenttoclaimissued);
+              console.log('[CARGO DEBUG] intenttoclaimissued formatted:', raw["cr991_intenttoclaimissued@OData.Community.Display.V1.FormattedValue"]);
+              console.log('[CARGO DEBUG] intenttoclaim value:', raw.cr991_intenttoclaim);
+              console.log('[CARGO DEBUG] intenttoclaim formatted:', raw["cr991_intenttoclaim@OData.Community.Display.V1.FormattedValue"]);
+            }
             addOrMerge({
               id: raw.cr991_cargoequipmentincidentid || raw.id,
               category: 'cargo',
@@ -342,9 +359,9 @@ export function useIncidents(pollingInterval = 2000) {
               transport_company: raw.cr991_transportcompany || '',
               scope_of_work: raw["cr991_scopeofwork@OData.Community.Display.V1.FormattedValue"] || raw.cr991_scopeofwork || '',
               role_performed: raw["cr991_roleperformed@OData.Community.Display.V1.FormattedValue"] || raw.cr991_roleperformed || '',
-              incident_types: raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || '',
-              claim_types: raw["cr991_intenttoclaimissued@OData.Community.Display.V1.FormattedValue"] || raw.cr991_intenttoclaimissued || raw["cr991_intenttoclaim@OData.Community.Display.V1.FormattedValue"] || raw.cr991_intenttoclaim || '',
-              corrective_actions: raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"] || raw.cr991_immediatecorrectiveaction || '',
+              incident_types: raw.cr991_incidenttypeselectallapplicableincid || raw["cr991_incidenttypeselectallapplicableincid@OData.Community.Display.V1.FormattedValue"] || raw["cr991_incidenttype@OData.Community.Display.V1.FormattedValue"] || raw.cr991_incidenttype || '',
+              claim_types: raw.cr991_intenttoclaimissuedselectallapplicable || raw["cr991_intenttoclaimissuedselectallapplicable@OData.Community.Display.V1.FormattedValue"] || raw["cr991_intenttoclaimissued@OData.Community.Display.V1.FormattedValue"] || raw.cr991_intenttoclaimissued || raw["cr991_intenttoclaim@OData.Community.Display.V1.FormattedValue"] || raw.cr991_intenttoclaim || '',
+              corrective_actions: raw.cr991_immediatecorrectiveactionselectallapplicable || raw["cr991_immediatecorrectiveactionselectallapplicable@OData.Community.Display.V1.FormattedValue"] || raw["cr991_immediatecorrectiveaction@OData.Community.Display.V1.FormattedValue"] || raw.cr991_immediatecorrectiveaction || '',
               claim_estimate: raw.cr991_incidentclaimestimate || '',
               incident_summary: raw.cr991_incidentsummary || raw.cr991_cargodescription || '',
               root_cause: raw.cr991_rootcause || '',

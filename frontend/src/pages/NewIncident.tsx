@@ -151,6 +151,9 @@ export default function NewIncident() {
         incident_types: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : (data.incident_types || data.incident_type),
         claim_types: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
         // Explicit mappings for Power Automate logical names
+        cr991_incidenttypeselectallapplicableincid: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : (data.incident_types || data.incident_type),
+        cr991_immediatecorrectiveactionselectallapplicable: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
+        cr991_intenttoclaimissuedselectallapplicable: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
         cr991_incidenttype: Array.isArray(data.incident_types) ? data.incident_types.join('; ') : (data.incident_types || data.incident_type),
         cr991_immediatecorrectiveaction: Array.isArray(data.corrective_actions) ? data.corrective_actions.join('; ') : data.corrective_actions,
         cr991_intenttoclaimissued: Array.isArray(data.claim_types) ? data.claim_types.join('; ') : data.claim_types,
