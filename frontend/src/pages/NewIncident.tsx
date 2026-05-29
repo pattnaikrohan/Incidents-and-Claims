@@ -27,7 +27,7 @@ const FORM_META: Record<string, { label: string; icon: any; color: string; desc:
 
 export default function NewIncident() {
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, email, name } = useAuth();
   const { incidents, loading: incidentsLoading } = useIncidents(0); // No polling needed here, just the list
   const [params] = useSearchParams();
   const type = params.get('type') || '';
@@ -109,12 +109,21 @@ export default function NewIncident() {
         }
       });
 
+      const incidentLink = `${window.location.origin}/incidents/${currentIncidentId}`;
+      const loggedBy = name || email || localStorage.getItem('email') || 'System User';
+
       const payload = {
         ...autoMappedPayload,
         ...data,
         incident_id: currentIncidentId,
         incident_ref: currentIncidentId,
+        incident_link: incidentLink,
+        submitted_by: loggedBy,
+        logged_by: loggedBy,
         // Add explicit cr991 keys to help Power Automate mapping
+        cr991_incidentlink: incidentLink,
+        cr991_submittedby: loggedBy,
+        cr991_loggedby: loggedBy,
         cr991_incidentid: currentIncidentId,
         cr991_incidentref: currentIncidentId,
         cr991_number: currentIncidentId,
