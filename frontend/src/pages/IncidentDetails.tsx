@@ -641,6 +641,9 @@ export default function IncidentDetails() {
           autoMappedPayload[`cr991_${cleanKey}`] = backendPayload[key];
         }
       });
+      
+      const incidentLink = `${window.location.origin}/incidents/${incident.incident_number_str || incident.id || searchId}`;
+      const loggedBy = email || localStorage.getItem('email') || 'System User';
 
       const flowPayload = {
         "editor email": email || '',
@@ -648,6 +651,12 @@ export default function IncidentDetails() {
         "incident type": cat === 'risk' ? 'risk and compliance' : cat,
         cr991_incidentnumber: incident.incident_number_str || '',
         cr991_incidentstatus: _isDraft ? 'Draft' : 'Open - Incident Logged',
+        incident_link: incidentLink,
+        cr991_incidentlink: incidentLink,
+        submitted_by: loggedBy,
+        cr991_submittedby: loggedBy,
+        logged_by: loggedBy,
+        cr991_loggedby: loggedBy,
         ...backendPayload,
         ...autoMappedPayload,
         cr991_incidenttypeselectallapplicableincid: backendPayload.incident_types || backendPayload.incident_type,
