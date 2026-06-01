@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ShieldAlert, ArrowRight, ShieldCheck } from 'lucide-react';
 
-import { api } from '../services/api';
+
 import logo from '../assets/aaw_new.png';
 
 export default function Login() {
-  const { token, login, loginWithSSO, ssoLoading } = useAuth();
+  const { token, loginWithSSO, ssoLoading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [authStatus, setAuthStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
