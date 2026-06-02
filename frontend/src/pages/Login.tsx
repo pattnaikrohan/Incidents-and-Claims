@@ -140,8 +140,8 @@ export default function Login() {
       {/* The App Window - STRICTLY FIXED HEIGHT */}
       <div className="app-window fade-in-scale" style={{
         display: 'flex',
-        width: 'min(820px, 90vw)',
-        height: 'min(520px, 80vh)',
+        width: 'min(760px, 90vw)',
+        height: 'min(480px, 80vh)',
         background: 'transparent',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
@@ -156,7 +156,7 @@ export default function Login() {
         {/* LEFT PANE: Hero & Brand */}
         <div
           style={{
-            flex: '0 0 36%',
+            flex: '0 0 35%',
             background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.9) 100%)',
             padding: '1.5rem',
             display: 'flex',
@@ -174,9 +174,8 @@ export default function Login() {
             <img src={logo} alt="R&C Hub" style={{ height: '28px', width: 'auto', marginBottom: '2rem', display: 'block' }} />
 
             <div style={{ position: 'relative' }}>
-              {/* Base Title - ALWAYS VISIBLE */}
               <h1 style={{
-                fontSize: '2.8rem',
+                fontSize: '2.5rem',
                 fontWeight: 700,
                 color: '#f8fafc',
                 fontFamily: "'Outfit', sans-serif",
@@ -186,8 +185,8 @@ export default function Login() {
               }}>
                 R&C <br />
                 <span style={{
-                  marginLeft: '1.5rem',
-                  fontSize: '4.5rem',
+                  marginLeft: '1.25rem',
+                  fontSize: '4rem',
                   color: '#38bdf8',
                   fontFamily: "'Pinyon Script', cursive",
                   display: 'inline-block',
@@ -200,7 +199,7 @@ export default function Login() {
 
               {/* Shine Overlay Layer */}
               <h1 style={{
-                fontSize: '2.8rem',
+                fontSize: '2.5rem',
                 fontWeight: 700,
                 color: '#ffffff',
                 fontFamily: "'Outfit', sans-serif",
@@ -221,8 +220,8 @@ export default function Login() {
               }}>
                 R&C <br />
                 <span style={{
-                  marginLeft: '1.5rem',
-                  fontSize: '4.5rem',
+                  marginLeft: '1.25rem',
+                  fontSize: '4rem',
                   color: '#ffffff',
                   fontFamily: "'Pinyon Script', cursive",
                   display: 'inline-block',
@@ -248,7 +247,7 @@ export default function Login() {
 
         {/* RIGHT PANE: Auth Gateway */}
         <div style={{
-          flex: '0 0 64%',
+          flex: '0 0 65%',
           background: 'linear-gradient(160deg, #f8fafc 0%, #eef2ff 50%, #f0fdf4 100%)',
           height: '100%',
           display: 'flex',
@@ -265,27 +264,27 @@ export default function Login() {
 
             {/* Icon */}
             <div style={{
-              width: '56px', height: '56px', borderRadius: '14px',
+              width: '52px', height: '52px', borderRadius: '12px',
               background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               marginBottom: '1rem',
               boxShadow: '0 8px 20px -5px rgba(15, 23, 42, 0.2)'
             }}>
-              <ShieldCheck size={28} color="#fff" />
+              <ShieldCheck size={24} color="#fff" />
             </div>
 
             {/* Text */}
             <h2 style={{
-              fontSize: '1.9rem',
+              fontSize: '1.7rem',
               fontWeight: 800,
               color: '#0f172a',
               letterSpacing: '-0.04em',
-              margin: '0 0 0.4rem 0',
+              margin: '0 0 0.3rem 0',
             }}>
               Welcome back
             </h2>
-            <p style={{ color: '#64748b', fontSize: '0.95rem', fontWeight: 500, margin: '0 0 2rem 0' }}>
-              Sign in with your corporate account to continue to the R&C Hub
+            <p style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 500, margin: '0 0 1.5rem 0' }}>
+              Sign in with your corporate account to continue
             </p>
 
             {/* SSO Button */}
@@ -294,10 +293,10 @@ export default function Login() {
               disabled={ssoLoading || authStatus !== 'idle'}
               style={{
                 width: '100%',
-                padding: '1rem 1.25rem',
-                fontSize: '1rem',
+                padding: '0.9rem 1.1rem',
+                fontSize: '0.9rem',
                 fontWeight: 700,
-                borderRadius: '12px',
+                borderRadius: '10px',
                 background: 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
                 color: '#ffffff',
                 border: 'none',
@@ -312,10 +311,10 @@ export default function Login() {
               onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0, 120, 212, 0.3)'; }}
             >
               <div style={{
-                width: '32px', height: '32px', borderRadius: '7px', background: '#ffffff',
+                width: '28px', height: '28px', borderRadius: '6px', background: '#ffffff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}>
-                <svg width="16" height="16" viewBox="0 0 21 21" fill="none">
+                <svg width="14" height="14" viewBox="0 0 21 21" fill="none">
                   <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
                   <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
                   <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
@@ -323,28 +322,28 @@ export default function Login() {
                 </svg>
               </div>
               <span>Continue with Microsoft SSO</span>
-              <ArrowRight size={16} style={{ marginLeft: 'auto', opacity: 0.8 }} />
+              <ArrowRight size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />
             </button>
 
             {/* Trust line */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '1.5rem' }}>
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px rgba(16,185,129,0.5)' }} />
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.04em' }}>Azure AD &middot; SSO &middot; MFA &middot; Encrypted</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginTop: '1.25rem' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.5)' }} />
+              <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.04em' }}>Azure AD &middot; SSO &middot; MFA &middot; Encrypted</span>
             </div>
 
             {/* System Status */}
-            <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-around', color: '#64748b' }}>
+            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-around', color: '#64748b' }}>
                <div style={{ textAlign: 'center' }}>
-                 <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>100%</div>
-                 <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Uptime</div>
+                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>100%</div>
+                 <div style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Uptime</div>
                </div>
                <div style={{ textAlign: 'center' }}>
-                 <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>Active</div>
-                 <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Threat Mon</div>
+                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>Active</div>
+                 <div style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Threat Mon</div>
                </div>
                <div style={{ textAlign: 'center' }}>
-                 <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>24/7</div>
-                 <div style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Support</div>
+                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>24/7</div>
+                 <div style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Support</div>
                </div>
             </div>
 
