@@ -111,13 +111,13 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
   };
 
   const [incidentTypes, setIncidentTypes] = useState<string[]>(
-    parseMultiSelect(initialData?.incident_types || initialData?.incident_type)
+    parseMultiSelect(initialData?.incident_types || initialData?.incident_type || initialData?.incidenttype_formatted || initialData?.incidenttypeselectallapplicableincid)
   );
   const [correctiveActions, setCorrectiveActions] = useState<string[]>(
-    parseMultiSelect(initialData?.corrective_actions || initialData?.corrective_action)
+    parseMultiSelect(initialData?.corrective_actions || initialData?.corrective_action || initialData?.immediatecorrectiveaction || initialData?.immediatecorrectiveaction_formatted || initialData?.immediatecorrectiveactionselectallapplicable)
   );
   const [claimTypes, setClaimTypes] = useState<string[]>(
-    parseMultiSelect(initialData?.claim_types || initialData?.intent_to_claim)
+    parseMultiSelect(initialData?.claim_types || initialData?.intent_to_claim || initialData?.intenttoclaimissued || initialData?.intenttoclaimissued_formatted || initialData?.intenttoclaimissuedselectallapplicable)
   );
   const [files, setFiles] = useState<File[]>([]);
 
@@ -159,9 +159,9 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
         hbl_hawb_issued: initialData.hbl_hawb_issued || 'N/A',
         hbl_hawb_number: initialData.hbl_hawb_number || '',
       }));
-      setIncidentTypes(parseMultiSelect(initialData.incident_types || initialData.incident_type));
-      setCorrectiveActions(parseMultiSelect(initialData.corrective_actions || initialData.corrective_action));
-      setClaimTypes(parseMultiSelect(initialData.claim_types || initialData.intent_to_claim));
+      setIncidentTypes(parseMultiSelect(initialData.incident_types || initialData.incident_type || initialData.incidenttype_formatted || initialData.incidenttypeselectallapplicableincid));
+      setCorrectiveActions(parseMultiSelect(initialData.corrective_actions || initialData.corrective_action || initialData.immediatecorrectiveaction || initialData.immediatecorrectiveaction_formatted || initialData.immediatecorrectiveactionselectallapplicable));
+      setClaimTypes(parseMultiSelect(initialData.claim_types || initialData.intent_to_claim || initialData.intenttoclaimissued || initialData.intenttoclaimissued_formatted || initialData.intenttoclaimissuedselectallapplicable));
     }
   }, [initialData, incident_id]);
 
