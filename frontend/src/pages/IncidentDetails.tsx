@@ -694,15 +694,16 @@ export default function IncidentDetails() {
 
   const renderOriginalForm = () => {
     const category = getIncidentCategory(incident);
+    const formKey = isEditingForm ? 'edit' : JSON.stringify(incident);
 
     switch (category) {
-      case 'cargo': return <CargoForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'hr': return <HRForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'whs': return <WHSForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'it': return <ITForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'risk': return <RiskForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'finance': return <FinanceForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'ncr': return <NCRForm initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'cargo': return <CargoForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'hr': return <HRForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'whs': return <WHSForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'it': return <ITForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'risk': return <RiskForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'finance': return <FinanceForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'ncr': return <NCRForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
     }
 
     // Fallback to generic JSON mapping if form not matched
