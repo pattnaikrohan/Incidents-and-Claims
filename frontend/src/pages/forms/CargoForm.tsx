@@ -111,13 +111,13 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
   };
 
   const [incidentTypes, setIncidentTypes] = useState<string[]>(
-    parseMultiSelect(initialData?.incident_types)
+    parseMultiSelect(initialData?.incident_types || initialData?.incident_type)
   );
   const [correctiveActions, setCorrectiveActions] = useState<string[]>(
-    parseMultiSelect(initialData?.corrective_actions)
+    parseMultiSelect(initialData?.corrective_actions || initialData?.corrective_action)
   );
   const [claimTypes, setClaimTypes] = useState<string[]>(
-    parseMultiSelect(initialData?.claim_types)
+    parseMultiSelect(initialData?.claim_types || initialData?.intent_to_claim)
   );
   const [files, setFiles] = useState<File[]>([]);
 
@@ -159,9 +159,9 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
         hbl_hawb_issued: initialData.hbl_hawb_issued || 'N/A',
         hbl_hawb_number: initialData.hbl_hawb_number || '',
       }));
-      setIncidentTypes(parseMultiSelect(initialData.incident_types));
-      setCorrectiveActions(parseMultiSelect(initialData.corrective_actions));
-      setClaimTypes(parseMultiSelect(initialData.claim_types));
+      setIncidentTypes(parseMultiSelect(initialData.incident_types || initialData.incident_type));
+      setCorrectiveActions(parseMultiSelect(initialData.corrective_actions || initialData.corrective_action));
+      setClaimTypes(parseMultiSelect(initialData.claim_types || initialData.intent_to_claim));
     }
   }, [initialData, incident_id]);
 
