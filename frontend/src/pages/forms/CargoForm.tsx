@@ -110,14 +110,37 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
     return [];
   };
 
+  const getMultiSelectData = (obj: any, keyword: string, explicitKeys: string[] = []): string[] => {
+    if (!obj) return [];
+    
+    // First, try explicitly provided keys
+    for (const key of explicitKeys) {
+      if (obj[key]) {
+        const parsed = parseMultiSelect(obj[key]);
+        // Only return if it actually contains words (not just Dataverse choice integers like "100000001, 100000002")
+        if (parsed.length > 0 && parsed.some(s => /[a-zA-Z]/.test(s))) return parsed;
+      }
+    }
+    
+    // Fallback: brute force scan all keys in the object for the keyword
+    for (const key in obj) {
+      if (key.toLowerCase().includes(keyword)) {
+        const parsed = parseMultiSelect(obj[key]);
+        if (parsed.length > 0 && parsed.some(s => /[a-zA-Z]/.test(s))) return parsed;
+      }
+    }
+    
+    return [];
+  };
+
   const [incidentTypes, setIncidentTypes] = useState<string[]>(
-    parseMultiSelect(initialData?.incident_types || initialData?.incident_type || initialData?.incidenttype_formatted || initialData?.incidenttypeselectallapplicableincid)
+    getMultiSelectData(initialData, 'incidenttype', ['incident_types', 'incident_type', 'incidenttypeselectallapplicableincid', 'incidenttype_formatted'])
   );
   const [correctiveActions, setCorrectiveActions] = useState<string[]>(
-    parseMultiSelect(initialData?.corrective_actions || initialData?.corrective_action || initialData?.immediatecorrectiveaction || initialData?.immediatecorrectiveaction_formatted || initialData?.immediatecorrectiveactionselectallapplicable)
+    getMultiSelectData(initialData, 'correctiveaction', ['corrective_actions', 'corrective_action', 'immediatecorrectiveactionselectallapplicable', 'immediatecorrectiveaction'])
   );
   const [claimTypes, setClaimTypes] = useState<string[]>(
-    parseMultiSelect(initialData?.claim_types || initialData?.intent_to_claim || initialData?.intenttoclaimissued || initialData?.intenttoclaimissued_formatted || initialData?.intenttoclaimissuedselectallapplicable)
+    getMultiSelectData(initialData, 'intenttoclaim', ['claim_types', 'intent_to_claim', 'intenttoclaimissuedselectallapplicable', 'intenttoclaimissued'])
   );
   const [files, setFiles] = useState<File[]>([]);
 
@@ -159,9 +182,9 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
         hbl_hawb_issued: initialData.hbl_hawb_issued || 'N/A',
         hbl_hawb_number: initialData.hbl_hawb_number || '',
       }));
-      setIncidentTypes(parseMultiSelect(initialData.incident_types || initialData.incident_type || initialData.incidenttype_formatted || initialData.incidenttypeselectallapplicableincid));
-      setCorrectiveActions(parseMultiSelect(initialData.corrective_actions || initialData.corrective_action || initialData.immediatecorrectiveaction || initialData.immediatecorrectiveaction_formatted || initialData.immediatecorrectiveactionselectallapplicable));
-      setClaimTypes(parseMultiSelect(initialData.claim_types || initialData.intent_to_claim || initialData.intenttoclaimissued || initialData.intenttoclaimissued_formatted || initialData.intenttoclaimissuedselectallapplicable));
+      setIncidentTypes(getMultiSelectData(initialData, 'incidenttype', ['incident_types', 'incident_type', 'incidenttypeselectallapplicableincid', 'incidenttype_formatted']));
+      setCorrectiveActions(getMultiSelectData(initialData, 'correctiveaction', ['corrective_actions', 'corrective_action', 'immediatecorrectiveactionselectallapplicable', 'immediatecorrectiveaction']));
+      setClaimTypes(getMultiSelectData(initialData, 'intenttoclaim', ['claim_types', 'intent_to_claim', 'intenttoclaimissuedselectallapplicable', 'intenttoclaimissued']));
     }
   }, [initialData, incident_id]);
 
