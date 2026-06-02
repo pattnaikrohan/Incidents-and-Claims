@@ -284,7 +284,12 @@ export function useIncidents(pollingInterval = 2000) {
             const newVal = finalObj[key];
             const isClaimOrCompliance = key.startsWith('claim_') || key.startsWith('writeoff_') || key === 'insurer_notified' || key === 'cor_required';
             if (newVal && newVal !== 'N/A' && newVal !== 'No description' && newVal !== '' && (newVal !== 'No' || isClaimOrCompliance)) {
-              merged[key] = newVal;
+              // Protect rich text fields from being overwritten by plain text equivalents
+              if ((key === 'incident_summary' || key === 'description') && typeof merged[key] === 'string' && merged[key].includes('---') && typeof newVal === 'string' && !newVal.includes('---')) {
+                // Do not overwrite
+              } else {
+                merged[key] = newVal;
+              }
             }
           });
           mergedMap.set(id, merged);
