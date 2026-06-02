@@ -8,6 +8,8 @@ import { useIncidents } from '../hooks/useIncidents';
 export default function NCRs() {
   const navigate = useNavigate();
   const { role, branchName, businessUnit } = useAuth();
+  const branchNamesRaw = localStorage.getItem('branchNames');
+  const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
   const { incidents, loading, isRefreshing, handleManualRefresh } = useIncidents(2000);
   const [ncrs, setNcrs] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,8 +74,8 @@ export default function NCRs() {
       if (role !== 'full_access' && role !== 'risk_compliance') {
         if (role === 'bu_access' && businessUnit) {
           ncrData = ncrData.filter((i: any) => matchesBU(i.business_unit, i.branch_department, businessUnit));
-        } else if (role === 'branch_access' && branchName) {
-          ncrData = ncrData.filter((i: any) => matchesBranch(i.branch_department, branchName));
+        } else if (role === 'branch_access' && allBranchNames.length > 0) {
+          ncrData = ncrData.filter((i: any) => allBranchNames.some(bn => matchesBranch(i.branch_department, bn)));
         } else {
           ncrData = [];
         }

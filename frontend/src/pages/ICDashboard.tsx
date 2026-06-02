@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 
 export default function ICDashboard() {
   const { role, branchName, businessUnit } = useAuth();
+  const branchNamesRaw = localStorage.getItem('branchNames');
+  const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
   const { incidents: allIncidents, loading } = useIncidents(2000);
 
   // Exclude NCRs — this dashboard is for I&C only
@@ -88,8 +90,8 @@ export default function ICDashboard() {
   if (role !== 'full_access' && role !== 'risk_compliance') {
     if (role === 'bu_access' && businessUnit) {
       incidents = incidents.filter((i: any) => matchesBU(i.business_unit, i.branch_department, businessUnit));
-    } else if (role === 'branch_access' && branchName) {
-      incidents = incidents.filter((i: any) => matchesBranch(i.branch_department, branchName));
+    } else if (role === 'branch_access' && allBranchNames.length > 0) {
+      incidents = incidents.filter((i: any) => allBranchNames.some(bn => matchesBranch(i.branch_department, bn)));
     } else if (role === 'hr_access') {
       incidents = incidents.filter((i: any) => { const c = getCategory(i); return c === 'hr' || c === 'whs'; });
     } else if (role === 'it_access') {

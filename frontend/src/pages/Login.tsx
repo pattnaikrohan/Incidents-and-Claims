@@ -140,8 +140,8 @@ export default function Login() {
       {/* The App Window - STRICTLY FIXED HEIGHT */}
       <div className="app-window fade-in-scale" style={{
         display: 'flex',
-        width: 'min(720px, 90vw)',
-        height: 'min(480px, 80vh)',
+        width: 'min(960px, 95vw)',
+        height: 'min(600px, 85vh)',
         background: 'transparent',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
@@ -156,7 +156,7 @@ export default function Login() {
         {/* LEFT PANE: Hero & Brand */}
         <div
           style={{
-            flex: '0 0 35%',
+            flex: '0 0 38%',
             background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.9) 100%)',
             padding: '1.5rem',
             display: 'flex',
@@ -248,7 +248,7 @@ export default function Login() {
 
         {/* RIGHT PANE: Auth Gateway */}
         <div style={{
-          flex: '0 0 65%',
+          flex: '0 0 62%',
           background: 'linear-gradient(160deg, #f8fafc 0%, #eef2ff 50%, #f0fdf4 100%)',
           height: '100%',
           display: 'flex',
@@ -261,31 +261,31 @@ export default function Login() {
           <div style={{ position: 'absolute', top: '15%', right: '5%', width: '180px', height: '180px', background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', bottom: '15%', left: '8%', width: '140px', height: '140px', background: 'radial-gradient(circle, rgba(16,185,129,0.05) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
-          <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '360px', textAlign: 'center' }}>
+          <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: '440px', textAlign: 'center', padding: '2rem' }}>
 
             {/* Icon */}
             <div style={{
-              width: '52px', height: '52px', borderRadius: '14px',
+              width: '64px', height: '64px', borderRadius: '16px',
               background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              marginBottom: '1rem',
-              boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)'
+              marginBottom: '1.5rem',
+              boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.2)'
             }}>
-              <ShieldCheck size={24} color="#fff" />
+              <ShieldCheck size={32} color="#fff" />
             </div>
 
             {/* Text */}
             <h2 style={{
-              fontSize: '1.75rem',
+              fontSize: '2.2rem',
               fontWeight: 800,
               color: '#0f172a',
-              letterSpacing: '-0.03em',
-              margin: '0 0 0.3rem 0',
+              letterSpacing: '-0.04em',
+              margin: '0 0 0.5rem 0',
             }}>
               Welcome back
             </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: 500, margin: '0 0 2rem 0' }}>
-              Sign in with your corporate account
+            <p style={{ color: '#64748b', fontSize: '1rem', fontWeight: 500, margin: '0 0 2.5rem 0' }}>
+              Sign in with your corporate account to continue to the R&C Hub
             </p>
 
             {/* SSO Button */}
@@ -294,10 +294,10 @@ export default function Login() {
               disabled={ssoLoading || authStatus !== 'idle'}
               style={{
                 width: '100%',
-                padding: '0.95rem 1.25rem',
-                fontSize: '0.95rem',
+                padding: '1.1rem 1.5rem',
+                fontSize: '1.05rem',
                 fontWeight: 700,
-                borderRadius: '12px',
+                borderRadius: '14px',
                 background: 'linear-gradient(135deg, #0078d4 0%, #005a9e 100%)',
                 color: '#ffffff',
                 border: 'none',
@@ -312,24 +312,40 @@ export default function Login() {
               onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 14px rgba(0, 120, 212, 0.3)'; }}
             >
               <div style={{
-                width: '32px', height: '32px', borderRadius: '7px', background: '#ffffff',
+                width: '36px', height: '36px', borderRadius: '8px', background: '#ffffff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}>
-                <svg width="16" height="16" viewBox="0 0 21 21" fill="none">
+                <svg width="18" height="18" viewBox="0 0 21 21" fill="none">
                   <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
                   <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
                   <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
                   <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
                 </svg>
               </div>
-              <span>Continue with Microsoft</span>
-              <ArrowRight size={16} style={{ marginLeft: 'auto', opacity: 0.6 }} />
+              <span>Continue with Microsoft SSO</span>
+              <ArrowRight size={18} style={{ marginLeft: 'auto', opacity: 0.8 }} />
             </button>
 
             {/* Trust line */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginTop: '1.5rem' }}>
-              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 8px rgba(16,185,129,0.4)' }} />
-              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.03em' }}>Azure AD &middot; SSO &middot; MFA &middot; Encrypted</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', marginTop: '2rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px rgba(16,185,129,0.5)' }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8', letterSpacing: '0.04em' }}>Azure AD &middot; SSO &middot; MFA &middot; Encrypted</span>
+            </div>
+
+            {/* System Status */}
+            <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'space-around', color: '#64748b' }}>
+               <div style={{ textAlign: 'center' }}>
+                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>100%</div>
+                 <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Uptime</div>
+               </div>
+               <div style={{ textAlign: 'center' }}>
+                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>Active</div>
+                 <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Threat Mon</div>
+               </div>
+               <div style={{ textAlign: 'center' }}>
+                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>24/7</div>
+                 <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Support</div>
+               </div>
             </div>
 
           </div>

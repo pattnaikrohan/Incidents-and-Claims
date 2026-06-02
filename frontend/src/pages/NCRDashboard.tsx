@@ -53,12 +53,15 @@ export default function NCRDashboard() {
     return false;
   };
 
+  const branchNamesRaw = localStorage.getItem('branchNames');
+  const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
+
   // Role-based filtering
   if (role !== 'full_access' && role !== 'risk_compliance') {
     if (role === 'bu_access' && businessUnit) {
       ncrs = ncrs.filter((i: any) => matchesBU(i.business_unit, i.branch_department, businessUnit));
-    } else if (role === 'branch_access' && branchName) {
-      ncrs = ncrs.filter((i: any) => matchesBranch(i.branch_department, branchName));
+    } else if (role === 'branch_access' && allBranchNames.length > 0) {
+      ncrs = ncrs.filter((i: any) => allBranchNames.some(bn => matchesBranch(i.branch_department, bn)));
     } else {
       ncrs = [];
     }

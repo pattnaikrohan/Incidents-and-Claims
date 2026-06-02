@@ -75,65 +75,96 @@ const BRANCH_TO_BU: Record<string, string> = {
 export interface ResolvedRole {
   role: string;
   businessUnit: string | null;
+  businessUnits: string[];
   branchName: string | null;
+  branchNames: string[];
+  functionalRoles: string[];
   matchedGroups: string[];
 }
 
 /**
  * Resolves the application role from a list of Azure AD group IDs.
- * Uses priority ordering: Full Access > Department > BU Manager > Branch > submit_only
+ * Accumulates ALL matching groups across all tiers for cross-tier access.
+ * Primary role is set to the highest tier matched.
  */
 export function resolveRoleFromGroups(groupIds: string[]): ResolvedRole {
   const groupSet = new Set(groupIds.map(id => id.toLowerCase()));
   const matchedGroups: string[] = [];
 
-  // Priority 1: Full Access / Global Admin
+  let isFullAccess = false;
+  const functionalRoles: string[] = [];
+  const businessUnits: string[] = [];
+  const branchNames: string[] = [];
+
+  // ── Collect ALL matches across every tier ──────────────────
+
+  // Tier 1: Full Access / Global Admin
   if (FULL_ACCESS_GROUP_ID && groupSet.has(FULL_ACCESS_GROUP_ID.toLowerCase())) {
+    isFullAccess = true;
     matchedGroups.push('Full Access / Global Admin');
-    return { role: 'full_access', businessUnit: null, branchName: null, matchedGroups };
   }
 
-  // Priority 2: Department functional groups
+  // Tier 2: Department functional groups
   if (groupSet.has(GROUPS.RISK_COMPLIANCE.toLowerCase())) {
+    functionalRoles.push('risk_compliance');
     matchedGroups.push('Risk & Compliance Global');
-    return { role: 'risk_compliance', businessUnit: null, branchName: null, matchedGroups };
   }
-
   if (groupSet.has(GROUPS.PEOPLE_SAFETY.toLowerCase())) {
+    functionalRoles.push('hr_access');
     matchedGroups.push('People & Safety Global');
-    return { role: 'hr_access', businessUnit: null, branchName: null, matchedGroups };
   }
-
   if (groupSet.has(GROUPS.IT_SECURITY.toLowerCase())) {
+    functionalRoles.push('it_access');
     matchedGroups.push('IT & Security Global');
-    return { role: 'it_access', businessUnit: null, branchName: null, matchedGroups };
   }
-
   if (groupSet.has(GROUPS.FINANCE.toLowerCase())) {
+    functionalRoles.push('finance_access');
     matchedGroups.push('Finance Global');
-    return { role: 'finance_access', businessUnit: null, branchName: null, matchedGroups };
   }
 
-  // Priority 3: BU Manager groups
+  // Tier 3: BU Manager groups
   for (const [groupId, adGroupName] of Object.entries(BU_MANAGER_GROUPS)) {
     if (groupSet.has(groupId.toLowerCase())) {
       matchedGroups.push(adGroupName);
-      const businessUnit = BU_AD_TO_APP[adGroupName] || adGroupName;
-      return { role: 'bu_access', businessUnit, branchName: null, matchedGroups };
+      const bu = BU_AD_TO_APP[adGroupName] || adGroupName;
+      if (!businessUnits.includes(bu)) businessUnits.push(bu);
     }
   }
 
-  // Priority 4: Branch groups
+  // Tier 4: Branch groups
   for (const [groupId, branchName] of Object.entries(BRANCH_GROUPS)) {
     if (groupSet.has(groupId.toLowerCase())) {
       matchedGroups.push(`Branch - ${branchName}`);
-      const businessUnit = BRANCH_TO_BU[branchName] || null;
-      return { role: 'branch_access', businessUnit, branchName, matchedGroups };
+      if (!branchNames.includes(branchName)) branchNames.push(branchName);
+      const bu = BRANCH_TO_BU[branchName];
+      if (bu && !businessUnits.includes(bu)) businessUnits.push(bu);
     }
   }
 
-  // Priority 5: Default — no matching group
-  return { role: 'submit_only', businessUnit: null, branchName: null, matchedGroups: ['(no matching AD group)'] };
+  // ── Determine the primary role (highest tier matched) ─────
+  let primaryRole: string;
+  if (isFullAccess) {
+    primaryRole = 'full_access';
+  } else if (functionalRoles.length > 0) {
+    primaryRole = functionalRoles[0];
+  } else if (businessUnits.length > 0 && branchNames.length === 0) {
+    primaryRole = 'bu_access';
+  } else if (branchNames.length > 0) {
+    primaryRole = 'branch_access';
+  } else {
+    primaryRole = 'submit_only';
+    if (matchedGroups.length === 0) matchedGroups.push('(no matching AD group)');
+  }
+
+  return {
+    role: primaryRole,
+    businessUnit: businessUnits[0] || null,
+    businessUnits,
+    branchName: branchNames[0] || null,
+    branchNames,
+    functionalRoles,
+    matchedGroups,
+  };
 }
 
 /**

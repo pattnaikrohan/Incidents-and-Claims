@@ -617,7 +617,15 @@ export default function Layout({ children }: { children: ReactNode }) {
                         <span style={{ color: '#10b981', fontWeight: 800 }}>ACTIVE</span>
                       </div>
                       <div style={{ color: '#94a3b8', marginBottom: '0.25rem' }}>{email}</div>
-                      <div>{branchName ? branchName : businessUnit ? businessUnit : 'Global Headquarters'}</div>
+                      <div>
+                        {(() => {
+                          const branchNamesRaw = localStorage.getItem('branchNames');
+                          const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
+                          if (allBranchNames.length > 0) return allBranchNames.join(', ');
+                          if (businessUnit) return businessUnit;
+                          return 'Global Headquarters';
+                        })()}
+                      </div>
                     </div>
 
                     {/* AD Group Info (SSO users only) */}

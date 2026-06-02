@@ -17,6 +17,9 @@ export default function Incidents() {
                      currentPath.includes('/ncrs') ? 'ncrs' : 'incidents';
   const [activeTab, setActiveTab] = useState('active');
   const { role, branchName, businessUnit } = useAuth();
+  // Multi-branch support
+  const branchNamesRaw = localStorage.getItem('branchNames');
+  const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
   const { incidents, loading, isRefreshing, handleManualRefresh } = useIncidents(2000);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     // Auto-expand relevant section for dept-specific roles
@@ -186,8 +189,8 @@ export default function Incidents() {
       displayedIncidents = displayedIncidents.filter(i => matchesBU(i.business_unit, i.branch_department, businessUnit));
     } 
     // If Branch user, they ONLY see their branch
-    else if (role === 'branch_access' && branchName) {
-      displayedIncidents = displayedIncidents.filter(i => matchesBranch(i.branch_department, branchName));
+    else if (role === 'branch_access' && allBranchNames.length > 0) {
+      displayedIncidents = displayedIncidents.filter(i => allBranchNames.some(bn => matchesBranch(i.branch_department, bn)));
     }
     // Dept-specific roles see their category of incidents (globally — they are functional oversight roles)
     else if (role === 'hr_access') {

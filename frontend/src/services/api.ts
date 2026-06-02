@@ -25,9 +25,20 @@ api.interceptors.request.use((config) => {
     const role = localStorage.getItem('role');
     const branchName = localStorage.getItem('branchName');
     const businessUnit = localStorage.getItem('businessUnit');
+    const branchNames = localStorage.getItem('branchNames');
+    const businessUnits = localStorage.getItem('businessUnits');
     if (role) config.headers['X-User-Role'] = role;
-    if (branchName) config.headers['X-User-Branch'] = branchName;
-    if (businessUnit) config.headers['X-User-BU'] = businessUnit;
+    // Send arrays if available, fall back to single values
+    if (branchNames) {
+      config.headers['X-User-Branch'] = branchNames;
+    } else if (branchName) {
+      config.headers['X-User-Branch'] = JSON.stringify([branchName]);
+    }
+    if (businessUnits) {
+      config.headers['X-User-BU'] = businessUnits;
+    } else if (businessUnit) {
+      config.headers['X-User-BU'] = JSON.stringify([businessUnit]);
+    }
   }
   return config;
 });

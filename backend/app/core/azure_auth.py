@@ -145,30 +145,73 @@ BRANCH_TO_BU = {
 def resolve_role_from_groups(group_ids: list) -> dict:
     """
     Resolve application role from Azure AD group memberships.
-    Returns dict with: role, business_unit, branch_name
+    
+    Accumulates ALL matching groups across all tiers so that a user in
+    multiple groups sees the union of all their memberships.
+    
+    Returns dict with:
+      role            – the highest-priority role matched
+      business_units  – list of matched BU names
+      branch_names    – list of matched branch names
+      functional_roles – list of matched department roles (e.g. ['hr_access', 'finance_access'])
     """
     group_set = {g.lower() for g in group_ids}
     
-    # Priority 1: Full Access / Global Admin
+    is_full_access = False
+    functional_roles = []     # e.g. ['hr_access', 'finance_access']
+    business_units = []       # e.g. ['AAW Global Logistics - AU']
+    branch_names = []         # e.g. ['Melbourne', 'Sydney']
+    
+    # ── Collect ALL matches across every tier ──────────────────
+    
+    # Tier 1: Full Access / Global Admin
     if FULL_ACCESS_GROUP_ID and FULL_ACCESS_GROUP_ID.lower() in group_set:
-        return {'role': 'full_access', 'business_unit': None, 'branch_name': None}
+        is_full_access = True
 
-    # Priority 2: Functional department groups
+    # Tier 2: Functional department groups
     for gid, role in FUNCTIONAL_GROUPS.items():
         if gid.lower() in group_set:
-            return {'role': role, 'business_unit': None, 'branch_name': None}
-    
-    # Priority 3: BU Manager groups
+            if role not in functional_roles:
+                functional_roles.append(role)
+
+    # Tier 3: BU Manager groups
     for gid, ad_name in BU_MANAGER_GROUPS.items():
         if gid.lower() in group_set:
             bu_name = BU_AD_TO_APP.get(ad_name, ad_name)
-            return {'role': 'bu_access', 'business_unit': bu_name, 'branch_name': None}
-    
-    # Priority 4: Branch groups — also resolve business_unit via BRANCH_TO_BU
+            if bu_name not in business_units:
+                business_units.append(bu_name)
+
+    # Tier 4: Branch groups
     for gid, branch_name in BRANCH_GROUPS.items():
         if gid.lower() in group_set:
-            business_unit = BRANCH_TO_BU.get(branch_name)
-            return {'role': 'branch_access', 'business_unit': business_unit, 'branch_name': branch_name}
+            if branch_name not in branch_names:
+                branch_names.append(branch_name)
+            # Also add the BU for this branch
+            bu = BRANCH_TO_BU.get(branch_name)
+            if bu and bu not in business_units:
+                business_units.append(bu)
     
-    # Default: submit_only
-    return {'role': 'submit_only', 'business_unit': None, 'branch_name': None}
+    # ── Determine the primary role (highest tier matched) ─────
+    if is_full_access:
+        primary_role = 'full_access'
+    elif functional_roles:
+        # Use the first functional role as primary, but ALL are stored in functional_roles
+        primary_role = functional_roles[0]
+    elif business_units and not branch_names:
+        # Only BU Manager groups matched (no branch groups)
+        primary_role = 'bu_access'
+    elif branch_names:
+        primary_role = 'branch_access'
+    else:
+        primary_role = 'submit_only'
+    
+    return {
+        'role': primary_role,
+        'business_units': business_units,
+        'branch_names': branch_names,
+        'functional_roles': functional_roles,
+        # Legacy single-value keys for backward compatibility
+        'business_unit': business_units[0] if business_units else None,
+        'branch_name': branch_names[0] if branch_names else None,
+    }
+

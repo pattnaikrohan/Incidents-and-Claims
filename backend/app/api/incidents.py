@@ -138,32 +138,50 @@ def read_incidents(
     if role in [RoleEnum.full_access, RoleEnum.risk_compliance]:
         filtered = incidents
     elif role == RoleEnum.bu_access:
-        # BU Manager sees all incidents within their Business Unit
+        # BU Manager sees all incidents within their Business Unit(s)
         bu_map = {b["id"]: b["business_unit"] for b in db.branches}
-        user_bu = getattr(current_user, 'business_unit', None)
-        if user_bu:
-            filtered = [i for i in incidents if bu_map.get(get_val(i, "branch_id"), "") == user_bu or get_val(i, "business_unit") == user_bu]
+        user_bus = getattr(current_user, 'business_units', [])
+        if not user_bus:
+            # Backward compat: fall back to single business_unit
+            single_bu = getattr(current_user, 'business_unit', None)
+            user_bus = [single_bu] if single_bu else []
+        if user_bus:
+            bu_set = set(user_bus)
+            filtered = [i for i in incidents if bu_map.get(get_val(i, "branch_id"), "") in bu_set or get_val(i, "business_unit") in bu_set]
         else:
-            # Fallback: if no BU set, show nothing (safety)
             filtered = [i for i in incidents if get_val(i, "creator_id") == current_user.id]
     elif role == RoleEnum.branch_access:
-        # Branch user sees only their branch's incidents
-        filtered = [i for i in incidents if get_val(i, "branch_id") == current_user.branch_id]
+        # Branch user sees incidents from ALL their branches
+        user_branch_ids = getattr(current_user, 'branch_ids', [])
+        if not user_branch_ids:
+            single_bid = getattr(current_user, 'branch_id', None)
+            user_branch_ids = [single_bid] if single_bid else []
+        branch_set = set(user_branch_ids)
+        filtered = [i for i in incidents if get_val(i, "branch_id") in branch_set]
     elif role in [RoleEnum.it_access, RoleEnum.hr_access, RoleEnum.finance_access]:
-        # Department roles: scoped to their branch's BU, filtered to their incident types
-        user_bu = getattr(current_user, 'business_unit', None)
-        bu_map = {b["id"]: b["business_unit"] for b in db.branches}
+        # Department roles: see their incident types globally.
+        # Also accumulate types from ALL functional_roles if user is in multiple depts.
+        func_roles = getattr(current_user, 'functional_roles', [])
+        if not func_roles:
+            func_roles = [role.value]
         
-        # Determine which incident types this dept role can see
-        type_filter = []
-        if role == RoleEnum.it_access:
-            type_filter = ['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure']
-        elif role == RoleEnum.hr_access:
-            type_filter = ['Near Miss','First Aid Injury','Lost Time Injury','Workplace Harassment','Misconduct','Grievance']
-        elif role == RoleEnum.finance_access:
-            type_filter = ['Travel Disruption','Financial Loss','Fraud','Payment Error']
+        type_filter = set()
+        for fr in func_roles:
+            if fr == 'it_access':
+                type_filter.update(['Data Breach','Ransomware / Malware','Phishing Attack','System Outage','Software Failure','Hardware Failure'])
+            elif fr == 'hr_access':
+                type_filter.update(['Near Miss','First Aid Injury','Lost Time Injury','Workplace Harassment','Misconduct','Grievance'])
+            elif fr == 'finance_access':
+                type_filter.update(['Travel Disruption','Financial Loss','Fraud','Payment Error'])
         
         filtered = [i for i in incidents if get_val(i, "type") in type_filter]
+        
+        # Cross-tier: also include incidents from any branch groups the user belongs to
+        user_branch_ids = getattr(current_user, 'branch_ids', [])
+        if user_branch_ids:
+            branch_set = set(user_branch_ids)
+            branch_incidents = [i for i in incidents if get_val(i, "branch_id") in branch_set and i not in filtered]
+            filtered = filtered + branch_incidents
     else:
         # submit_only: only see own incidents
         filtered = [i for i in incidents if get_val(i, "creator_id") == current_user.id]

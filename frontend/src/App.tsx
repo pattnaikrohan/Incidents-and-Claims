@@ -11,7 +11,7 @@ import CoRDetails from './pages/CoRDetails';
 import ClaimDetails from './pages/ClaimDetails';
 import NewIncident from './pages/NewIncident';
 import Search from './pages/Search';
-import Reports from './pages/Reports';
+
 import NCRDashboard from './pages/NCRDashboard';
 import NCRs from './pages/NCRs';
 import ICDashboard from './pages/ICDashboard';
@@ -129,11 +129,7 @@ export default function App() {
                 <Search />
               </ProtectedRoute>
             } />
-            <Route path="/reports" element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            } />
+
             <Route path="/ncr-dashboard" element={
               <ProtectedRoute>
                 <NCRDashboard />

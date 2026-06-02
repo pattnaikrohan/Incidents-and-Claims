@@ -58,19 +58,24 @@ def get_current_user(request: Request, db = Depends(get_db), token: str = Depend
             except ValueError:
                 role_enum = RoleEnum.submit_only
             
-            # Find matching branch_id if we have a branch_name
-            branch_id = None
-            if resolved.get("branch_name"):
-                # Try exact match first, then case-insensitive contains as fallback
-                for b in db.branches:
-                    if b["name"] == resolved["branch_name"]:
-                        branch_id = b["id"]
-                        break
-                if branch_id is None:
+            # Resolve branch_ids for ALL matched branch names
+            branch_ids = []
+            if resolved.get("branch_names"):
+                for bn in resolved["branch_names"]:
                     for b in db.branches:
-                        if resolved["branch_name"].lower() in b["name"].lower() or b["name"].lower() in resolved["branch_name"].lower():
-                            branch_id = b["id"]
+                        if b["name"] == bn:
+                            branch_ids.append(b["id"])
                             break
+                    else:
+                        # Fuzzy fallback
+                        for b in db.branches:
+                            if bn.lower() in b["name"].lower() or b["name"].lower() in bn.lower():
+                                if b["id"] not in branch_ids:
+                                    branch_ids.append(b["id"])
+                                break
+            
+            # Legacy single branch_id (first match, for backward compat)
+            branch_id = branch_ids[0] if branch_ids else None
             
             # Create a user-like object for compatibility
             class SSOUserObj:
@@ -80,7 +85,11 @@ def get_current_user(request: Request, db = Depends(get_db), token: str = Depend
                     self.name = name
                     self.role = role_enum
                     self.branch_id = branch_id
+                    self.branch_ids = branch_ids
                     self.business_unit = resolved.get("business_unit")
+                    self.business_units = resolved.get("business_units", [])
+                    self.functional_roles = resolved.get("functional_roles", [])
+                    self.branch_names = resolved.get("branch_names", [])
                     self.is_sso = True
             
             return SSOUserObj()

@@ -182,6 +182,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       localStorage.removeItem('businessUnit');
     }
+    // Store arrays for multi-group support
+    const branchNamesArr = result.resolved.branchNames || [];
+    const businessUnitsArr = result.resolved.businessUnits || [];
+    if (branchNamesArr.length > 0) {
+      localStorage.setItem('branchNames', JSON.stringify(branchNamesArr));
+    } else {
+      localStorage.removeItem('branchNames');
+    }
+    if (businessUnitsArr.length > 0) {
+      localStorage.setItem('businessUnits', JSON.stringify(businessUnitsArr));
+    } else {
+      localStorage.removeItem('businessUnits');
+    }
     localStorage.removeItem('branchId');
 
     setToken(result.accessToken);
@@ -279,6 +292,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('branchId');
     localStorage.removeItem('branchName');
     localStorage.removeItem('businessUnit');
+    localStorage.removeItem('branchNames');
+    localStorage.removeItem('businessUnits');
     localStorage.removeItem('isSSOUser');
 
     setToken(null);

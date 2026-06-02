@@ -7,6 +7,9 @@ import { ChartWrapper } from '../components/ChartWrapper';
 
 export default function Dashboard() {
   const { role, branchName, businessUnit } = useAuth();
+  // Multi-branch support: parse all branch names from localStorage
+  const branchNamesRaw = localStorage.getItem('branchNames');
+  const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
   const { incidents: rawIncidents, loading } = useIncidents(2000);
   
   // ── Fuzzy matching helpers ───────────────────────────────────
@@ -57,8 +60,8 @@ export default function Dashboard() {
   if (role !== 'full_access' && role !== 'risk_compliance') {
     if (role === 'bu_access' && businessUnit) {
       incidents = incidents.filter((i: any) => matchesBU(i.business_unit, i.branch_department, businessUnit));
-    } else if (role === 'branch_access' && branchName) {
-      incidents = incidents.filter((i: any) => matchesBranch(i.branch_department, branchName));
+    } else if (role === 'branch_access' && allBranchNames.length > 0) {
+      incidents = incidents.filter((i: any) => allBranchNames.some(bn => matchesBranch(i.branch_department, bn)));
     } else if (role === 'hr_access') {
       incidents = incidents.filter((i: any) => { const c = (i.category||'').toLowerCase(); const t = (i.type||'').toLowerCase(); return c==='hr'||c==='whs'||t.includes('human')||t.includes('hr')||t.includes('whs')||t.includes('safety'); });
     } else if (role === 'it_access') {
@@ -167,10 +170,10 @@ export default function Dashboard() {
              <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'var(--accent-fg)' }}>R&C HUB</span>
           </div>
           <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, var(--fg-base) 0%, var(--fg-muted) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global'} Dashboard
+            {allBranchNames.length > 1 ? allBranchNames.map(b => b.split(' - ').pop()).join(' & ') : branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global'} Dashboard
           </h2>
           <p style={{ color: 'var(--fg-muted)', fontSize: '1.125rem', maxWidth: '600px' }}>
-            Live {branchName || businessUnit || 'global'} risk monitoring and automated incident distribution analysis.
+            Live {allBranchNames.length > 1 ? allBranchNames.map(b => b.split(' - ').pop()).join(', ') : branchName || businessUnit || 'global'} risk monitoring and automated incident distribution analysis.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -297,7 +300,7 @@ export default function Dashboard() {
                   <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>Monitoring {monitoredCount} records across all global logistics clusters.</p>
                 </div>
              </div>
-             <Link to="/reports" className="btn" style={{ background: '#fff', color: '#000', fontWeight: 900, padding: '0.75rem 2rem' }}>OPEN FULL REPORT PORTAL</Link>
+             <div style={{ padding: '0.75rem 2rem' }}></div>
            </div>
         </div>
 
