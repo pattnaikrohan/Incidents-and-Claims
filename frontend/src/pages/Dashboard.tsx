@@ -170,10 +170,10 @@ export default function Dashboard() {
              <span style={{ fontSize: '0.75rem', fontWeight: 900, letterSpacing: '0.1em', color: 'var(--accent-fg)' }}>R&C HUB</span>
           </div>
           <h2 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg, var(--fg-base) 0%, var(--fg-muted) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            {allBranchNames.length > 1 ? allBranchNames.map(b => b.split(' - ').pop()).join(' & ') : branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global'} Dashboard
+            {allBranchNames.length > 1 ? 'Multi-Branch' : branchName ? branchName.split(' - ').pop() : businessUnit ? businessUnit : 'Global'} Dashboard
           </h2>
           <p style={{ color: 'var(--fg-muted)', fontSize: '1.125rem', maxWidth: '600px' }}>
-            Live {allBranchNames.length > 1 ? allBranchNames.map(b => b.split(' - ').pop()).join(', ') : branchName || businessUnit || 'global'} risk monitoring and automated incident distribution analysis.
+            Live {allBranchNames.length > 1 ? 'multi-branch' : branchName || businessUnit || 'global'} risk monitoring and automated incident distribution analysis.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
