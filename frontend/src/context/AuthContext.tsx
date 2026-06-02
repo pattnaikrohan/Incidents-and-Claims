@@ -154,7 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [isSSOUser, setIsSSOUser] = useState<boolean>(localStorage.getItem('isSSOUser') === 'true');
   const [ssoLoading, setSsoLoading] = useState<boolean>(false);
-  const [resolvedGroupInfo, setResolvedGroupInfo] = useState<ResolvedRole | null>(null);
+  const [resolvedGroupInfo, setResolvedGroupInfo] = useState<ResolvedRole | null>(
+    localStorage.getItem('resolvedGroupInfo') ? JSON.parse(localStorage.getItem('resolvedGroupInfo')!) : null
+  );
 
   /** Apply SSO auth result to state and localStorage */
   const applyAuthResult = useCallback((result: {
@@ -206,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBranchId(null);
     setIsSSOUser(true);
     setResolvedGroupInfo(result.resolved);
+    localStorage.setItem('resolvedGroupInfo', JSON.stringify(result.resolved));
   }, []);
 
   // On mount: check the redirect response that was captured during MSAL initialization
@@ -295,6 +298,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('branchNames');
     localStorage.removeItem('businessUnits');
     localStorage.removeItem('isSSOUser');
+    localStorage.removeItem('resolvedGroupInfo');
 
     setToken(null);
     setRole(null);
