@@ -20,7 +20,7 @@ export default function Incidents() {
   // Multi-branch support
   const branchNamesRaw = localStorage.getItem('branchNames');
   const allBranchNames: string[] = branchNamesRaw ? JSON.parse(branchNamesRaw) : (branchName ? [branchName] : []);
-  const { incidents, loading, isRefreshing, handleManualRefresh } = useIncidents(2000);
+  const { incidents, loading, isRefreshing, handleManualRefresh } = useIncidents(10000);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
     // Auto-expand relevant section for dept-specific roles
     const base = { cargo: false, hr: false, whs: false, it: false, risk: false, finance: false, ncr: false };

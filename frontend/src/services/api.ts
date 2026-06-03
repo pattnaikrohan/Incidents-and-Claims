@@ -11,13 +11,57 @@ export const api = axios.create({
   baseURL: BASE_URL,
 });
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
+/**
+ * Silently refresh the Azure AD token if the user is an SSO user.
+ * MSAL's acquireTokenSilent uses the cached refresh token to get a new
+ * ID token without any user interaction, avoiding the 401 → login redirect
+ * that occurs when the short-lived ID token (≈1 hour) expires.
+ */
+async function refreshSSOTokenIfNeeded(): Promise<string | null> {
+  try {
+    // Dynamic import to avoid circular dependency with AuthContext
+    const { msalInstance, ensureMsalInitialized } = await import('../context/AuthContext');
+    await ensureMsalInitialized();
+
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length === 0) return null;
+
+    const account = msalInstance.getActiveAccount() || accounts[0];
+    const tokenResponse = await msalInstance.acquireTokenSilent({
+      scopes: ['openid', 'profile', 'User.Read'],
+      account,
+    });
+
+    // Update localStorage with the fresh token so all subsequent calls use it
+    if (tokenResponse.idToken) {
+      localStorage.setItem('token', tokenResponse.idToken);
+      return tokenResponse.idToken;
+    }
+    return null;
+  } catch (err) {
+    console.warn('[API] Silent token refresh failed, using cached token:', err);
+    return null;
   }
-  // Signal to backend whether this is an SSO token or local JWT
+}
+
+api.interceptors.request.use(async (config) => {
   const isSSOUser = localStorage.getItem('isSSOUser') === 'true';
+
+  // For SSO users, silently refresh the token before each request
+  if (isSSOUser) {
+    const freshToken = await refreshSSOTokenIfNeeded();
+    const token = freshToken || localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } else {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+
+  // Signal to backend whether this is an SSO token or local JWT
   if (isSSOUser && config.headers) {
     config.headers['X-Auth-Source'] = 'azure-ad';
     // Send resolved role and group IDs so backend can use them
@@ -45,9 +89,24 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // Auto-logout on 401 Unauthorized
-    if (error.response && error.response.status === 401) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // On 401, attempt a silent token refresh and retry ONCE before giving up
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      const isSSOUser = localStorage.getItem('isSSOUser') === 'true';
+
+      if (isSSOUser) {
+        const freshToken = await refreshSSOTokenIfNeeded();
+        if (freshToken) {
+          console.log('[API] Token refreshed after 401, retrying request...');
+          originalRequest.headers.Authorization = `Bearer ${freshToken}`;
+          return api(originalRequest);
+        }
+      }
+
+      // Refresh failed or not an SSO user — redirect to login
       localStorage.removeItem('token');
       localStorage.removeItem('role');
       localStorage.removeItem('branchId');
