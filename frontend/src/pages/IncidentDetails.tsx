@@ -6,6 +6,7 @@ import CollaborationFeed from '../components/CollaborationFeed';
 import { api } from '../services/api';
 import { useState, useEffect, useRef } from 'react';
 import { useIncidents } from '../hooks/useIncidents';
+import { isEqual } from 'lodash';
 
 import CargoForm from './forms/CargoForm';
 import HRForm from './forms/HRForm';
@@ -242,14 +243,15 @@ export default function IncidentDetails() {
           ['input', 'textarea', 'select'].includes(document.activeElement.tagName.toLowerCase());
         const shouldShield = isTyping || isDirty || isSaving || postSaveShieldRef.current;
 
-        if (!shouldShield || !incident) {
-          setIncident(finalIncident);
-          setLiability(prev => ({
-            ...prev,
-            responsible_party: finalIncident.responsible_party || '',
-            formal_claim_issued: finalIncident.formal_claim_issued || 'No',
-            insurer_notified: finalIncident.insurer_notified || 'No',
-            risk_level: finalIncident.risk_level || finalIncident.cor_risk_level || '',
+        if (!shouldShield) {
+          if (!incident || !isEqual(incident, finalIncident)) {
+            setIncident(finalIncident);
+            setLiability(prev => ({
+              ...prev,
+              responsible_party: finalIncident.responsible_party || '',
+              formal_claim_issued: finalIncident.formal_claim_issued || 'No',
+              insurer_notified: finalIncident.insurer_notified || 'No',
+              risk_level: finalIncident.risk_level || finalIncident.cor_risk_level || '',
             management_escalation: finalIncident.management_escalation || 'No',
             cor: finalIncident.cor || finalIncident.cor_required || 'No',
             status: finalIncident.status || 'Open - Incident Logged',
@@ -261,6 +263,7 @@ export default function IncidentDetails() {
             cor_action_implemented: finalIncident.cor_action_implemented || 'No'
           }));
         }
+      }
 
         // Fetch attachments using the internal system ID (e.g., CEI-...) instead of the Dataverse GUID
         const searchId = finalIncident.incident_number_str || id;

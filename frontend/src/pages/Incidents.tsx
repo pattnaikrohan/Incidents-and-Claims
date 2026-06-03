@@ -380,13 +380,22 @@ export default function Incidents() {
                     </select>
                   </div>
 
-                  <button 
-                    className="btn btn-secondary" 
-                    style={{ width: '100%', fontSize: '0.65rem', padding: '4px' }}
-                    onClick={() => setGlobalFilter({ bu: '', branch: '' })}
-                  >
-                    Clear Filter
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      className="btn btn-secondary" 
+                      style={{ flex: 1, fontSize: '0.65rem', padding: '4px' }}
+                      onClick={() => setGlobalFilter({ bu: '', branch: '' })}
+                    >
+                      Clear Filter
+                    </button>
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ flex: 1, fontSize: '0.65rem', padding: '4px' }}
+                      onClick={() => setGlobalFilterMenuOpen(false)}
+                    >
+                      Apply
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

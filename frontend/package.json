@@ -16,6 +16,7 @@
     "axios": "^1.13.6",
     "d3": "^7.9.0",
     "html-to-image": "^1.11.13",
+    "lodash": "^4.18.1",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@types/lodash": "^4.17.24",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
