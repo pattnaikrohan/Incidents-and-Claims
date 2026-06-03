@@ -694,7 +694,9 @@ export default function IncidentDetails() {
 
   const renderOriginalForm = () => {
     const category = getIncidentCategory(incident);
-    const formKey = isEditingForm ? 'edit' : JSON.stringify(incident);
+    // Use a stable key: only re-mount the form when the incident ID changes or edit mode toggles.
+    // Using JSON.stringify(incident) caused the form to flicker on every poll cycle.
+    const formKey = isEditingForm ? `edit-${incident.id}` : `view-${incident.id}`;
 
     switch (category) {
       case 'cargo': return <CargoForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
