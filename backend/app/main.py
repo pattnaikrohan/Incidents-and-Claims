@@ -17,7 +17,9 @@ origins = [
     "https://icy-desert-0a4e94a00.azurestaticapps.net",
     "https://ashy-forest-0478c1800.azurestaticapps.net",
     "https://incidents-and-claims.azurewebsites.net",
-    "https://riskandcompliance.aaw.com.au"
+    "https://riskandcompliance.aaw.com.au",
+    "https://www.riskandcompliance.aaw.com.au",
+    "http://riskandcompliance.aaw.com.au"
 ]
 
 app.add_middleware(
