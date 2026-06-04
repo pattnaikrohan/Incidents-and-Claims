@@ -11,6 +11,7 @@ import CoRDetails from './pages/CoRDetails';
 import ClaimDetails from './pages/ClaimDetails';
 import NewIncident from './pages/NewIncident';
 import Search from './pages/Search';
+import { useAutoRefresh } from './hooks/useAutoRefresh';
 
 import NCRDashboard from './pages/NCRDashboard';
 import NCRs from './pages/NCRs';
@@ -38,6 +39,9 @@ const ProtectedRoute = ({ children, requireAdmin }: { children: React.ReactNode;
 };
 
 export default function App() {
+  // Automatically hard-refresh the app after 60 minutes (1 hour) of inactivity
+  useAutoRefresh(60);
+
   const [msalReady, setMsalReady] = useState(false);
 
   useEffect(() => {
