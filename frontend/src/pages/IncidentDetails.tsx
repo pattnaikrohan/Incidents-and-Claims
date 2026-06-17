@@ -190,7 +190,9 @@ export default function IncidentDetails() {
 
   const fetchIncident = async () => {
     try {
-      let finalIncident = incidents.find((i: any) => String(i.id) === String(id) || String(i.incident_number_str) === String(id));
+      // Prioritize matching by stable incident_number_str (e.g. CEI-000001) over unstable Dataverse GUID
+      let finalIncident = incidents.find((i: any) => String(i.incident_number_str) === String(id))
+        || incidents.find((i: any) => String(i.id) === String(id));
       const targetId = finalIncident?.incident_number_str || id;
 
       // 2. Fetch latest metadata from backend (Investigation findings, Liability, etc.)

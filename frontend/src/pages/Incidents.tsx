@@ -807,7 +807,8 @@ export default function Incidents() {
                                         if (isDraft && activeTab === 'drafts') {
                                           navigate(`/incidents/new?type=${category.id}&draftId=${incident.id}`);
                                         } else {
-                                          navigate(pageSource === 'cors' ? `/cors/${incident.id}` : pageSource === 'claims' ? `/claims/${incident.id}` : `/incidents/${incident.id}`, { state: { source: pageSource } });
+                                          const stableId = incident.incident_number_str || incident.id;
+                                          navigate(pageSource === 'cors' ? `/cors/${stableId}` : pageSource === 'claims' ? `/claims/${stableId}` : `/incidents/${stableId}`, { state: { source: pageSource } });
                                         }
                                       }}
                                       style={{ 
