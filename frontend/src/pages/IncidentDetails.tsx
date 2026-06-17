@@ -649,12 +649,18 @@ export default function IncidentDetails() {
       
       const incidentLink = `${window.location.origin}/incidents/${incident.incident_number_str || incident.id || searchId}`;
       const loggedBy = email || localStorage.getItem('email') || 'System User';
+      const targetIncidentId = incident.incident_number_str || incident.id || searchId;
 
       const flowPayload = {
         "editor email": email || '',
-        "incident id": incident.id,
+        "incident id": targetIncidentId,
+        incident_id: targetIncidentId,
+        cr991_incidentid: targetIncidentId,
+        cr991_incidentref: targetIncidentId,
+        cr991_number: targetIncidentId,
+        cr991_name: targetIncidentId,
         "incident type": cat === 'risk' ? 'risk and compliance' : cat,
-        cr991_incidentnumber: incident.incident_number_str || '',
+        cr991_incidentnumber: targetIncidentId,
         cr991_incidentstatus: _isDraft ? 'Draft' : 'Open - Incident Logged',
         incident_link: incidentLink,
         cr991_incidentlink: incidentLink,
