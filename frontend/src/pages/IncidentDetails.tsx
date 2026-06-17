@@ -631,7 +631,7 @@ export default function IncidentDetails() {
       const backendPayload = { ...restFormData };
       
       // Fix mangled strings from previous bug
-      const fixString = (s: string) => s.replace(/Evidence preserved \(photos;\s*logs;\s*seals\)/g, "Evidence preserved (photos, logs, seals)");
+      const fixString = (s: any) => typeof s === 'string' ? s.replace(/Evidence preserved \(photos;\s*logs;\s*seals\)/g, "Evidence preserved (photos, logs, seals)") : s;
       
       if (Array.isArray(backendPayload.incident_types)) backendPayload.incident_types = Array.from(new Set(backendPayload.incident_types)).map(fixString).join('; ');
       else if (typeof backendPayload.incident_types === 'string') backendPayload.incident_types = fixString(backendPayload.incident_types);
