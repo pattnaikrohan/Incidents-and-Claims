@@ -629,9 +629,19 @@ export default function IncidentDetails() {
       
       // For backend: sanitize lists
       const backendPayload = { ...restFormData };
-      if (Array.isArray(backendPayload.incident_types)) backendPayload.incident_types = backendPayload.incident_types.join('; ');
-      if (Array.isArray(backendPayload.corrective_actions)) backendPayload.corrective_actions = backendPayload.corrective_actions.join('; ');
-      if (Array.isArray(backendPayload.claim_types)) backendPayload.claim_types = backendPayload.claim_types.join('; ');
+      
+      // Fix mangled strings from previous bug
+      const fixString = (s: string) => s.replace(/Evidence preserved \(photos;\s*logs;\s*seals\)/g, "Evidence preserved (photos, logs, seals)");
+      
+      if (Array.isArray(backendPayload.incident_types)) backendPayload.incident_types = Array.from(new Set(backendPayload.incident_types)).map(fixString).join('; ');
+      else if (typeof backendPayload.incident_types === 'string') backendPayload.incident_types = fixString(backendPayload.incident_types);
+      
+      if (Array.isArray(backendPayload.corrective_actions)) backendPayload.corrective_actions = Array.from(new Set(backendPayload.corrective_actions)).map(fixString).join('; ');
+      else if (typeof backendPayload.corrective_actions === 'string') backendPayload.corrective_actions = fixString(backendPayload.corrective_actions);
+      
+      if (Array.isArray(backendPayload.claim_types)) backendPayload.claim_types = Array.from(new Set(backendPayload.claim_types)).map(fixString).join('; ');
+      else if (typeof backendPayload.claim_types === 'string') backendPayload.claim_types = fixString(backendPayload.claim_types);
+
 
       await api.patch(`/incidents/${searchId}`, backendPayload);
 

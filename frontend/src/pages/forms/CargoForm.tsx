@@ -104,8 +104,10 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
     if (!val) return [];
     if (Array.isArray(val)) return val;
     if (typeof val === 'string') {
-      // Dataverse multi-select uses '; ' separator, but frontend uses ', '
-      return val.split(/[;,]\s*/).map((s: string) => s.trim()).filter(Boolean);
+      // Fix mangled string from old data before splitting
+      let cleanVal = val.replace(/Evidence preserved \(photos;\s*logs;\s*seals\)/g, "Evidence preserved (photos, logs, seals)");
+      // Dataverse multi-select uses '; ' separator. Splitting by comma breaks our labels!
+      return Array.from(new Set(cleanVal.split(/;\s*/).map((s: string) => s.trim()).filter(Boolean)));
     }
     return [];
   };
