@@ -892,7 +892,9 @@ export default function IncidentDetails() {
                 </div>
                 <div>
                   <label className="overline">{getIncidentCategory(incident) === 'whs' ? 'Location (Site)' : 'Branch / Department'}</label>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>{incident.location || incident.branch_department || 'N/A'}</div>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--fg-base)', fontWeight: 500 }}>
+                    {getIncidentCategory(incident) === 'whs' ? (incident.location || incident.branch_department || 'N/A') : (incident.branch_department || 'N/A')}
+                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '1rem' }}>
