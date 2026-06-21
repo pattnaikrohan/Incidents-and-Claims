@@ -146,8 +146,11 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
   );
   const [files, setFiles] = useState<File[]>([]);
 
+  // Only sync initialData changes into form state when the form is editable.
+  // In readOnly mode, the form was already initialized correctly via useState;
+  // syncing here on every poll cycle caused fields to flicker between incidents.
   useEffect(() => {
-    if (initialData) {
+    if (initialData && !readOnly) {
       setF((p: any) => ({
         ...p,
         ...initialData,
@@ -188,7 +191,7 @@ export default function CargoForm({ onSubmit, onCancel, loading, initialData, re
       setCorrectiveActions(getMultiSelectData(initialData, 'correctiveaction', ['corrective_actions', 'corrective_action', 'immediatecorrectiveactionselectallapplicable', 'immediatecorrectiveaction']));
       setClaimTypes(getMultiSelectData(initialData, 'intenttoclaim', ['claim_types', 'intent_to_claim', 'intenttoclaimissuedselectallapplicable', 'intenttoclaimissued']));
     }
-  }, [initialData, incident_id]);
+  }, [initialData, incident_id, readOnly]);
 
   const upd = (k: string, v: string) => setF((p: any) => ({ ...p, [k]: v }));
   const toggle = (arr: string[], setArr: (a: string[]) => void, val: string) =>

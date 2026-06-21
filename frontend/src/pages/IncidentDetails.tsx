@@ -45,6 +45,10 @@ export default function IncidentDetails() {
   const [isDirty, setIsDirty] = useState(false);
   const postSaveShieldRef = useRef(false);
   const postSaveTimeoutRef = useRef<any>(null);
+  // Stable snapshot of incident data for the original submission form.
+  // Captured once on first load / ID change to prevent polling flicker.
+  const originalFormDataRef = useRef<any>(null);
+  const [originalFormData, setOriginalFormData] = useState<any>(null);
 
   const activatePostSaveShield = () => {
     postSaveShieldRef.current = true;
@@ -264,6 +268,16 @@ export default function IncidentDetails() {
             cor_corrective_action: finalIncident.cor_corrective_action || '',
             cor_action_implemented: finalIncident.cor_action_implemented || 'No'
           }));
+
+            // Capture a stable snapshot for the original submission form
+            // Only update when we don't have one yet, or the incident ID changed
+            const currentId = String(finalIncident.id || finalIncident.incident_number_str || '');
+            const snapshotId = String(originalFormDataRef.current?.id || originalFormDataRef.current?.incident_number_str || '');
+            if (!originalFormDataRef.current || currentId !== snapshotId) {
+              const snapshot = JSON.parse(JSON.stringify(finalIncident));
+              originalFormDataRef.current = snapshot;
+              setOriginalFormData(snapshot);
+            }
         }
       }
 
@@ -707,6 +721,12 @@ export default function IncidentDetails() {
       }).catch(err => console.error('Power Automate edit trigger failed:', err));
 
       showNotification('Submission updated successfully.');
+
+      // Update the stable form snapshot with the saved data so read-only view reflects edits
+      const updatedSnapshot = JSON.parse(JSON.stringify({ ...incident, ...restFormData }));
+      originalFormDataRef.current = updatedSnapshot;
+      setOriginalFormData(updatedSnapshot);
+
       await handleManualRefresh(); // Fetch immediately
       triggerFastPolling(); // Continue fast polling for a few seconds
 
@@ -727,14 +747,18 @@ export default function IncidentDetails() {
     // Using JSON.stringify(incident) caused the form to flicker on every poll cycle.
     const formKey = isEditingForm ? `edit-${incident.id}` : `view-${incident.id}`;
 
+    // In read-only mode, use the stable snapshot to prevent polling from overwriting displayed data.
+    // In edit mode, use the live incident so the form starts with the latest data.
+    const formData = isEditingForm ? incident : (originalFormData || incident);
+
     switch (category) {
-      case 'cargo': return <CargoForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'hr': return <HRForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'whs': return <WHSForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'it': return <ITForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'risk': return <RiskForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'finance': return <FinanceForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
-      case 'ncr': return <NCRForm key={formKey} initialData={incident} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'cargo': return <CargoForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'hr': return <HRForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'whs': return <WHSForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'it': return <ITForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'risk': return <RiskForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'finance': return <FinanceForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
+      case 'ncr': return <NCRForm key={formKey} initialData={formData} readOnly={!isEditingForm} onSubmit={handleOriginalFormSubmit} onCancel={() => setIsEditingForm(false)} loading={isUpdatingDept} />;
     }
 
     // Fallback to generic JSON mapping if form not matched
