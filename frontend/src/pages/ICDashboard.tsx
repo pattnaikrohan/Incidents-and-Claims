@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Link } from 'react-router-dom';
 
 export default function ICDashboard() {
@@ -135,17 +135,30 @@ export default function ICDashboard() {
     { name: 'Closed', value: closed, color: '#10b981' }
   ].filter(x => x.value > 0);
 
-  // Monthly Trend
+  // Monthly Trend — Open vs Closed by month-year (last 14 months)
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const monthlyMap: Record<string, number> = {};
+  const now = new Date();
+  const monthlyTrendMap: Record<string, { name: string; open: number; closed: number }> = {};
+  // Pre-fill last 14 months
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    monthlyTrendMap[key] = { name: key, open: 0, closed: 0 };
+  }
   incidents.forEach(n => {
     try {
       const d = new Date(n.date || n.created_at);
-      const key = monthNames[d.getMonth()];
-      if (key) monthlyMap[key] = (monthlyMap[key] || 0) + 1;
+      const key = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+      if (monthlyTrendMap[key]) {
+        if (n.status?.toLowerCase().includes('closed')) {
+          monthlyTrendMap[key].closed += 1;
+        } else {
+          monthlyTrendMap[key].open += 1;
+        }
+      }
     } catch (e) {}
   });
-  const monthlyData = Object.entries(monthlyMap).map(([name, value]) => ({ name, value }));
+  const monthlyData = Object.values(monthlyTrendMap);
 
   const recentTable = incidents.slice(0, 8);
 
@@ -218,7 +231,7 @@ export default function ICDashboard() {
               const pct = (b.value / max) * 100;
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ width: '100px', textAlign: 'right', fontSize: '0.8rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
+                  <div title={b.name} style={{ width: '220px', minWidth: '220px', textAlign: 'right', fontSize: '0.8rem', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</div>
                   <div style={{ flex: 1, height: '14px', background: '#f0f0f0', borderRadius: '2px', overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: '#6366f1', borderRadius: '2px' }} />
                   </div>
@@ -261,20 +274,65 @@ export default function ICDashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Monthly Trend */}
-        <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: '4px', padding: '1.25rem' }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666', letterSpacing: '0.05em', marginBottom: '1.5rem' }}>MONTHLY TREND — INCIDENTS RAISED</div>
-          <div style={{ height: '140px', width: '100%' }}>
+        {/* Monthly Trend — Open vs Closed Line Graph */}
+        <div style={{ background: 'linear-gradient(135deg, #1a1f2e 0%, #2a2f3e 50%, #1e2333 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', letterSpacing: '0.03em', marginBottom: '0.25rem' }}>Monthly Incident Trend</div>
+          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>Open vs Closed — Rolling 14 Months</div>
+          <div style={{ height: '200px', width: '100%' }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#666' }} dy={5} />
-                <Tooltip cursor={{ fill: '#f8f9fa' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="value" fill="#93c5fd" radius={[2, 2, 0, 0]}>
-                  {monthlyData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === monthlyData.length - 1 ? '#6366f1' : '#c7d2fe'} />
-                  ))}
-                </Bar>
-              </BarChart>
+              <LineChart data={monthlyData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.5)', fontWeight: 600 }} 
+                  dy={8}
+                  interval={0}
+                  angle={-35}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} allowDecimals={false} />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgba(30,35,51,0.95)', 
+                    border: '1px solid rgba(255,255,255,0.15)', 
+                    borderRadius: '8px', 
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+                    color: '#fff',
+                    fontSize: '0.8rem'
+                  }} 
+                  labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: '4px' }}
+                  itemStyle={{ color: '#fff' }}
+                />
+                <Legend 
+                  verticalAlign="top" 
+                  align="center" 
+                  iconType="plainline" 
+                  wrapperStyle={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', paddingBottom: '8px' }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="open" 
+                  name="Open" 
+                  stroke="#38bdf8" 
+                  strokeWidth={2.5} 
+                  dot={{ r: 3, fill: '#38bdf8', strokeWidth: 0 }} 
+                  activeDot={{ r: 5, stroke: '#38bdf8', strokeWidth: 2, fill: '#1a1f2e' }}
+                  label={{ position: 'top', fontSize: 9, fill: '#38bdf8', fontWeight: 700, offset: 8 }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="closed" 
+                  name="Closed" 
+                  stroke="#fb923c" 
+                  strokeWidth={2.5} 
+                  dot={{ r: 3, fill: '#fb923c', strokeWidth: 0 }} 
+                  activeDot={{ r: 5, stroke: '#fb923c', strokeWidth: 2, fill: '#1a1f2e' }}
+                  label={{ position: 'top', fontSize: 9, fill: '#fb923c', fontWeight: 700, offset: 8 }}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>

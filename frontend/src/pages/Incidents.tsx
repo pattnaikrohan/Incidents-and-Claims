@@ -67,7 +67,7 @@ export default function Incidents() {
   }, [activeFilterMenu]);
 
   const INCIDENT_TYPES = [
-    { id: 'cargo', label: 'Cargo & Equipment', icon: Package, color: '#f59e0b', desc: 'Cargo damage, theft, equipment failure', columns: ['Reference', 'Job Number', 'Classification', 'Jurisdiction', 'Customer', 'Lodged Date', 'Status', 'Exposure'] },
+    { id: 'cargo', label: 'Cargo & Equipment', icon: Package, color: '#f59e0b', desc: 'Cargo damage, theft, equipment failure', columns: ['Incident Number', 'Status', 'System Job Number', 'Short Description', 'Business Unit', 'Date of Incident', 'BL/AWB Number', 'Container Number/s', 'Date Created', 'Created By'] },
     { id: 'hr', label: 'Human Resources', icon: Users, color: '#8b5cf6', desc: 'Workplace conduct & HR matters', columns: ['Reference', 'Matter Type', 'Employee', 'Branch / Dept', 'Lodged Date', 'Status'] },
     { id: 'whs', label: 'WH&S Incident', icon: HeartPulse, color: '#ef4444', desc: 'Workplace health, safety & injuries', columns: ['Reference', 'Injury / Incident', 'Location', 'Branch / Dept', 'Lodged Date', 'Status'] },
     { id: 'it', label: 'IT & Security', icon: Lock, color: '#06b6d4', desc: 'Cyber, data breach & system issues', columns: ['Reference', 'Issue Type', 'System', 'Branch / Dept', 'Lodged Date', 'Status'] },
@@ -746,7 +746,7 @@ export default function Incidents() {
                 {isExpanded && (
                   <div className="fade-in" style={{ padding: '0.25rem' }}>
                     <div style={{ overflowX: 'auto', padding: '0.25rem' }}>
-                      <table style={{ minWidth: '800px', borderCollapse: 'separate', borderSpacing: '0 0.25rem' }}>
+                      <table style={{ minWidth: '1100px', borderCollapse: 'separate', borderSpacing: '0 0.25rem' }}>
                         <thead>
                           <tr>
                             {category.columns.map((col, idx) => (
@@ -757,7 +757,7 @@ export default function Incidents() {
                                   paddingLeft: idx === 0 ? '1.5rem' : '0.75rem',
                                   paddingRight: idx === category.columns.length - 1 ? '1.5rem' : '0.75rem',
                                   paddingTop: '0.5rem', paddingBottom: '0.5rem',
-                                  textAlign: idx === category.columns.length - 1 && category.id === 'cargo' ? 'right' : 'left',
+                                  textAlign: 'left',
                                   color: 'var(--fg-faint)', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em'
                                 }}
                               >
@@ -880,10 +880,21 @@ export default function Incidents() {
                                 
                                 {category.id === 'cargo' && (
                                   <>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.job_number || incident.system_job_number || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.type || incident.incident_types || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.location || incident.location_of_incident || 'N/A'}</td>
-                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.customer_name || 'N/A'}</td>
+                                    <td style={{ padding: '0.4rem 0.75rem' }}>
+                                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                        <span className={`badge badge-${(String(incident.status || '').toLowerCase().includes('closed') || String(incident.status || '').toLowerCase() === 'close') ? 'closed' : (String(incident.status || '').toLowerCase().includes('open') || String(incident.status || '').toLowerCase() === 'new') ? 'open' : 'review'}`} style={{ fontWeight: 700, padding: '0.2rem 0.6rem', fontSize: '0.65rem' }}>
+                                          {String(incident.status || '')}
+                                        </span>
+                                      </div>
+                                    </td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.system_job_number || incident.job_number || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', maxWidth: '180px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={incident.short_description || incident.description || ''}>{incident.short_description || incident.description || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.business_unit || 'N/A'}</td>
+                                    <td className="monospaced" style={{ color: 'var(--fg-muted)', fontWeight: 600, fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.date_of_incident || incident.date || 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', color: 'var(--fg-muted)' }}>{incident.mbl_mawb_number || incident.hbl_hawb_number || incident.bill_of_lading || '—'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', color: 'var(--fg-muted)' }}>{incident.container_numbers || incident.container_number || '—'}</td>
+                                    <td className="monospaced" style={{ color: 'var(--fg-muted)', fontWeight: 600, fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{incident.created_at ? new Date(incident.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}</td>
+                                    <td style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', borderTopRightRadius: '10px', borderBottomRightRadius: '10px' }}>{incident.logged_by || 'N/A'}</td>
                                   </>
                                 )}
                                 {category.id === 'hr' && (
@@ -929,6 +940,8 @@ export default function Incidents() {
                                   </>
                                 )}
 
+                                {category.id !== 'cargo' && (
+                                  <>
                                 <td className="monospaced" style={{ color: 'var(--fg-muted)', fontWeight: 600, fontSize: '0.75rem', padding: '0.4rem 0.75rem' }}>{category.id === 'finance' ? (incident.reported_date || incident.date || 'N/A') : incident.date}</td>
                                 <td style={{ padding: '0.4rem 0.75rem', borderTopRightRadius: '10px', borderBottomRightRadius: '10px', border: '1px solid transparent', borderLeft: 'none' }}>
                                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -937,10 +950,7 @@ export default function Incidents() {
                                     </span>
                                   </div>
                                 </td>
-                                {category.id === 'cargo' && (
-                                  <td style={{ fontSize: '0.75rem', padding: '0.4rem 1.5rem 0.4rem 0.75rem', textAlign: 'right', fontWeight: 600, borderTopRightRadius: '10px', borderBottomRightRadius: '10px', border: '1px solid transparent', borderLeft: 'none' }}>
-                                    {incident.total_estimated_costs || '$0.00'}
-                                  </td>
+                                  </>
                                 )}
                               </tr>
                             );
