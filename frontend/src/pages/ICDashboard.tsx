@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { useIncidents } from '../hooks/useIncidents';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Link } from 'react-router-dom';
 
 export default function ICDashboard() {
@@ -273,70 +273,76 @@ export default function ICDashboard() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-        {/* Monthly Trend — Open vs Closed Line Graph */}
-        <div style={{ background: 'linear-gradient(135deg, #1a1f2e 0%, #2a2f3e 50%, #1e2333 100%)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', letterSpacing: '0.03em', marginBottom: '0.25rem' }}>Monthly Incident Trend</div>
-          <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem' }}>Open vs Closed — Rolling 14 Months</div>
-          <div style={{ height: '200px', width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData} margin={{ top: 15, right: 20, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.5)', fontWeight: 600 }} 
-                  dy={8}
-                  interval={0}
-                  angle={-35}
-                  textAnchor="end"
-                  height={50}
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.4)' }} allowDecimals={false} />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'rgba(30,35,51,0.95)', 
-                    border: '1px solid rgba(255,255,255,0.15)', 
-                    borderRadius: '8px', 
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-                    color: '#fff',
-                    fontSize: '0.8rem'
-                  }} 
-                  labelStyle={{ color: '#fff', fontWeight: 700, marginBottom: '4px' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Legend 
-                  verticalAlign="top" 
-                  align="center" 
-                  iconType="plainline" 
-                  wrapperStyle={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', paddingBottom: '8px' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="open" 
-                  name="Open" 
-                  stroke="#38bdf8" 
-                  strokeWidth={2.5} 
-                  dot={{ r: 3, fill: '#38bdf8', strokeWidth: 0 }} 
-                  activeDot={{ r: 5, stroke: '#38bdf8', strokeWidth: 2, fill: '#1a1f2e' }}
-                  label={{ position: 'top', fontSize: 9, fill: '#38bdf8', fontWeight: 700, offset: 8 }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="closed" 
-                  name="Closed" 
-                  stroke="#fb923c" 
-                  strokeWidth={2.5} 
-                  dot={{ r: 3, fill: '#fb923c', strokeWidth: 0 }} 
-                  activeDot={{ r: 5, stroke: '#fb923c', strokeWidth: 2, fill: '#1a1f2e' }}
-                  label={{ position: 'top', fontSize: 9, fill: '#fb923c', fontWeight: 700, offset: 8 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+      {/* Monthly Trend — Open vs Closed Line Graph (full width) */}
+      <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: '4px', padding: '1.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666', letterSpacing: '0.05em' }}>MONTHLY INCIDENT TREND</div>
+            <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '0.2rem' }}>Open vs Closed — Rolling 14 Months</div>
+          </div>
+          <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{ width: '24px', height: '3px', background: '#6366f1', borderRadius: '2px' }} />
+              <span style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500 }}>Open</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <div style={{ width: '24px', height: '3px', background: '#f59e0b', borderRadius: '2px' }} />
+              <span style={{ fontSize: '0.7rem', color: '#666', fontWeight: 500 }}>Closed</span>
+            </div>
           </div>
         </div>
+        <div style={{ height: '240px', width: '100%' }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: -10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 10, fill: '#888', fontWeight: 500 }} 
+                dy={8}
+                interval={0}
+                angle={-40}
+                textAnchor="end"
+                height={55}
+              />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#aaa' }} allowDecimals={false} />
+              <Tooltip 
+                contentStyle={{ 
+                  background: '#fff', 
+                  border: '1px solid #e5e5e5', 
+                  borderRadius: '8px', 
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: '0.8rem'
+                }} 
+                labelStyle={{ fontWeight: 700, marginBottom: '4px', color: '#333' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="open" 
+                name="Open" 
+                stroke="#6366f1" 
+                strokeWidth={2.5} 
+                dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} 
+                activeDot={{ r: 6, stroke: '#6366f1', strokeWidth: 2, fill: '#fff' }}
+                label={{ position: 'top', fontSize: 10, fill: '#6366f1', fontWeight: 700, offset: 10 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="closed" 
+                name="Closed" 
+                stroke="#f59e0b" 
+                strokeWidth={2.5} 
+                dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} 
+                activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2, fill: '#fff' }}
+                label={{ position: 'top', fontSize: 10, fill: '#f59e0b', fontWeight: 700, offset: 10 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
+      <div style={{ marginBottom: '1.5rem' }}>
         {/* Incidents by Type */}
         <div style={{ background: '#fff', border: '1px solid #e5e5e5', borderRadius: '4px', padding: '1.25rem' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#666', letterSpacing: '0.05em', marginBottom: '1.5rem' }}>INCIDENTS BY TYPE</div>
