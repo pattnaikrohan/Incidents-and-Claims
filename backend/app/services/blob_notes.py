@@ -119,14 +119,17 @@ def add_note(incident_id: str, message: str, author_name: str, note_type: str = 
 
 
 def clear_notes(incident_id: str) -> int:
-    """Delete all collaboration notes for an incident. Returns the count removed."""
+    """Clear all collaboration notes for an incident in Azure Blob Storage."""
     notes = get_notes(incident_id)
     count = len(notes)
 
     try:
         blob_client = _get_blob_client(incident_id)
-        if blob_client.exists():
-            blob_client.delete_blob()
+        blob_client.upload_blob(
+            json.dumps([], default=str).encode("utf-8"),
+            overwrite=True,
+            content_settings=ContentSettings(content_type="application/json")
+        )
     except Exception as e:
         print(f"[BlobNotes] Error clearing notes for {incident_id}: {e}")
         raise

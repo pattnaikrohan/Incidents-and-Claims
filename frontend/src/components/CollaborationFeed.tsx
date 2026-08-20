@@ -74,7 +74,11 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
         }
 
         // Update known IDs
-        incomingNotes.forEach((n) => knownNoteIdsRef.current.add(n.id));
+        if (incomingNotes.length === 0) {
+          knownNoteIdsRef.current.clear();
+        } else {
+          incomingNotes.forEach((n) => knownNoteIdsRef.current.add(n.id));
+        }
         isInitialLoadRef.current = false;
         setNotes(incomingNotes);
       }

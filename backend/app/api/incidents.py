@@ -359,7 +359,7 @@ def list_incident_notes(
     # 1. Fetch from Azure Blob Storage (primary persistent storage)
     try:
         blob_data = blob_notes.get_notes(incident_id)
-        if blob_data:
+        if blob_data is not None:
             return blob_data
     except Exception as e:
         print(f"[NotesAPI] Azure Blob fetch failed: {e}")
