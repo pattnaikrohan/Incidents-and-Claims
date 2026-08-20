@@ -14,6 +14,22 @@ interface CollaborationFeedProps {
   incidentId: string | number;
 }
 
+function formatLocalTime(rawTimestamp: string): string {
+  if (!rawTimestamp) return '';
+  try {
+    let dateStr = String(rawTimestamp).trim();
+    // If ISO timestamp has no timezone offset or Z, treat as UTC from server
+    if (dateStr.includes('T') && !dateStr.endsWith('Z') && !dateStr.includes('+') && !/-\d\d:\d\d$/.test(dateStr)) {
+      dateStr += 'Z';
+    }
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
 export default function CollaborationFeed({ incidentId }: CollaborationFeedProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -211,7 +227,7 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--fg-base)' }}>{note.author_name}</span>
                   <span style={{ fontSize: '0.65rem', color: 'var(--fg-faint)' }}>
-                    {new Date(note.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatLocalTime(note.timestamp)}
                   </span>
                 </div>
                 <div style={{ 

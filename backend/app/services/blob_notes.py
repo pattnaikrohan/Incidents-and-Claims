@@ -8,7 +8,7 @@ This ensures notes persist across Azure App Service restarts and are accessible
 in real-time across all environments.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 # Azure Storage configuration
@@ -60,7 +60,7 @@ def add_note(incident_id: str, message: str, author_name: str, note_type: str = 
         "message": message,
         "author_name": author_name,
         "note_type": note_type,
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
     notes.append(new_note)
 
