@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Shield, Clock, MessageSquare } from 'lucide-react';
+import { Send, Shield, Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 
 interface Note {
@@ -58,6 +58,16 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
     }
   };
 
+  const handleClearMessages = async () => {
+    if (!window.confirm('Are you sure you want to clear all messages in this thread? This cannot be undone.')) return;
+    try {
+      await api.delete(`/incidents/${incidentId}/notes`);
+      setNotes([]);
+    } catch (error) {
+      console.error('Failed to clear messages:', error);
+    }
+  };
+
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--fg-muted)' }}>Loading conversation...</div>;
 
   return (
@@ -92,10 +102,43 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
         }}>
           <Shield size={20} />
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <h3 style={{ fontSize: '1.05rem', fontWeight: 600, margin: 0, color: 'var(--fg-base)' }}>Incident Collaboration</h3>
           <span style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', fontWeight: 500 }}>Real-time coordination thread</span>
         </div>
+        {notes.length > 0 && (
+          <button
+            onClick={handleClearMessages}
+            title="Clear all messages"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border-base)',
+              borderRadius: '8px',
+              padding: '0.4rem 0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              cursor: 'pointer',
+              color: 'var(--fg-muted)',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#ef4444';
+              e.currentTarget.style.borderColor = '#fca5a5';
+              e.currentTarget.style.background = '#fef2f2';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--fg-muted)';
+              e.currentTarget.style.borderColor = 'var(--border-base)';
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <Trash2 size={13} />
+            Clear
+          </button>
+        )}
       </div>
 
       {/* Messages Area */}

@@ -1066,7 +1066,7 @@ export default function IncidentDetails() {
             const meta = CATEGORY_META[category];
             const deptFilled = isDeptSectionFilled(incident, category);
             const canSee = canSeeDeptSection(role, category);
-            const canEdit = canEditDeptSection(role, category);
+            const canEdit = canEditDeptSection(role, category, email);
             const showConfNotes = canSeeConfidentialNotes(role);
             const isAwaiting = !deptFilled && !canEdit;
 

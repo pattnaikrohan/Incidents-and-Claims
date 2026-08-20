@@ -362,8 +362,11 @@ def list_incident_notes(
         {
             "id": n.get("id") if isinstance(n, dict) else getattr(n, "id", None),
             "message": n.get("message") if isinstance(n, dict) else getattr(n, "message", ""),
-            "author": "System User",
-            "date": n.get("created_at") if isinstance(n, dict) else getattr(n, "created_at", getattr(n, "timestamp", None))
+            "note_type": n.get("note_type") if isinstance(n, dict) else getattr(n, "note_type", "user"),
+            "author_name": n.get("author_name") if isinstance(n, dict) else getattr(n, "author_name", 
+                           getattr(current_user, "name", "System User")),
+            "timestamp": n.get("timestamp") if isinstance(n, dict) else getattr(n, "timestamp", 
+                         getattr(n, "created_at", None))
         }
         for n in notes
     ]
@@ -375,12 +378,37 @@ def add_incident_note(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
+    author_name = getattr(current_user, "name", None) or getattr(current_user, "email", "Unknown")
     new_note = IncidentNote(
         id=len(db.notes) + 1,
         incident_id=incident_id,
         message=note_in.get("message", ""),
-        author_id=current_user.id,
-        created_at=datetime.now()
+        author_id=getattr(current_user, "id", None),
+        note_type="user",
+        timestamp=datetime.now()
     )
+    # Attach author_name so it persists in the JSON store for later retrieval
+    new_note.author_name = author_name
     db.add(new_note)
-    return {"message": "Note added", "note_id": new_note.id}
+    return {
+        "message": "Note added",
+        "note_id": new_note.id,
+        "author_name": author_name,
+        "timestamp": str(new_note.timestamp)
+    }
+
+@router.delete("/{incident_id}/notes", response_model=dict)
+def clear_incident_notes(
+    incident_id: str,
+    db = Depends(get_db),
+    current_user = Depends(get_current_active_user)
+):
+    search_id = str(incident_id).strip().lower()
+    before_count = len(db.notes)
+    db.notes = [
+        n for n in db.notes
+        if str(n.get("incident_id") if isinstance(n, dict) else getattr(n, "incident_id", "")).lower() != search_id
+    ]
+    removed = before_count - len(db.notes)
+    db._save()
+    return {"message": f"Cleared {removed} message(s)", "removed": removed}

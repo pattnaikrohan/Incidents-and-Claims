@@ -78,10 +78,25 @@ export function canSeeDeptSection(role: string | null, category: IncidentCategor
 }
 
 /**
- * Can the current role EDIT the department-specific section?
- * Only the actual department team can edit their section.
+ * Users who should have full edit access to all department sections,
+ * regardless of their Azure AD role assignment.
+ * Add emails in lowercase.
  */
-export function canEditDeptSection(role: string | null, category: IncidentCategory): boolean {
+const ELEVATED_EDIT_EMAILS: string[] = [
+  'ced.cruz@aaw.com.au',
+  'k.stjepovic@ilm.com.au',
+  'r.pattnaik@ilm.com.au',
+  'a.barik@ilm.com.au',
+];
+
+/**
+ * Can the current role EDIT the department-specific section?
+ * Only the actual department team can edit their section,
+ * unless the user's email is in the elevated override list.
+ */
+export function canEditDeptSection(role: string | null, category: IncidentCategory, email?: string | null): boolean {
+  // Email-based override: grant full edit access to elevated users
+  if (email && ELEVATED_EDIT_EMAILS.includes(email.toLowerCase())) return true;
   if (role === 'full_access') return true;
   if (role === 'hr_access' && (category === 'hr' || category === 'whs')) return true;
   if (role === 'whs_access' && category === 'whs') return true;
