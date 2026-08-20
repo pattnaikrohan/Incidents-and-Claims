@@ -64,8 +64,11 @@ def _trigger_power_automate(incident_id: str, message: str, author_name: str, ti
 
     def _call():
         try:
+            incident_link = f"https://riskandcompliance.aaw.com.au/incidents/{incident_id}"
             payload = {
                 "incident_id": str(incident_id),
+                "incident_link": incident_link,
+                "incident_url": incident_link,
                 "message": message,
                 "author_name": author_name,
                 "timestamp": timestamp,

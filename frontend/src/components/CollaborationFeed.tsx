@@ -135,12 +135,20 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
     setNewMessage('');
     setIsSending(true);
 
-    // Trigger Power Automate flow directly
+    // Construct full link to the incident
+    const appOrigin = window.location.origin && !window.location.origin.includes('localhost')
+      ? window.location.origin
+      : 'https://riskandcompliance.aaw.com.au';
+    const incidentLink = `${appOrigin}/incidents/${incidentId}`;
+
+    // Trigger Power Automate flow directly with incident_link
     fetch(PA_COLLABORATION_FLOW, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         incident_id: String(incidentId),
+        incident_link: incidentLink,
+        incident_url: incidentLink,
         message: msgToSend,
         author_name: authorName,
         author_email: authorEmail,
