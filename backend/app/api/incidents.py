@@ -354,47 +354,90 @@ def list_incident_notes(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    notes = [
+    from app.services import blob_notes
+    
+    # 1. Fetch from Azure Blob Storage (primary persistent storage)
+    try:
+        blob_data = blob_notes.get_notes(incident_id)
+        if blob_data:
+            return blob_data
+    except Exception as e:
+        print(f"[NotesAPI] Azure Blob fetch failed: {e}")
+
+    # 2. Fallback to in-memory store if blob empty / unavailable
+    search_id = str(incident_id).strip().lower()
+    local_notes = [
         n for n in db.notes 
-        if str(n.get("incident_id") if isinstance(n, dict) else getattr(n, "incident_id", "")).lower() == str(incident_id).lower()
+        if str(n.get("incident_id") if isinstance(n, dict) else getattr(n, "incident_id", "")).strip().lower() == search_id
     ]
+    
     return [
         {
             "id": n.get("id") if isinstance(n, dict) else getattr(n, "id", None),
+            "incident_id": incident_id,
             "message": n.get("message") if isinstance(n, dict) else getattr(n, "message", ""),
             "note_type": n.get("note_type") if isinstance(n, dict) else getattr(n, "note_type", "user"),
             "author_name": n.get("author_name") if isinstance(n, dict) else getattr(n, "author_name", 
                            getattr(current_user, "name", "System User")),
-            "timestamp": n.get("timestamp") if isinstance(n, dict) else getattr(n, "timestamp", 
-                         getattr(n, "created_at", None))
+            "timestamp": str(n.get("timestamp") if isinstance(n, dict) else getattr(n, "timestamp", 
+                         getattr(n, "created_at", datetime.now().isoformat())))
         }
-        for n in notes
+        for n in local_notes
     ]
 
 @router.post("/{incident_id}/notes", response_model=dict)
 def add_incident_note(
     incident_id: str,
-    note_in: dict, # Simplified
+    note_in: dict,
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
-    author_name = getattr(current_user, "name", None) or getattr(current_user, "email", "Unknown")
-    new_note = IncidentNote(
+    from app.services import blob_notes
+    
+    author_name = getattr(current_user, "name", None) or getattr(current_user, "email", "Team Member")
+    message = note_in.get("message", "").strip()
+    
+    if not message:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    new_note = None
+    # 1. Persist to Azure Blob Storage notepad
+    try:
+        new_note = blob_notes.add_note(
+            incident_id=incident_id,
+            message=message,
+            author_name=author_name,
+            note_type="user"
+        )
+    except Exception as e:
+        print(f"[NotesAPI] Azure Blob save failed: {e}")
+
+    # 2. Also record in local store
+    local_note = IncidentNote(
         id=len(db.notes) + 1,
         incident_id=incident_id,
-        message=note_in.get("message", ""),
+        message=message,
         author_id=getattr(current_user, "id", None),
         note_type="user",
         timestamp=datetime.now()
     )
-    # Attach author_name so it persists in the JSON store for later retrieval
-    new_note.author_name = author_name
-    db.add(new_note)
+    local_note.author_name = author_name
+    db.add(local_note)
+
+    if new_note:
+        return {
+            "message": "Note added",
+            "note_id": new_note.get("id"),
+            "author_name": author_name,
+            "timestamp": new_note.get("timestamp"),
+            "note": new_note
+        }
+    
     return {
         "message": "Note added",
-        "note_id": new_note.id,
+        "note_id": local_note.id,
         "author_name": author_name,
-        "timestamp": str(new_note.timestamp)
+        "timestamp": str(local_note.timestamp)
     }
 
 @router.delete("/{incident_id}/notes", response_model=dict)
@@ -403,12 +446,24 @@ def clear_incident_notes(
     db = Depends(get_db),
     current_user = Depends(get_current_active_user)
 ):
+    from app.services import blob_notes
+    
+    # 1. Clear Azure Blob Storage notepad
+    blob_removed = 0
+    try:
+        blob_removed = blob_notes.clear_notes(incident_id)
+    except Exception as e:
+        print(f"[NotesAPI] Azure Blob clear failed: {e}")
+
+    # 2. Clear local memory store
     search_id = str(incident_id).strip().lower()
     before_count = len(db.notes)
     db.notes = [
         n for n in db.notes
-        if str(n.get("incident_id") if isinstance(n, dict) else getattr(n, "incident_id", "")).lower() != search_id
+        if str(n.get("incident_id") if isinstance(n, dict) else getattr(n, "incident_id", "")).strip().lower() != search_id
     ]
-    removed = before_count - len(db.notes)
+    local_removed = before_count - len(db.notes)
     db._save()
-    return {"message": f"Cleared {removed} message(s)", "removed": removed}
+    
+    total_removed = max(blob_removed, local_removed)
+    return {"message": f"Cleared {total_removed} message(s)", "removed": total_removed}

@@ -20,10 +20,14 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [isSending, setIsSending] = useState(false);
+
   const fetchNotes = async () => {
     try {
       const response = await api.get(`/incidents/${incidentId}/notes`);
-      setNotes(response.data);
+      if (Array.isArray(response.data)) {
+        setNotes(response.data);
+      }
     } catch (error) {
       console.error('Failed to fetch notes:', error);
     } finally {
@@ -33,9 +37,8 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
 
   useEffect(() => {
     fetchNotes();
-    // In a real app, we would use WebSockets here for instant updates.
-    // Setting up a basic poll for demonstration.
-    const interval = setInterval(fetchNotes, 5000);
+    // Poll every 3 seconds for real-time updates across users
+    const interval = setInterval(fetchNotes, 3000);
     return () => clearInterval(interval);
   }, [incidentId]);
 
@@ -47,14 +50,30 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    const msgToSend = newMessage.trim();
+    if (!msgToSend || isSending) return;
+
+    // Optimistic message update for instant UI feedback
+    const optimisticNote: Note = {
+      id: Date.now(),
+      message: msgToSend,
+      timestamp: new Date().toISOString(),
+      note_type: 'user',
+      author_name: localStorage.getItem('displayName') || localStorage.getItem('email') || 'You'
+    };
+    setNotes((prev) => [...prev, optimisticNote]);
+    setNewMessage('');
+    setIsSending(true);
 
     try {
-      await api.post(`/incidents/${incidentId}/notes`, { message: newMessage });
-      setNewMessage('');
-      fetchNotes();
+      await api.post(`/incidents/${incidentId}/notes`, { message: msgToSend });
+      await fetchNotes();
     } catch (error) {
       console.error('Failed to send message:', error);
+      // Re-fetch to ensure sync
+      fetchNotes();
+    } finally {
+      setIsSending(false);
     }
   };
 
