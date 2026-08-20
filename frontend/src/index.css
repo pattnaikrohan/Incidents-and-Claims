@@ -808,3 +808,14 @@ tr:last-child td {
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+@keyframes slideDownToast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}

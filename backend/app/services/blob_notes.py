@@ -50,17 +50,50 @@ def get_notes(incident_id: str) -> list:
         return []
 
 
+POWER_AUTOMATE_COLLABORATION_URL = (
+    "https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/"
+    "powerautomate/automations/direct/cu/29/workflows/5c440ebc9da5492ca70c12ad1274f7c8/"
+    "triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bHUdb-NvEZr5C3VvzREdUc5jsQyvWBjFGn2daF6tUdg"
+)
+
+
+def _trigger_power_automate(incident_id: str, message: str, author_name: str, timestamp: str):
+    """Trigger the Power Automate collaboration flow in a non-blocking manner."""
+    import threading
+    import requests
+
+    def _call():
+        try:
+            payload = {
+                "incident_id": str(incident_id),
+                "message": message,
+                "author_name": author_name,
+                "timestamp": timestamp,
+            }
+            requests.post(
+                POWER_AUTOMATE_COLLABORATION_URL,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=10,
+            )
+        except Exception as e:
+            print(f"[BlobNotes] Power Automate notification error: {e}")
+
+    threading.Thread(target=_call, daemon=True).start()
+
+
 def add_note(incident_id: str, message: str, author_name: str, note_type: str = "user") -> dict:
     """Add a new collaboration note for an incident, persisted to Azure Blob Storage."""
     notes = get_notes(incident_id)
 
+    timestamp_str = datetime.now(timezone.utc).isoformat()
     new_note = {
         "id": len(notes) + 1,
         "incident_id": str(incident_id),
         "message": message,
         "author_name": author_name,
         "note_type": note_type,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": timestamp_str,
     }
     notes.append(new_note)
 
@@ -75,6 +108,9 @@ def add_note(incident_id: str, message: str, author_name: str, note_type: str = 
     except Exception as e:
         print(f"[BlobNotes] Error saving note for {incident_id}: {e}")
         raise
+
+    # Trigger Power Automate notification flow
+    _trigger_power_automate(incident_id, message, author_name, timestamp_str)
 
     return new_note
 
