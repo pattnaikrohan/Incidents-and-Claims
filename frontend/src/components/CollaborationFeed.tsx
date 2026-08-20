@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Shield, Clock, MessageSquare, Trash2, Bell, X } from 'lucide-react';
+import { Send, Shield, Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { playNotificationSound } from '../utils/notificationSound';
+import { useNotifications } from '../context/NotificationContext';
 
 const PA_COLLABORATION_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/5c440ebc9da5492ca70c12ad1274f7c8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bHUdb-NvEZr5C3VvzREdUc5jsQyvWBjFGn2daF6tUdg';
 
@@ -40,11 +41,9 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isSending, setIsSending] = useState(false);
 
-  // Incoming notification banner state
-  const [toast, setToast] = useState<{ show: boolean; author: string; message: string } | null>(null);
+  const { addNotification } = useNotifications();
   const knownNoteIdsRef = useRef<Set<string | number>>(new Set());
   const isInitialLoadRef = useRef(true);
-  const toastTimeoutRef = useRef<any>(null);
 
   const currentUserName = localStorage.getItem('displayName') || localStorage.getItem('email') || '';
 
@@ -64,19 +63,15 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
 
           if (freshIncoming.length > 0) {
             const latest = freshIncoming[freshIncoming.length - 1];
-            // Play notification chime for incoming message
-            playNotificationSound('received');
-
-            // Show top-of-app notification banner
-            if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-            setToast({
-              show: true,
+            // Register in global notification context (plays chime + shows top banner + adds to Bell menu)
+            addNotification({
+              title: 'Incident Collaboration',
+              message: latest.message,
               author: latest.author_name,
-              message: latest.message
+              incidentId: String(incidentId),
+              link: `/incidents/${incidentId}`,
+              type: 'collaboration'
             });
-            toastTimeoutRef.current = setTimeout(() => {
-              setToast(null);
-            }, 6000);
           }
         }
 
@@ -100,7 +95,6 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
     const interval = setInterval(fetchNotes, 3000);
     return () => {
       clearInterval(interval);
-      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     };
   }, [incidentId]);
 
@@ -181,76 +175,8 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--fg-muted)' }}>Loading conversation...</div>;
 
   return (
-    <>
-      {/* Top of App Notification Toast */}
-      {toast && toast.show && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '1.25rem',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 999999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.85rem',
-            padding: '0.85rem 1.25rem',
-            background: 'rgba(15, 23, 42, 0.92)',
-            backdropFilter: 'blur(12px)',
-            color: '#ffffff',
-            borderRadius: '16px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(59, 130, 246, 0.3)',
-            animation: 'slideDownToast 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-            maxWidth: '90vw',
-            width: '420px',
-          }}
-        >
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: '0 4px 10px rgba(59, 130, 246, 0.4)'
-            }}
-          >
-            <Bell size={18} color="#ffffff" />
-          </div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span>{toast.author}</span>
-              <span style={{ color: '#64748b', fontSize: '0.75rem' }}>• Incident #{incidentId}</span>
-            </div>
-            <div style={{ fontSize: '0.85rem', color: '#f1f5f9', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
-              {toast.message}
-            </div>
-          </div>
-          <button
-            onClick={() => setToast(null)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              padding: '0.25rem',
-              borderRadius: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            title="Dismiss"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      <div className="card" style={{ 
-        display: 'flex', 
+    <div className="card" style={{ 
+      display: 'flex', 
       flexDirection: 'column', 
       height: '500px', 
       padding: 0,
@@ -453,6 +379,5 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
         </button>
       </form>
     </div>
-    </>
   );
 }

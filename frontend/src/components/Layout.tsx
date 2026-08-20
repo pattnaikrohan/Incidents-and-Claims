@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import {
   LogOut, LayoutDashboard, FileText, Search,
   BarChart3, ChevronRight, Package, Users, HeartPulse,
   Shield, DollarSign, Lock, Bell, Settings,
-  Briefcase, AlertTriangle, FileWarning, PieChart
+  Briefcase, AlertTriangle, FileWarning, PieChart,
+  Trash2, CheckCheck, MessageSquare, X, Sparkles
 } from 'lucide-react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import logo from '../assets/aaw_logo.png';
@@ -64,9 +66,11 @@ const INCIDENT_TYPES = [
 
 export default function Layout({ children }: { children: ReactNode }) {
   const { logout, role, email, branchName, businessUnit, displayName: ssoDisplayName, isSSOUser, resolvedGroupInfo } = useAuth();
+  const { notifications, unreadCount, activeToast, markAsRead, markAllAsRead, clearAll, removeNotification, dismissToast } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [incidentFlyout, setIncidentFlyout] = useState(false);
   const [dashboardFlyout, setDashboardFlyout] = useState(false);
   const [collapsed] = useState(false);
@@ -75,6 +79,7 @@ export default function Layout({ children }: { children: ReactNode }) {
   const dashboardFlyoutRef = useRef<HTMLDivElement>(null);
   const dashboardNavRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -92,6 +97,9 @@ export default function Layout({ children }: { children: ReactNode }) {
       }
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -372,6 +380,113 @@ export default function Layout({ children }: { children: ReactNode }) {
 
       {/* ── MAIN CONTENT ──────────────────────────────────────── */}
       <div className="sidebar-main">
+        {/* Floating Top Toast Banner */}
+        {activeToast && (
+          <div
+            onClick={() => {
+              if (activeToast.link || activeToast.incidentId) {
+                navigate(activeToast.link || `/incidents/${activeToast.incidentId}`);
+                dismissToast();
+              }
+            }}
+            style={{
+              position: 'fixed',
+              top: '1.25rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 999999,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.9rem',
+              padding: '0.9rem 1.4rem',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.92) 100%)',
+              backdropFilter: 'blur(20px)',
+              color: '#ffffff',
+              borderRadius: '20px',
+              boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.4), 0 0 20px rgba(59, 130, 246, 0.25)',
+              animation: 'slideDownToast 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
+              maxWidth: '92vw',
+              width: '440px',
+              cursor: 'pointer',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+            }}
+          >
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
+              }}
+            >
+              <Bell size={19} color="#ffffff" />
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span>{activeToast.author || activeToast.title}</span>
+                {activeToast.incidentId && (
+                  <span style={{
+                    fontSize: '0.7rem',
+                    padding: '0.1rem 0.45rem',
+                    background: 'rgba(59, 130, 246, 0.2)',
+                    color: '#bfdbfe',
+                    borderRadius: '6px',
+                    fontWeight: 600
+                  }}>
+                    #{activeToast.incidentId}
+                  </span>
+                )}
+              </div>
+              <div style={{
+                fontSize: '0.85rem',
+                color: '#f8fafc',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                marginTop: '2px',
+                fontWeight: 500
+              }}>
+                {activeToast.message}
+              </div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissToast();
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: '0.35rem',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                e.currentTarget.style.color = '#fca5a5';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.color = '#94a3b8';
+              }}
+              title="Dismiss"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        )}
+
         {/* Topbar strip */}
         <header className="sidebar-topbar">
           <div className="sidebar-topbar__left" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '0.5rem' }}>
@@ -410,10 +525,346 @@ export default function Layout({ children }: { children: ReactNode }) {
             >
               <Search size={17} />
             </button>
-            <button className="sidebar-topbar__icon-btn" title="Notifications">
-              <Bell size={17} />
-              <span className="sidebar-topbar__notif-dot" />
-            </button>
+            {/* ── NOTIFICATIONS BELL WITH FLYOUT ──────────────── */}
+            <div style={{ position: 'relative' }} ref={notifRef}>
+              <button
+                className="sidebar-topbar__icon-btn"
+                title="Notifications"
+                onClick={() => setNotifOpen(!notifOpen)}
+                style={{
+                  position: 'relative',
+                  color: notifOpen || unreadCount > 0 ? '#60a5fa' : '#a1a1aa',
+                  background: notifOpen ? 'rgba(59, 130, 246, 0.15)' : undefined
+                }}
+              >
+                <Bell size={17} />
+                {unreadCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      right: '4px',
+                      minWidth: '16px',
+                      height: '16px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #ef4444, #f43f5e)',
+                      color: '#ffffff',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 3px',
+                      boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
+                      border: '1.5px solid #0f172a',
+                      animation: 'pulse 2s infinite'
+                    }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Posh Notifications Flyout Panel */}
+              {notifOpen && (
+                <div
+                  className="fade-in"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '0.75rem',
+                    width: '380px',
+                    maxHeight: '480px',
+                    zIndex: 200,
+                    background: 'linear-gradient(165deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.97) 100%)',
+                    backdropFilter: 'blur(32px)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '20px',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(59, 130, 246, 0.15)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden',
+                    color: '#fff',
+                    animation: 'slideDownToast 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
+                >
+                  {/* Flyout Header */}
+                  <div
+                    style={{
+                      padding: '1.1rem 1.25rem',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: 'rgba(255, 255, 255, 0.02)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <div style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2))',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#60a5fa'
+                      }}>
+                        <Bell size={15} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc', letterSpacing: '-0.01em' }}>
+                          Notifications
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                          {unreadCount > 0 ? `${unreadCount} unread update${unreadCount > 1 ? 's' : ''}` : 'All caught up'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          title="Mark all as read"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '8px',
+                            padding: '0.35rem 0.6rem',
+                            color: '#94a3b8',
+                            fontSize: '0.72rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
+                            e.currentTarget.style.color = '#93c5fd';
+                            e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                            e.currentTarget.style.color = '#94a3b8';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          }}
+                        >
+                          <CheckCheck size={13} />
+                          Read All
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={clearAll}
+                          title="Clear all notifications"
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '8px',
+                            padding: '0.35rem 0.6rem',
+                            color: '#94a3b8',
+                            fontSize: '0.72rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.3rem',
+                            transition: 'all 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                            e.currentTarget.style.color = '#fca5a5';
+                            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                            e.currentTarget.style.color = '#94a3b8';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          }}
+                        >
+                          <Trash2 size={13} />
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Notification Items List */}
+                  <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '0.6rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.4rem',
+                    maxHeight: '360px'
+                  }}>
+                    {notifications.length === 0 ? (
+                      <div style={{
+                        padding: '2.5rem 1.5rem',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.6rem'
+                      }}>
+                        <div style={{
+                          width: '48px',
+                          height: '48px',
+                          borderRadius: '50%',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#64748b'
+                        }}>
+                          <Sparkles size={22} />
+                        </div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e2e8f0' }}>
+                          All caught up!
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', maxWidth: '220px' }}>
+                          No new messages or activity updates right now.
+                        </div>
+                      </div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => {
+                            markAsRead(n.id);
+                            if (n.link || n.incidentId) {
+                              navigate(n.link || `/incidents/${n.incidentId}`);
+                              setNotifOpen(false);
+                            }
+                          }}
+                          style={{
+                            padding: '0.85rem 1rem',
+                            borderRadius: '12px',
+                            background: n.read ? 'rgba(255, 255, 255, 0.02)' : 'rgba(59, 130, 246, 0.08)',
+                            border: n.read ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(59, 130, 246, 0.25)',
+                            display: 'flex',
+                            gap: '0.75rem',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                            e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.35)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = n.read ? 'rgba(255, 255, 255, 0.02)' : 'rgba(59, 130, 246, 0.08)';
+                            e.currentTarget.style.borderColor = n.read ? '1px solid rgba(255, 255, 255, 0.05)' : 'rgba(59, 130, 246, 0.25)';
+                          }}
+                        >
+                          {/* Unread Glowing Pip */}
+                          {!n.read && (
+                            <div style={{
+                              position: 'absolute',
+                              top: '12px',
+                              right: '12px',
+                              width: '7px',
+                              height: '7px',
+                              borderRadius: '50%',
+                              background: '#38bdf8',
+                              boxShadow: '0 0 8px #38bdf8'
+                            }} />
+                          )}
+
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            color: '#fff',
+                            marginTop: '2px',
+                            boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                          }}>
+                            <MessageSquare size={16} />
+                          </div>
+
+                          <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '2px' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#f1f5f9' }}>
+                                {n.author || n.title}
+                              </span>
+                              {n.incidentId && (
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  padding: '0.1rem 0.4rem',
+                                  background: 'rgba(59, 130, 246, 0.15)',
+                                  color: '#93c5fd',
+                                  borderRadius: '4px',
+                                  fontWeight: 600,
+                                  letterSpacing: '0.02em'
+                                }}>
+                                  #{n.incidentId}
+                                </span>
+                              )}
+                            </div>
+                            <div style={{
+                              fontSize: '0.78rem',
+                              color: '#cbd5e1',
+                              lineHeight: 1.4,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {n.message}
+                            </div>
+                            <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '4px' }}>
+                              {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </div>
+
+                          {/* Delete Item Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeNotification(n.id);
+                            }}
+                            title="Remove"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#64748b',
+                              cursor: 'pointer',
+                              padding: '0.2rem',
+                              borderRadius: '4px',
+                              alignSelf: 'flex-start',
+                              opacity: 0.6,
+                              transition: 'all 0.15s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.opacity = '1';
+                              e.currentTarget.style.color = '#ef4444';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.opacity = '0.6';
+                              e.currentTarget.style.color = '#64748b';
+                            }}
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div style={{ position: 'relative' }} ref={profileRef}>
               <div
                 className="sidebar-topbar__avatar"

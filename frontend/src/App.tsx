@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { MsalProvider } from '@azure/msal-react';
 import { AuthProvider, useAuth, msalInstance, ensureMsalInitialized } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -75,78 +76,80 @@ export default function App() {
   return (
     <MsalProvider instance={msalInstance}>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/incidents" element={
-              <ProtectedRoute>
-                <Incidents />
-              </ProtectedRoute>
-            } />
-            <Route path="/claims" element={
-              <ProtectedRoute>
-                <Incidents />
-              </ProtectedRoute>
-            } />
-            <Route path="/cors" element={
-              <ProtectedRoute>
-                <Incidents />
-              </ProtectedRoute>
-            } />
-            <Route path="/ncrs" element={
-              <ProtectedRoute>
-                <NCRs />
-              </ProtectedRoute>
-            } />
-            <Route path="/ic-dashboard" element={
-              <ProtectedRoute>
-                <ICDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/incidents/new" element={
-              <ProtectedRoute>
-                <NewIncident />
-              </ProtectedRoute>
-            } />
-            <Route path="/incidents/:id" element={
-              <ProtectedRoute>
-                <IncidentDetails />
-              </ProtectedRoute>
-            } />
-            <Route path="/cors/:id" element={
-              <ProtectedRoute>
-                <CoRDetails />
-              </ProtectedRoute>
-            } />
-            <Route path="/claims/:id" element={
-              <ProtectedRoute>
-                <ClaimDetails />
-              </ProtectedRoute>
-            } />
-            <Route path="/search" element={
-              <ProtectedRoute>
-                <Search />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/ncr-dashboard" element={
-              <ProtectedRoute>
-                <NCRDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/access-control" element={
-              <ProtectedRoute requireAdmin>
-                <AccessControl />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/incidents" element={
+                <ProtectedRoute>
+                  <Incidents />
+                </ProtectedRoute>
+              } />
+              <Route path="/claims" element={
+                <ProtectedRoute>
+                  <Incidents />
+                </ProtectedRoute>
+              } />
+              <Route path="/cors" element={
+                <ProtectedRoute>
+                  <Incidents />
+                </ProtectedRoute>
+              } />
+              <Route path="/ncrs" element={
+                <ProtectedRoute>
+                  <NCRs />
+                </ProtectedRoute>
+              } />
+              <Route path="/ic-dashboard" element={
+                <ProtectedRoute>
+                  <ICDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/incidents/new" element={
+                <ProtectedRoute>
+                  <NewIncident />
+                </ProtectedRoute>
+              } />
+              <Route path="/incidents/:id" element={
+                <ProtectedRoute>
+                  <IncidentDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/claims/:id" element={
+                <ProtectedRoute>
+                  <ClaimDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/cors/:id" element={
+                <ProtectedRoute>
+                  <CoRDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/search" element={
+                <ProtectedRoute>
+                  <Search />
+                </ProtectedRoute>
+              } />
+              <Route path="/ncr-dashboard" element={
+                <ProtectedRoute>
+                  <NCRDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/access-control" element={
+                <ProtectedRoute requireAdmin>
+                  <AccessControl />
+                </ProtectedRoute>
+              } />
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </MsalProvider>
   );
