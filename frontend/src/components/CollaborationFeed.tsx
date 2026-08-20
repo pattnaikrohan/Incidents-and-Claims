@@ -4,8 +4,6 @@ import { api } from '../services/api';
 import { playNotificationSound } from '../utils/notificationSound';
 import { useNotifications } from '../context/NotificationContext';
 
-const PA_COLLABORATION_FLOW = 'https://default9a3bb30112fd4106a7f7563f72cfdf.69.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/29/workflows/5c440ebc9da5492ca70c12ad1274f7c8/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=bHUdb-NvEZr5C3VvzREdUc5jsQyvWBjFGn2daF6tUdg';
-
 interface Note {
   id: number | string;
   message: string;
@@ -110,7 +108,6 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
     if (!msgToSend || isSending) return;
 
     const authorName = localStorage.getItem('displayName') || localStorage.getItem('email') || 'You';
-    const authorEmail = localStorage.getItem('email') || '';
 
     // Play subtle confirmation sound on send
     playNotificationSound('sent');
@@ -128,27 +125,6 @@ export default function CollaborationFeed({ incidentId }: CollaborationFeedProps
     setNotes((prev) => [...prev, optimisticNote]);
     setNewMessage('');
     setIsSending(true);
-
-    // Construct full link to the incident
-    const appOrigin = window.location.origin && !window.location.origin.includes('localhost')
-      ? window.location.origin
-      : 'https://riskandcompliance.aaw.com.au';
-    const incidentLink = `${appOrigin}/incidents/${incidentId}`;
-
-    // Trigger Power Automate flow directly with incident_link
-    fetch(PA_COLLABORATION_FLOW, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        incident_id: String(incidentId),
-        incident_link: incidentLink,
-        incident_url: incidentLink,
-        message: msgToSend,
-        author_name: authorName,
-        author_email: authorEmail,
-        timestamp: new Date().toISOString()
-      })
-    }).catch((err) => console.warn('[PA Collaboration Flow] Call error:', err));
 
     try {
       await api.post(`/incidents/${incidentId}/notes`, { message: msgToSend });
